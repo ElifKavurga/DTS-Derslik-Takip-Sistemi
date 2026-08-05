@@ -1,43 +1,108 @@
 # DTS - Derslik Takip Sistemi
 
-DTS, dersliklerin takibi için geliştirilecek modern bir full-stack web uygulamasıdır. Bu sprintte business logic eklenmemiştir; amaç profesyonel, genişletilebilir ve çalıştırılabilir proje iskeletini hazırlamaktır.
+DTS, derslik takip süreçleri için geliştirilecek full-stack web uygulamasıdır. Sprint 0.3 kapsamı yalnızca geliştirme ortamı altyapısını hazırlar; business logic, entity ve controller geliştirmesi içermez.
 
-## Kullanılan Teknolojiler
+## Gereksinimler
+
+- Java 21
+- Maven 3.9+
+- Node.js 20+
+- Docker
+- Docker Compose
+
+## Docker ile Calistirma
+
+Kök dizinde:
+
+```bash
+docker compose up --build
+```
+
+Servisler:
+
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- PostgreSQL: `localhost:5432`
+
+Docker servisleri aynı `dts-network` bridge network üzerinde çalışır. `backend`, `postgres` servisinin healthcheck sonucunu bekler. `frontend`, `backend` servisinin sağlıklı hale gelmesini bekler.
+
+## Manuel Calistirma
+
+PostgreSQL'i Docker ile tek başına başlatmak için:
+
+```bash
+docker compose up postgres
+```
 
 Backend:
 
-- Java 21
-- Spring Boot 3.x
-- Spring Security
-- Spring Data JPA
-- PostgreSQL
-- Flyway
-- JWT Authentication
-- Maven
-- Docker
-- Lombok
-- MapStruct
-- Jakarta Validation
-- OpenAPI / Swagger
+```bash
+cd backend
+mvn spring-boot:run
+```
 
 Frontend:
 
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Axios
-- TanStack Query
-- Zustand
-- React Hook Form
-- Zod
-- React Hot Toast
-- Heroicons
-- ESLint
-- Prettier
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Proje Yapısı
+## Veritabani
+
+Geliştirme ortamı için varsayılan PostgreSQL bilgileri:
+
+- Database: `dts_db`
+- User: `dts_user`
+- Password: `dts_password`
+- Encoding: `UTF8`
+
+PostgreSQL verisi `postgres_data` Docker volume içinde saklanır.
+
+## Ortam Degiskenleri
+
+Kök ortam değişkenleri için:
+
+```bash
+cp .env.example .env
+```
+
+Backend için örnek değişkenler [backend/.env.example](backend/.env.example) dosyasında yer alır:
+
+```env
+DATABASE_URL=jdbc:postgresql://localhost:5432/dts_db
+DATABASE_USERNAME=dts_user
+DATABASE_PASSWORD=dts_password
+JWT_SECRET=change-this-development-secret-with-at-least-32-chars
+JWT_EXPIRATION=60
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+```
+
+Frontend için örnek değişkenler [frontend/.env.example](frontend/.env.example) dosyasında yer alır:
+
+```env
+VITE_API_URL=http://localhost:8080/api
+```
+
+## Flyway Migration
+
+Migration dosyaları:
+
+```text
+backend/src/main/resources/db/migration
+```
+
+İlk migration dosyası:
+
+```text
+V1__init.sql
+```
+
+Uygulama açılırken Flyway otomatik çalışır. Gelecek migration dosyaları `V{number}__description.sql` formatıyla aynı klasöre eklenmelidir.
+
+## Proje Yapisi
 
 ```text
 backend/
@@ -52,6 +117,12 @@ backend/
     security/
     service/
     util/
+  src/main/resources/
+    application.yml
+    application-dev.yml
+    application-test.yml
+    db/migration/
+
 frontend/
   src/
     assets/
@@ -63,74 +134,24 @@ frontend/
     router/
     services/
     store/
+    styles/
     types/
     utils/
 ```
 
-## Kurulum Adımları
+## Dogrulama
 
-Ön gereksinimler:
-
-- Java 21
-- Maven 3.9+
-- Node.js 20+
-- Docker ve Docker Compose
-
-Ortam değişkenleri için örnek dosyayı kullanabilirsiniz:
-
-```bash
-cp .env.example .env
-```
-
-## Docker ile Çalıştırma
-
-Kök dizinde:
-
-```bash
-docker compose up --build
-```
-
-Servisler:
-
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:8080`
-- PostgreSQL: `localhost:5432`
-- Swagger: `http://localhost:8080/swagger-ui.html`
-
-## Backend Çalıştırma
-
-PostgreSQL çalışır durumdayken:
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-Backend varsayılan olarak `http://localhost:8080` adresinde çalışır.
-
-## Frontend Çalıştırma
+Frontend:
 
 ```bash
 cd frontend
-npm install
-npm run dev
+npm run lint
+npm run build
 ```
-
-Frontend varsayılan olarak `http://localhost:5173` adresinde çalışır.
-
-## Doğrulama
 
 Backend:
 
 ```bash
 cd backend
 mvn test
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm run build
-npm run lint
 ```

@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/dts_db}
+    username: ${DATABASE_USERNAME:dts_user}
+    password: ${DATABASE_PASSWORD:dts_password}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    clean-disabled: true
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+application:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-chars}
+      expiration-minutes: ${JWT_EXPIRATION:60}
+
+logging:
+  level:
+    root: INFO
+    com.dts.dersliktakip: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN

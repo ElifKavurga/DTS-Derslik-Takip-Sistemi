@@ -11,6 +11,8 @@ spring:
     enabled: true
 
 application:
+  cors:
+    allowed-origins: http://localhost:5173
   security:
     jwt:
       secret: test-development-secret-with-at-least-32-chars
