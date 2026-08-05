@@ -1,0 +1,8 @@
+package com.dts.dersliktakip.dto;
+
+public record AuthResponse(
+        String accessToken,
+        String refreshToken,
+        UserResponse user
+) {
+}

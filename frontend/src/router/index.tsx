@@ -4,6 +4,8 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
+import { ProtectedRoute } from '@/router/ProtectedRoute';
+import { PublicRoute } from '@/router/PublicRoute';
 
 export const router = createBrowserRouter([
   {
@@ -11,19 +13,29 @@ export const router = createBrowserRouter([
     element: <Navigate to="/dashboard" replace />,
   },
   {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    element: <DashboardLayout />,
+    element: <PublicRoute />,
     children: [
       {
-        path: '/dashboard',
-        element: <DashboardPage />,
+        path: '/login',
+        element: <LoginPage />,
       },
+    ],
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
       {
-        path: '/profile',
-        element: <ProfilePage />,
+        element: <DashboardLayout />,
+        children: [
+          {
+            path: '/dashboard',
+            element: <DashboardPage />,
+          },
+          {
+            path: '/profile',
+            element: <ProfilePage />,
+          },
+        ],
       },
     ],
   },

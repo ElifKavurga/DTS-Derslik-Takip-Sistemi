@@ -17,3 +17,4 @@ application:
     jwt:
       secret: test-development-secret-with-at-least-32-chars
       expiration-minutes: 60
+      refresh-expiration-minutes: 10080

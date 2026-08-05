@@ -1,3 +1,7 @@
+import { useAuthStore } from '@/store/useAuthStore';
+
 export const DashboardPage = () => {
-  return <div>Dashboard</div>;
+  const user = useAuthStore((state) => state.user);
+
+  return <div>Dashboard {user ? `- ${user.fullName}` : ''}</div>;
 };

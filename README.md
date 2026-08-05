@@ -102,6 +102,38 @@ V1__init.sql
 
 Uygulama açılırken Flyway otomatik çalışır. Gelecek migration dosyaları `V{number}__description.sql` formatıyla aynı klasöre eklenmelidir.
 
+Sprint 0.4 ile auth altyapısı için `users` tablosu ve ilk `SUPER_ADMIN` kullanıcısı migration üzerinden eklenir.
+
+Varsayılan geliştirme kullanıcısı:
+
+```text
+Email: admin@dts.local
+Password: Admin123*
+Role: SUPER_ADMIN
+```
+
+Şifre veritabanında BCrypt hash olarak tutulur.
+
+## Authentication
+
+Backend endpointleri:
+
+```text
+POST /api/auth/login
+POST /api/auth/refresh
+GET  /api/auth/me
+```
+
+`/api/auth/login` ve `/api/auth/refresh` public endpointlerdir. `/api/auth/me` ve diğer endpointler JWT Bearer token gerektirir.
+
+Frontend auth akışı:
+
+- Login formu React Hook Form ve Zod validation kullanır.
+- Access token ve refresh token Zustand auth store içinde session storage ile korunur.
+- Axios request interceptor `Authorization: Bearer <token>` header değerini ekler.
+- Axios response interceptor `401` durumunda session bilgisini temizler.
+- Dashboard protected route arkasındadır.
+
 ## Proje Yapisi
 
 ```text

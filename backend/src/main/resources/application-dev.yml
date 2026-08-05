@@ -27,6 +27,7 @@ application:
     jwt:
       secret: ${JWT_SECRET:change-this-development-secret-with-at-least-32-chars}
       expiration-minutes: ${JWT_EXPIRATION:60}
+      refresh-expiration-minutes: ${JWT_REFRESH_EXPIRATION:10080}
 
 logging:
   level:

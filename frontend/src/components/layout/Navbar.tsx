@@ -1,3 +1,14 @@
+import { useAuthStore } from '@/store/useAuthStore';
+
 export const Navbar = () => {
-  return <header>Navbar</header>;
+  const logout = useAuthStore((state) => state.logout);
+
+  return (
+    <header>
+      Navbar
+      <button type="button" onClick={logout}>
+        Logout
+      </button>
+    </header>
+  );
 };
