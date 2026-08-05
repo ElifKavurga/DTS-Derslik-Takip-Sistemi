@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sınıf Takip Sistemi - Rezervasyonlarım</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#fdbc07",
+                        "inverse-surface": "#213145",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-background": "#0b1c30",
+                        "on-error": "#ffffff",
+                        "tertiary": "#663b00",
+                        "surface-dim": "#cbdbf5",
+                        "on-secondary-container": "#6b4d00",
+                        "on-surface-variant": "#3f484d",
+                        "on-surface": "#0b1c30",
+                        "surface-tint": "#066684",
+                        "primary-container": "#006482",
+                        "tertiary-container": "#845111",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#e5eeff",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#7a5900",
+                        "outline-variant": "#bfc8ce",
+                        "on-tertiary-fixed": "#2c1600",
+                        "on-secondary-fixed": "#261900",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "inverse-primary": "#88d0f2",
+                        "surface-container-high": "#dce9ff",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-container": "#ffcc9a",
+                        "error-container": "#ffdad6",
+                        "primary-fixed": "#bfe9ff",
+                        "primary": "#004b62",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "surface": "#f8f9ff",
+                        "tertiary-fixed": "#ffdcbd",
+                        "outline": "#70787e",
+                        "tertiary-fixed-dim": "#fdb970",
+                        "on-primary-fixed-variant": "#004d65",
+                        "on-primary-container": "#9bdeff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-primary-fixed": "#001f2a",
+                        "surface-variant": "#d3e4fe",
+                        "background": "#f8f9ff",
+                        "primary-fixed-dim": "#88d0f2",
+                        "secondary-fixed": "#ffdea2",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#fdbc07"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "gutter": "24px",
+                        "lg": "40px",
+                        "md": "24px",
+                        "margin-desktop": "32px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "xl": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "title-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-[280px] bg-primary dark:bg-primary shadow-[0px_4px_20px_rgba(0,100,130,0.08)] fixed left-0 top-0 py-8 z-50">
+<div class="px-8 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-container text-[28px]" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-on-primary">STS</h1>
+<p class="font-label-md text-label-md text-on-primary opacity-80">İnönü University</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 font-headline-md text-headline-md font-body-md text-body-md font-label-md text-label-md">
+<!-- Active Tab Fallback for Academic User Managing Bookings -->
+<a class="flex items-center gap-4 px-6 py-4 text-secondary-container bg-primary-container rounded-lg mx-4 scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="location_city">location_city</span>
+<span>Campus</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Users</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="admin_panel_settings">admin_panel_settings</span>
+<span>Permissions</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span>Profile</span>
+</a>
+</div>
+<div class="mt-auto px-4">
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+<!-- BottomNavBar (Mobile Fallback for Shell Logic) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant z-50 flex justify-around items-center h-16 pb-safe">
+<a class="flex flex-col items-center justify-center w-full h-full text-primary-container" href="#">
+<span class="material-symbols-outlined icon-fill" data-icon="dashboard">dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="location_city">location_city</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</a>
+</nav>
+<!-- TopNavBar -->
+<header class="hidden md:flex fixed top-0 right-0 w-[calc(100%-280px)] h-16 bg-surface dark:bg-surface-container-low border-b-0 shadow-sm z-40 justify-between items-center px-8 transition-all">
+<div class="flex items-center gap-4 w-1/3">
+<div class="relative w-full max-w-md focus-within:ring-2 focus-within:ring-secondary-container rounded-lg">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg font-body-md text-on-surface focus:outline-none focus:ring-0" placeholder="Ara..." type="text"/>
+</div>
+</div>
+<div class="absolute left-1/2 -translate-x-1/2">
+<h2 class="text-title-lg font-title-lg text-primary font-bold tracking-tight">Sınıf Takip Sistemi</h2>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest cursor-pointer hover:ring-2 ring-primary-container transition-all">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a university academic staff member against a neutral background. High key lighting, sharp focus, corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAARiotOyF4mSkj2RMQCIVKGB5fjk7YqoA7nOdRHuqKxa1vkqqwk9CGK44Ri0JvlbMyWn3ll0CbTEV2tne3-s_qhUQ1V_faFvYgn4iFLmwtq11QTkKWOYDrk2ryks53vTkowbWeM43AaIFhNBumhwN_L0Ob96i7vr5awRx6JFJ-8T732N5O9NKA7mKM9bvuYHJmVmSFPVojyBotL3MB9U1JdhQhcmcOv5sTVdpYLz_ZmdecCHKJrP2w"/>
+</div>
+</div>
+</header>
+<!-- Mobile Top Header -->
+<header class="md:hidden fixed top-0 left-0 w-full h-16 bg-surface z-40 flex items-center justify-between px-margin-mobile shadow-sm">
+<h2 class="font-title-lg text-title-lg text-primary font-bold tracking-tight">STS</h2>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a university academic staff member against a neutral background. High key lighting, sharp focus, corporate modern aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfW-FWYQtR-5zyU6YeCOoB1UpvaRgk4DGEC3b-5BYlF_6P7lbrwSusEDQ6MnOf4KMZvUi02CsKvscgQ_wI8GH0wyfqHNcxsgMPLVVRvEjaBwySnZ2ZwVq2trIEkIZNN0cIkubIi0Nxe5UnGzrkm3zJYPlhA6mP7ncnOk9lufLCxpyGsEECLl2DIXz3V5ZiqCuhUQmnOeLGf9XqWcM6IW5PLVqMeKSkCUNVbXjDGuCifmRcGo8lDQdb"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-16 md:ml-[280px] p-margin-mobile md:p-margin-desktop max-w-[1440px] mx-auto pb-24 md:pb-8">
+<!-- Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary-container mb-2">Rezervasyonlarım</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Oluşturduğunuz sınıf rezervasyonlarını görüntüleyin ve yönetin.</p>
+</div>
+<button class="bg-secondary-fixed-dim text-[#0F172A] font-label-md text-label-md px-6 py-3 rounded-[16px] hover:shadow-[0px_8px_30px_rgba(0,100,130,0.12)] transition-all flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+                Yeni Rezervasyon
+            </button>
+</div>
+<!-- Filters Section -->
+<div class="bg-surface-container-lowest p-6 rounded-[16px] shadow-[0px_4px_20px_rgba(0,100,130,0.08)] mb-10">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface">Arama</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant rounded-lg font-body-md focus:border-secondary-fixed-dim focus:ring-0 transition-colors" placeholder="Sınıf Kodu veya Ders..." type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface">Rezervasyon Tipi</label>
+<select class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg font-body-md text-on-surface focus:border-secondary-fixed-dim focus:ring-0 appearance-none">
+<option>Tümü</option>
+<option>Ek Ders</option>
+<option>Telafi</option>
+<option>Sınav</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface">Durum</label>
+<select class="w-full px-4 py-2.5 bg-surface border border-outline-variant rounded-lg font-body-md text-on-surface focus:border-secondary-fixed-dim focus:ring-0 appearance-none">
+<option>Yaklaşan</option>
+<option>Tamamlandı</option>
+<option>İptal Edildi</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface">Tarih Aralığı</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" data-icon="calendar_today">calendar_today</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant rounded-lg font-body-md focus:border-secondary-fixed-dim focus:ring-0" type="date"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Yaklaşan Rezervasyonlar -->
+<h3 class="font-title-lg text-title-lg text-primary-container mb-6">Yaklaşan Rezervasyonlar</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter mb-12">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-[16px] shadow-[0px_4px_20px_rgba(0,100,130,0.08)] hover:shadow-[0px_8px_30px_rgba(0,100,130,0.12)] transition-shadow border border-transparent hover:border-primary-container/10 flex flex-col h-full">
+<div class="flex justify-between items-start mb-6">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-primary-container bg-surface-container px-3 py-1 rounded-full w-fit mb-3 border border-primary-container/20">Onaylandı</span>
+<h4 class="font-title-lg text-title-lg text-primary-container">İleri Algoritmalar (Ek Ders)</h4>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center border border-outline-variant shrink-0">
+<span class="font-label-md text-label-md text-primary-container font-bold">A-101</span>
+</div>
+</div>
+<div class="flex flex-col gap-3 mb-8 grow">
+<div class="flex items-center gap-3 text-on-surface-variant font-body-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_month">calendar_month</span>
+<span>24 Ekim 2023, Perşembe</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant font-label-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+<span class="bg-surface px-2 py-1 rounded">10:30 - 12:15</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant font-body-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="domain">domain</span>
+<span>Mühendislik Fakültesi, 1. Kat</span>
+</div>
+</div>
+<div class="flex gap-3 pt-4 border-t border-outline-variant/30 mt-auto">
+<button class="flex-1 flex items-center justify-center gap-2 border-2 border-primary-container text-primary-container font-label-md text-label-md py-2 rounded-[16px] hover:bg-primary-container/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="info">info</span>
+                        Detay
+                    </button>
+<button class="flex items-center justify-center gap-2 text-on-surface-variant hover:text-error transition-colors p-2" title="İptal Et">
+<span class="material-symbols-outlined" data-icon="cancel">cancel</span>
+</button>
+<button class="flex items-center justify-center gap-2 text-on-surface-variant hover:text-primary-container transition-colors p-2" title="Kat Planı">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-[16px] shadow-[0px_4px_20px_rgba(0,100,130,0.08)] hover:shadow-[0px_8px_30px_rgba(0,100,130,0.12)] transition-shadow border border-transparent hover:border-primary-container/10 flex flex-col h-full">
+<div class="flex justify-between items-start mb-6">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-tertiary-container bg-surface-container-highest px-3 py-1 rounded-full w-fit mb-3 border border-tertiary-container/20">Beklemede</span>
+<h4 class="font-title-lg text-title-lg text-primary-container">Veri Yapıları (Telafi)</h4>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center border border-outline-variant shrink-0">
+<span class="font-label-md text-label-md text-primary-container font-bold">B-205</span>
+</div>
+</div>
+<div class="flex flex-col gap-3 mb-8 grow">
+<div class="flex items-center gap-3 text-on-surface-variant font-body-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_month">calendar_month</span>
+<span>25 Ekim 2023, Cuma</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant font-label-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+<span class="bg-surface px-2 py-1 rounded">13:15 - 15:00</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant font-body-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="domain">domain</span>
+<span>Mühendislik Fakültesi, 2. Kat</span>
+</div>
+</div>
+<div class="flex gap-3 pt-4 border-t border-outline-variant/30 mt-auto">
+<button class="flex-1 flex items-center justify-center gap-2 border-2 border-primary-container text-primary-container font-label-md text-label-md py-2 rounded-[16px] hover:bg-primary-container/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="info">info</span>
+                        Detay
+                    </button>
+<button class="flex items-center justify-center gap-2 text-on-surface-variant hover:text-error transition-colors p-2" title="İptal Et">
+<span class="material-symbols-outlined" data-icon="cancel">cancel</span>
+</button>
+<button class="flex items-center justify-center gap-2 text-on-surface-variant hover:text-primary-container transition-colors p-2" title="Kat Planı">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Geçmiş Rezervasyonlar -->
+<h3 class="font-title-lg text-title-lg text-on-surface-variant mb-6 opacity-80">Geçmiş Rezervasyonlar</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter opacity-70">
+<!-- Past Card 1 -->
+<div class="bg-surface p-6 rounded-[16px] border border-outline-variant/50 flex flex-col h-full grayscale-[20%]">
+<div class="flex justify-between items-start mb-6">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-outline-variant/20 px-3 py-1 rounded-full w-fit mb-3">Tamamlandı</span>
+<h4 class="font-title-lg text-title-lg text-on-surface">Yapay Zeka (Sınav)</h4>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/50 shrink-0">
+<span class="font-label-md text-label-md text-on-surface-variant font-bold">C-102</span>
+</div>
+</div>
+<div class="flex flex-col gap-3 mb-6 grow">
+<div class="flex items-center gap-3 text-outline font-body-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="calendar_month">calendar_month</span>
+<span>18 Ekim 2023, Çarşamba</span>
+</div>
+<div class="flex items-center gap-3 text-outline font-label-md">
+<span class="material-symbols-outlined text-[20px]" data-icon="schedule">schedule</span>
+<span>09:00 - 11:00</span>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 text-primary-container font-label-md text-label-md py-2 rounded-[16px] hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="history">history</span>
+                    Tekrar Oluştur
+                </button>
+</div>
+</div>
+</main>
+</body></html>

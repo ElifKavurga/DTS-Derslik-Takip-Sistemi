@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kat Planı Editörü - STS</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Custom scrollbar for panels */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #bfc8ce; /* outline-variant */
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #70787e; /* outline */
+        }
+    </style>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed": "#ffdcbd",
+                      "secondary-fixed-dim": "#fdbc07",
+                      "inverse-primary": "#88d0f2",
+                      "background": "#f8f9ff",
+                      "on-secondary-fixed-variant": "#5c4200",
+                      "surface-container": "#e5eeff",
+                      "inverse-on-surface": "#eaf1ff",
+                      "surface-tint": "#066684",
+                      "outline": "#70787e",
+                      "tertiary": "#663b00",
+                      "outline-variant": "#bfc8ce",
+                      "inverse-surface": "#213145",
+                      "surface-bright": "#f8f9ff",
+                      "secondary": "#7a5900",
+                      "on-secondary-container": "#6b4d00",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-fixed": "#bfe9ff",
+                      "primary": "#004b62",
+                      "on-tertiary-fixed": "#2c1600",
+                      "secondary-container": "#fdbc07",
+                      "tertiary-container": "#845111",
+                      "on-primary-fixed": "#001f2a",
+                      "error": "#ba1a1a",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-surface": "#0b1c30",
+                      "tertiary-fixed-dim": "#fdb970",
+                      "on-tertiary-fixed-variant": "#693c00",
+                      "on-primary-fixed-variant": "#004d65",
+                      "on-primary": "#ffffff",
+                      "surface-variant": "#d3e4fe",
+                      "on-secondary-fixed": "#261900",
+                      "on-primary-container": "#9bdeff",
+                      "error-container": "#ffdad6",
+                      "surface-container-high": "#dce9ff",
+                      "on-error-container": "#93000a",
+                      "on-background": "#0b1c30",
+                      "primary-fixed-dim": "#88d0f2",
+                      "on-tertiary-container": "#ffcc9a",
+                      "surface": "#f8f9ff",
+                      "surface-container-low": "#eff4ff",
+                      "surface-dim": "#cbdbf5",
+                      "on-error": "#ffffff",
+                      "on-surface-variant": "#3f484d",
+                      "primary-container": "#006482",
+                      "secondary-fixed": "#ffdea2",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "64px",
+                      "gutter": "24px",
+                      "base": "8px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "32px",
+                      "sm": "12px",
+                      "md": "24px",
+                      "lg": "40px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "label-sm": ["JetBrains Mono"],
+                      "label-md": ["JetBrains Mono"],
+                      "headline-md": ["Hanken Grotesk"],
+                      "body-md": ["Hanken Grotesk"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "title-lg": ["Hanken Grotesk"],
+                      "headline-lg-mobile": ["Hanken Grotesk"],
+                      "body-lg": ["Hanken Grotesk"],
+                      "display-lg": ["Hanken Grotesk"]
+              },
+              "fontSize": {
+                      "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background h-screen w-screen flex flex-col overflow-hidden antialiased">
+<!-- Editor Header (Replaces standard TopNav for focused workspace) -->
+<header class="h-16 flex-shrink-0 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between px-6 z-20">
+<div class="flex items-center gap-4">
+<button aria-label="Geri Dön" class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div>
+<h1 class="font-title-lg text-title-lg text-primary m-0">Mühendislik Fakültesi / A Blok / 1. Kat</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant m-0">Son kaydetme: 2 dakika önce</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 rounded-[16px] font-label-md text-label-md text-primary border border-outline-variant hover:bg-surface-container transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                Önizleme
+            </button>
+<button class="px-4 py-2 rounded-[16px] bg-secondary-container text-on-secondary-container font-label-md text-label-md hover:brightness-95 transition-all shadow-[0px_4px_20px_rgba(0,100,130,0.08)] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">publish</span>
+                Yayına Al
+            </button>
+</div>
+</header>
+<!-- Main Workspace Layout -->
+<main class="flex-1 flex overflow-hidden w-full relative">
+<!-- Left Panel: Hierarchy & Upload (280px) -->
+<aside class="w-[280px] flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col z-10">
+<div class="p-4 border-b border-outline-variant">
+<h2 class="font-title-lg text-title-lg text-primary mb-4">Konum Seçimi</h2>
+<div class="flex flex-col gap-4">
+<!-- Fakülte Select -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Fakülte</label>
+<div class="relative">
+<select class="w-full h-10 appearance-none bg-surface-container-lowest border border-outline rounded-[16px] px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all cursor-pointer">
+<option>Mühendislik Fakültesi</option>
+<option>Tıp Fakültesi</option>
+<option>Eğitim Fakültesi</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Bina Select -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Bina</label>
+<div class="relative">
+<select class="w-full h-10 appearance-none bg-surface-container-lowest border border-outline rounded-[16px] px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all cursor-pointer">
+<option>A Blok</option>
+<option>B Blok</option>
+<option>Ek Bina</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Kat Select -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface">Kat</label>
+<div class="relative">
+<select class="w-full h-10 appearance-none bg-surface-container-lowest border border-outline rounded-[16px] px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all cursor-pointer">
+<option>1. Kat</option>
+<option>Zemin Kat</option>
+<option>2. Kat</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 flex-1 flex flex-col">
+<h2 class="font-title-lg text-title-lg text-primary mb-4">Kat Planı</h2>
+<button class="w-full py-4 bg-primary text-on-primary rounded-[16px] font-label-md text-label-md flex flex-col items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-[0px_4px_20px_rgba(0,100,130,0.08)] mb-3">
+<span class="material-symbols-outlined text-[32px] mb-1">upload_file</span>
+                    Kat Planı Yükle
+                </button>
+<p class="font-label-sm text-label-sm text-center text-on-surface-variant">
+                    Desteklenen formatlar: JPG, PNG, SVG<br/>Maksimum dosya boyutu: 10MB
+                </p>
+<div class="mt-8">
+<h3 class="font-label-md text-label-md text-on-surface mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">layers</span> Katmanlar
+                    </h3>
+<ul class="flex flex-col gap-1">
+<li class="flex items-center justify-between p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-primary">image</span>
+                                Arka Plan Görseli
+                            </div>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">visibility</span>
+</li>
+<li class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-secondary">check_box_outline_blank</span>
+                                LAB-1 (Seçili)
+                            </div>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">visibility</span>
+</li>
+<li class="flex items-center justify-between p-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2 font-body-md text-body-md text-on-surface">
+<span class="material-symbols-outlined text-[18px] text-outline">check_box_outline_blank</span>
+                                A101
+                            </div>
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">visibility</span>
+</li>
+</ul>
+</div>
+</div>
+</aside>
+<!-- Middle Canvas Workspace -->
+<section class="flex-1 bg-surface-container relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing">
+<!-- Grid Pattern Background -->
+<div class="absolute inset-0 pointer-events-none" style="background-image: radial-gradient(circle at 1px 1px, #bfc8ce 1px, transparent 0); background-size: 24px 24px;"></div>
+<!-- Canvas Transformation Layer (Mocking zoom/pan state) -->
+<div class="relative scale-[1.1] transition-transform duration-300 origin-center w-[800px] h-[600px] bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,100,130,0.08)]">
+<!-- Floor Plan Image Mock -->
+<div class="absolute inset-0 w-full h-full opacity-80 mix-blend-multiply" data-alt="A clean, professional architectural floor plan blueprint of a university building floor, displayed from a top-down perspective. The blueprint uses crisp, fine dark teal lines on a bright white background, illustrating distinct rooms, corridors, stairwells, and structural walls in a modern, minimalist technical drawing style. No text labels or distracting elements, just pure geometric layout representation." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBC32KVWmGHRFtViub3ksm5nYyKNm5zj7Kza7LBHNoArixhPeGSSA02tXfWxo0lK31X3n9stS_sy027jLb2U7NNb8sg4I6XSKOa4sFZlzW42XDtos1jQZhtQAsNL93ykXeD5AufzewIuV2qbZufZcxywik0jeZtosxGMmKWGEzO9huu9IO2zlkFjxhdIW0P7fEPK9D87ogFjLxoZAddPEvVci8w97rtaHpJHF5DSd5cIxOtpPFwCIuH')"></div>
+<!-- Unselected Node 1: A101 -->
+<div class="absolute top-[120px] left-[150px] w-[180px] h-[140px] bg-surface-container-lowest/90 border border-outline rounded-[16px] shadow-sm backdrop-blur-sm flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:shadow-md transition-all group">
+<span class="font-title-lg text-title-lg text-primary">A101</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">Derslik • 40 Kişi</span>
+</div>
+<!-- Unselected Node 2: AMFİ-2 -->
+<div class="absolute top-[120px] right-[100px] w-[220px] h-[280px] bg-surface-container-lowest/90 border border-outline rounded-[16px] shadow-sm backdrop-blur-sm flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:shadow-md transition-all group">
+<span class="font-title-lg text-title-lg text-primary">AMFİ-2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-primary transition-colors">Amfi • 120 Kişi</span>
+</div>
+<!-- Selected Node: LAB-1 -->
+<div class="absolute bottom-[80px] left-[250px] w-[200px] h-[160px] bg-primary-fixed/90 border-2 border-primary ring-4 ring-primary/20 rounded-[16px] shadow-[0px_8px_30px_rgba(0,100,130,0.12)] backdrop-blur-sm flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
+<!-- Resize handles (Mock) -->
+<div class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-surface-container-lowest border-2 border-primary rounded-full"></div>
+<div class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-surface-container-lowest border-2 border-primary rounded-full"></div>
+<div class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-surface-container-lowest border-2 border-primary rounded-full"></div>
+<div class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-surface-container-lowest border-2 border-primary rounded-full"></div>
+<span class="font-title-lg text-title-lg text-on-primary-fixed-variant">LAB-1</span>
+<span class="font-label-sm text-label-sm text-primary">Laboratuvar • 30 Kişi</span>
+</div>
+</div>
+<!-- Floating Toolbar -->
+<div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-surface-container-lowest shadow-[0px_8px_30px_rgba(0,100,130,0.12)] rounded-[16px] p-2 flex items-center gap-1 z-20">
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" title="Uzaklaş">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<div class="px-2 font-label-md text-label-md text-primary w-14 text-center cursor-ns-resize select-none">110%</div>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" title="Yaklaş">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="w-px h-6 bg-outline-variant mx-1"></div>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors" title="Ekrana Sığdır">
+<span class="material-symbols-outlined">fit_screen</span>
+</button>
+<button class="w-10 h-10 rounded-lg flex items-center justify-center text-primary bg-surface-container-high transition-colors" title="Izgarayı Göster/Gizle">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+</div>
+<!-- Quick Add Floating Action (Contextual to workspace) -->
+<button class="absolute top-6 left-6 bg-surface-container-lowest shadow-[0px_8px_30px_rgba(0,100,130,0.12)] rounded-[16px] px-4 py-3 flex items-center gap-2 text-primary font-label-md text-label-md hover:bg-surface-container-high transition-colors z-20">
+<span class="material-symbols-outlined">add_box</span>
+                Yeni Derslik Ekle
+            </button>
+</section>
+<!-- Right Panel: Properties (300px) -->
+<aside class="w-[300px] flex-shrink-0 bg-surface-container-lowest border-l border-outline-variant p-5 flex flex-col overflow-y-auto z-10 shadow-[-4px_0_20px_rgba(0,100,130,0.05)]">
+<h2 class="font-title-lg text-title-lg text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">tune</span>
+                Derslik Özellikleri
+            </h2>
+<div class="flex flex-col gap-5 flex-1">
+<!-- Derslik Kodu -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface">Derslik Kodu <span class="text-error">*</span></label>
+<input class="h-10 rounded-[16px] bg-surface-container-lowest border border-outline px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all placeholder:text-outline-variant" type="text" value="LAB-1"/>
+</div>
+<!-- Derslik Adı -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface">Derslik Adı</label>
+<input class="h-10 rounded-[16px] bg-surface-container-lowest border border-outline px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all placeholder:text-outline-variant" type="text" value="Bilgisayar Laboratuvarı 1"/>
+</div>
+<!-- Tip -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface">Tip <span class="text-error">*</span></label>
+<div class="relative">
+<select class="w-full h-10 appearance-none bg-surface-container-lowest border border-outline rounded-[16px] px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all cursor-pointer">
+<option>Derslik</option>
+<option selected="">Laboratuvar</option>
+<option>Amfi</option>
+<option>Toplantı Odası</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Kapasite -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface">Kapasite (Kişi)</label>
+<input class="h-10 rounded-[16px] bg-surface-container-lowest border border-outline px-3 font-body-md text-body-md text-on-surface focus:border-secondary-container focus:border-2 focus:outline-none transition-all" max="500" min="1" type="number" value="30"/>
+</div>
+<hr class="border-outline-variant my-2"/>
+<!-- Donanım (Equipment) -->
+<div class="flex flex-col gap-3">
+<label class="font-label-md text-label-md text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">devices</span>
+                        Mevcut Donanımlar
+                    </label>
+<div class="flex flex-col gap-2">
+<label class="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="relative flex items-center">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-outline rounded bg-surface-container-lowest peer-checked:bg-secondary-container peer-checked:border-secondary-container transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">videocam</span> Projeksiyon
+                            </span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="relative flex items-center">
+<input class="peer sr-only" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-outline rounded bg-surface-container-lowest peer-checked:bg-secondary-container peer-checked:border-secondary-container transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">tv</span> Akıllı Tahta
+                            </span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="relative flex items-center">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-outline rounded bg-surface-container-lowest peer-checked:bg-secondary-container peer-checked:border-secondary-container transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">computer</span> Bilgisayar (PC)
+                            </span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group p-2 rounded-lg hover:bg-surface-container transition-colors">
+<div class="relative flex items-center">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="w-5 h-5 border-2 border-outline rounded bg-surface-container-lowest peer-checked:bg-secondary-container peer-checked:border-secondary-container transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container opacity-0 peer-checked:opacity-100 transition-opacity" style="font-variation-settings: 'wght' 600;">check</span>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant group-hover:text-primary transition-colors">ac_unit</span> Klima
+                            </span>
+</label>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-8 pt-4 border-t border-outline-variant flex flex-col gap-3">
+<button class="w-full h-12 bg-secondary-container text-on-secondary-container rounded-[16px] font-label-md text-label-md flex items-center justify-center gap-2 hover:brightness-95 transition-all shadow-sm">
+<span class="material-symbols-outlined text-[20px]">save</span>
+                    Değişiklikleri Kaydet
+                </button>
+<button class="w-full h-12 border-2 border-error text-error rounded-[16px] font-label-md text-label-md flex items-center justify-center gap-2 hover:bg-error-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+                    Dersliği Sil
+                </button>
+</div>
+</aside>
+</main>
+</body></html>

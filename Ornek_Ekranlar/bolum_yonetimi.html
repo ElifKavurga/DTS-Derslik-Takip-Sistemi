@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Bölüm Yönetimi - STS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdcbd",
+                        "secondary-fixed-dim": "#fdbc07",
+                        "inverse-primary": "#88d0f2",
+                        "background": "#f8f9ff",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "surface-container": "#e5eeff",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-tint": "#066684",
+                        "outline": "#70787e",
+                        "tertiary": "#663b00",
+                        "outline-variant": "#bfc8ce",
+                        "inverse-surface": "#213145",
+                        "surface-bright": "#f8f9ff",
+                        "secondary": "#7a5900",
+                        "on-secondary-container": "#6b4d00",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#bfe9ff",
+                        "primary": "#004b62",
+                        "on-tertiary-fixed": "#2c1600",
+                        "secondary-container": "#fdbc07",
+                        "tertiary-container": "#845111",
+                        "on-primary-fixed": "#001f2a",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-surface": "#0b1c30",
+                        "tertiary-fixed-dim": "#fdb970",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "on-primary-fixed-variant": "#004d65",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#d3e4fe",
+                        "on-secondary-fixed": "#261900",
+                        "on-primary-container": "#9bdeff",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#dce9ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#0b1c30",
+                        "primary-fixed-dim": "#88d0f2",
+                        "on-tertiary-container": "#ffcc9a",
+                        "surface": "#f8f9ff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-dim": "#cbdbf5",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#3f484d",
+                        "primary-container": "#006482",
+                        "secondary-fixed": "#ffdea2",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "64px",
+                        "gutter": "24px",
+                        "base": "8px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "sm": "12px",
+                        "md": "24px",
+                        "lg": "40px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["JetBrains Mono"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "title-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md text-body-md overflow-hidden">
+<!-- Top Navigation Bar -->
+<nav class="fixed top-0 right-0 w-full md:w-[calc(100%-280px)] h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-8 z-40">
+<div class="flex items-center gap-4">
+<!-- Mobile Menu Toggle (Hidden on Desktop) -->
+<button class="md:hidden text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="text-title-lg font-title-lg text-primary font-bold">
+                Sınıf Takip Sistemi
+            </div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative hidden sm:block focus-within:ring-2 focus-within:ring-secondary-container rounded-lg">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface focus:outline-none focus:border-secondary w-64 transition-colors" placeholder="Ara..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="A professional headshot of a university administrator. High-key lighting, bright turquoise accent lighting subtly highlighting the features. Clean, modern, confident appearance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY4mAJnUgIqOUUzJtR5PpCN2-itmMrhdpPAtlrTD53zv9pvGM52SF4G21WdHzKcVpgsofAruTNcDUmB0oC06KYdS1IpiAEtpelkrACZYhTb2xOD_AlkGnwKsil0ntFxYQqEMBuXEFcoe-roOZZETnnnWFQwT9-VXi0X1UpMYpgLnr8LaHY3uid9Gy2jwD1qKQBevqDAuU1oBrFLtBPJKzIJ-0cUJoxYBuhI-dSyQ9KLMkP60V06o4Q"/>
+</div>
+</nav>
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-0 h-screen w-[280px] bg-primary shadow-[0px_4px_20px_rgba(0,100,130,0.08)] flex flex-col py-8 z-50 hidden md:flex">
+<!-- Logo & Brand -->
+<div class="px-8 mb-xl flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center shrink-0">
+<img alt="University Logo" class="w-8 h-8 object-contain" data-alt="A minimalist, modern university logo. Clean lines, abstract academic imagery like a stylized open book or a classic column mixed with modern geometric shapes. Professional deep turquoise and yellow palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBX23iQ0VjTFq_36h46wp92bNusCuAMTDEgmGx0EXBs-0uNP-rOh6EV3qmkXUiACvZaR42awedMd5XWTfyKnESg6KdUIBUN0m_FyehywSWmeXmq0y87VJUG4O_yVpOAmNiCraKd_9BNjiDIq-M1Kr9es3j-Zj6RuBbbsfJO8XIyu1QP_HBN4SYFma1r5jVLtPf1o8JmzN8z7dxyJHsew1CqUNNxLpkUY1vz86y95zRBb-JeNJ8FWOcB"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-on-primary font-bold">STS</h1>
+<p class="font-label-md text-label-md text-on-primary opacity-80">İnönü University</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 flex flex-col gap-2">
+<!-- Inactive -->
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">location_city</span>
+<span class="font-label-md text-label-md">Campus</span>
+</a>
+<!-- Active (Mapping 'Bölüm Yönetimi' to an administrative intent, let's use 'Campus' or similar, but the user requested 'Bölüm Yönetimi'. Assuming it falls under general administration, 'Campus' or 'Users'. Let's say we are in a sub-section of Campus structure, but actually 'Campus' fits best for structural management. Or maybe we just highlight a custom active state if not strictly matching. I will map it to 'Campus' as it's structural.) Wait, the prompt says 'Management screen for university departments'. I'll highlight 'Campus' as the active section representing physical/structural hierarchy. Actually, let's highlight 'Users' if it's admin, or just keep 'Dashboard' active if it's a sub-page. Let's use 'Campus'. -->
+<a class="flex items-center gap-4 px-6 py-4 text-secondary-container bg-primary-container rounded-lg mx-4 scale-95 transition-transform group" href="#">
+<span class="material-symbols-outlined fill">location_city</span>
+<span class="font-label-md text-label-md">Campus</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">group</span>
+<span class="font-label-md text-label-md">Users</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">admin_panel_settings</span>
+<span class="font-label-md text-label-md">Permissions</span>
+</a>
+</nav>
+<!-- Bottom Actions -->
+<div class="mt-auto flex flex-col gap-2">
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">account_circle</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary-container opacity-80 hover:opacity-100 mx-4 hover:bg-primary-container hover:text-secondary-container transition-all duration-200 rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">logout</span>
+<span class="font-label-md text-label-md">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="md:ml-[280px] mt-16 p-margin-mobile md:p-margin-desktop h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden relative flex flex-col gap-md">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary-container font-bold">Bölüm Yönetimi</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Üniversite bölümlerini, ilgili fakülteleri ve yetkilendirmeleri yönetin.</p>
+</div>
+<button class="bg-secondary-container text-on-secondary-fixed hover:bg-secondary-fixed-dim transition-colors px-6 py-3 rounded-[16px] font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm hover:shadow-md">
+<span class="material-symbols-outlined">add</span>
+                Yeni Bölüm
+            </button>
+</header>
+<!-- Main Layout: Grid (Table + Side Panel) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter flex-1 items-start">
+<!-- Left Side: Filters & Table (Col span 8 or 9) -->
+<div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-md">
+<!-- Filters Card -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,100,130,0.08)]">
+<div class="flex flex-col sm:flex-row gap-4 items-end">
+<div class="w-full sm:w-1/3">
+<label class="block font-label-md text-label-md text-primary-container mb-2">Fakülte Seçiniz</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg px-4 py-2 font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-colors">
+<option value="">Tümü</option>
+<option value="mühendislik">Mühendislik Fakültesi</option>
+<option value="tıp">Tıp Fakültesi</option>
+<option value="eğitim">Eğitim Fakültesi</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="w-full sm:flex-1">
+<label class="block font-label-md text-label-md text-primary-container mb-2">Bölüm Ara</label>
+<div class="relative focus-within:ring-1 focus-within:ring-secondary-container rounded-lg">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-secondary-container transition-colors" placeholder="Bölüm adı veya kodu ile arayın..." type="text"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Table Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_20px_rgba(0,100,130,0.08)] overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-low">
+<th class="py-4 px-6 font-label-md text-label-md text-primary-container font-semibold">Bölüm Adı</th>
+<th class="py-4 px-6 font-label-md text-label-md text-primary-container font-semibold">Bağlı Fakülte</th>
+<th class="py-4 px-6 font-label-md text-label-md text-primary-container font-semibold">Bölüm Yöneticisi</th>
+<th class="py-4 px-6 font-label-md text-label-md text-primary-container font-semibold text-center">Durum</th>
+<th class="py-4 px-6 font-label-md text-label-md text-primary-container font-semibold text-right">İşlemler</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Active Row Example -->
+<tr class="hover:bg-surface-container-low transition-colors bg-inverse-on-surface cursor-pointer border-l-4 border-l-secondary-container">
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface font-medium">Bilgisayar Mühendisliği</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">Mühendislik Fakültesi</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-sm text-xs">AH</div>
+<span class="font-body-md text-body-md text-on-surface">Ahmet Yılmaz</span>
+</div>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-highest text-primary font-label-sm border border-primary-fixed-dim">
+                                            Aktif
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Düzenle">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1" title="Sil">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-transparent">
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface font-medium">Elektrik Elektronik Müh.</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">Mühendislik Fakültesi</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-variant text-on-surface flex items-center justify-center font-label-sm text-xs">MK</div>
+<span class="font-body-md text-body-md text-on-surface">Mehmet Kaya</span>
+</div>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-container-highest text-primary font-label-sm border border-primary-fixed-dim">
+                                            Aktif
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Düzenle">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1" title="Sil">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer border-l-4 border-l-transparent opacity-70">
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface font-medium">Makine Mühendisliği</td>
+<td class="py-4 px-6 font-body-md text-body-md text-on-surface-variant">Mühendislik Fakültesi</td>
+<td class="py-4 px-6">
+<span class="font-body-md text-body-md text-on-surface-variant italic">Atanmadı</span>
+</td>
+<td class="py-4 px-6 text-center">
+<span class="inline-flex items-center px-2 py-1 rounded-full bg-surface-variant text-on-surface-variant font-label-sm border border-outline-variant">
+                                            Pasif
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-colors p-1" title="Düzenle">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1" title="Sil">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Side: Detail Panel (Col span 4 or 3) -->
+<div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-md">
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_20px_rgba(0,100,130,0.08)] sticky top-6">
+<div class="flex items-center justify-between border-b border-outline-variant pb-4 mb-4">
+<h3 class="font-title-lg text-title-lg text-primary-container">Bölüm Detayları</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex flex-col items-center mb-6 text-center">
+<div class="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-primary text-[32px]">computer</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface font-bold">Bilgisayar Mühendisliği</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Mühendislik Fakültesi</p>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Yönetici</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-medium">Ahmet Yılmaz</span>
+</div>
+<div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">school</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Akademisyen Sayısı</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary-container bg-surface-container-high px-2 py-1 rounded">24</span>
+</div>
+<div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">meeting_room</span>
+<span class="font-body-md text-body-md text-on-surface-variant">Yetkili Sınıf Sayısı</span>
+</div>
+<span class="font-label-md text-label-md font-bold text-primary-container bg-surface-container-high px-2 py-1 rounded">12</span>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-outline-variant flex gap-3">
+<button class="flex-1 bg-surface border-2 border-primary-container text-primary-container hover:bg-surface-container-low transition-colors py-2 rounded-[16px] font-label-md text-label-md flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+                            Personel Ata
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

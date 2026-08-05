@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Haftalık Ders Programı - Sınıf Takip Sistemi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom scrollbar for calendar */
+        .calendar-scroll::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .calendar-scroll::-webkit-scrollbar-track {
+            background: #f8f9ff;
+            border-radius: 4px;
+        }
+        .calendar-scroll::-webkit-scrollbar-thumb {
+            background: #bfc8ce;
+            border-radius: 4px;
+        }
+        .calendar-scroll::-webkit-scrollbar-thumb:hover {
+            background: #70787e;
+        }
+
+        /* Draggable visual cue */
+        .course-card:hover {
+            cursor: grab;
+            transform: translateY(-2px);
+            box-shadow: 0px 8px 30px rgba(0, 100, 130, 0.12);
+        }
+        .course-card:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#2c1600",
+                        "tertiary-fixed-dim": "#fdb970",
+                        "primary-fixed": "#bfe9ff",
+                        "on-primary-fixed": "#001f2a",
+                        "on-secondary-container": "#6b4d00",
+                        "secondary": "#7a5900",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-variant": "#d3e4fe",
+                        "secondary-container": "#fdbc07",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "surface-tint": "#066684",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "on-primary-fixed-variant": "#004d65",
+                        "surface-container-low": "#eff4ff",
+                        "primary-fixed-dim": "#88d0f2",
+                        "surface-container-high": "#dce9ff",
+                        "inverse-surface": "#213145",
+                        "secondary-fixed": "#ffdea2",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#bfc8ce",
+                        "surface-container-highest": "#d3e4fe",
+                        "surface-container": "#e5eeff",
+                        "on-surface-variant": "#3f484d",
+                        "error-container": "#ffdad6",
+                        "background": "#f8f9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#261900",
+                        "tertiary-container": "#845111",
+                        "on-surface": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "outline": "#70787e",
+                        "on-background": "#0b1c30",
+                        "secondary-fixed-dim": "#fdbc07",
+                        "on-tertiary-container": "#ffcc9a",
+                        "surface-bright": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "on-tertiary": "#ffffff",
+                        "surface-dim": "#cbdbf5",
+                        "inverse-primary": "#88d0f2",
+                        "primary": "#004b62",
+                        "on-primary-container": "#9bdeff",
+                        "tertiary": "#663b00",
+                        "primary-container": "#006482",
+                        "tertiary-fixed": "#ffdcbd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "20px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "32px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "base": "8px",
+                        "md": "24px",
+                        "sm": "12px",
+                        "xl": "64px",
+                        "lg": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-lg": ["Hanken Grotesk"],
+                        "title-lg": ["Hanken Grotesk"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full w-[280px] bg-primary dark:bg-on-primary-fixed-variant flex flex-col h-full py-base z-50">
+<!-- Logo Header -->
+<div class="px-6 py-6 mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0">
+<img alt="İnönü University Logo" class="w-8 h-8 object-contain" data-alt="Minimalist geometric logo representing academic structure. Abstract building blocks in dark turquoise and gold on a pure white background. Crisp vector style, professional and institutional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZnmXsBXhth0bcOdHt74uJEEJogbTHSSKBhbf8rwZQEc3oc5lbBdotuBHzU1Oy5FseQRFDt4wnCsqwrWMs5_lxz0lLLiAkNzKILUH7_0qV9bwkTyWQ4RMXR87Ar-tmkwL3xKqRs8ipigF2c3lWEKd49xwqg2G7WLRSWMqKACbNrvT6EbbmAfEAZyX-9eTquQ61Hl0uxcUBWne5FmfgXUMBsHxtWq8yTq8b3iSPIGmmckxf8V2dAet8"/>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg font-bold text-secondary-fixed tracking-tight">STS Panel</h1>
+<p class="font-label-sm text-label-sm text-primary-fixed-dim">Academic Management</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col gap-2 mt-4">
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-medium hover:bg-primary-container/50 transition-colors" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-medium hover:bg-primary-container/50 transition-colors" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">menu_book</span>
+<span class="font-label-md text-label-md">Course Management</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 bg-primary-container text-on-primary-container font-bold border-r-4 border-secondary-fixed active:scale-[0.98] transition-transform" href="#">
+<span aria-hidden="true" class="material-symbols-outlined fill">calendar_month</span>
+<span class="font-label-md text-label-md">Weekly Schedule</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-medium hover:bg-primary-container/50 transition-colors" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">meeting_room</span>
+<span class="font-label-md text-label-md">Classroom Reservation</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-4 text-on-primary font-medium hover:bg-primary-container/50 transition-colors" href="#">
+<span aria-hidden="true" class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">User Management</span>
+</a>
+</div>
+<!-- CTA Button -->
+<div class="p-6 mt-auto">
+<button class="w-full bg-secondary-container text-on-surface py-3 px-4 rounded-2xl font-label-md text-label-md font-bold hover:bg-secondary-fixed-dim transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">add</span>
+                New Reservation
+            </button>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-h-screen ml-[280px] w-[calc(100%-280px)]">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-20 px-margin-desktop bg-surface dark:bg-on-surface shadow-[0px_4px_20px_rgba(0,100,130,0.08)] sticky top-0 z-40">
+<!-- Product Name -->
+<div class="flex items-center">
+<h2 class="font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">Sınıf Takip Sistemi</h2>
+</div>
+<!-- Center Links (Optional on this screen, but keeping per JSON) -->
+<nav class="hidden lg:flex items-center gap-8">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Buildings</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Floors</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Reports</a>
+</nav>
+<!-- Trailing Actions & Profile -->
+<div class="flex items-center gap-6">
+<button aria-label="Notifications" class="text-on-surface-variant hover:text-secondary-container transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="Settings" class="text-on-surface-variant hover:text-secondary-container transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-variant overflow-hidden border border-outline-variant cursor-pointer hover:ring-2 ring-primary-container transition-all">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a university academician in a bright, modern office setting. Sharp focus, high quality photography, soft natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB74cE92CxkwYDIxrkgTraSP1wYtbNrOSuXb6pykea95uvvZVEbuqiWQD6PkmJVgglO-lGyYyjK44cdZnr9H5wGA6JtPAHcJvx5wJou0rMXt64Vrp9WrzMOl0p4Uo_bDJOBpHXbit0hN6rSXE4065y9Inzf4mBpdz6Vxsaw-dlrdVGXdBP7GsW9WhrfDkzA0yXIeIP_EO872EJLE3WAk605Uf5TsF0qnXB_562iHtqzssmn-VnRFlAf"/>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-desktop bg-background flex flex-col h-[calc(100vh-80px)] overflow-hidden gap-md max-w-[1440px] mx-auto w-full">
+<!-- Page Header -->
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary">Haftalık Ders Programı</h2>
+<p class="text-on-surface-variant mt-1 font-body-md text-body-md">2023-2024 Güz Dönemi</p>
+</div>
+<button class="bg-secondary-container text-on-surface py-2.5 px-6 rounded-[16px] font-label-md text-label-md font-bold hover:bg-secondary-fixed-dim transition-colors flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">add</span>
+                    Yeni Ders Yerleştir
+                </button>
+</div>
+<!-- Filters Area -->
+<div class="bg-white rounded-[16px] p-4 shadow-[0px_4px_20px_rgba(0,100,130,0.08)] flex gap-4 flex-wrap items-end z-20 relative">
+<!-- Select: Faculty -->
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Fakülte</label>
+<div class="relative">
+<select class="w-full bg-white border border-[#E2E8F0] text-on-surface font-body-md text-body-md rounded-lg focus:ring-2 focus:ring-secondary-container focus:border-secondary-container appearance-none py-2 px-3 pr-10">
+<option>Mühendislik Fakültesi</option>
+<option>Tıp Fakültesi</option>
+<option>Eğitim Fakültesi</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Select: Department -->
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Bölüm</label>
+<div class="relative">
+<select class="w-full bg-white border border-[#E2E8F0] text-on-surface font-body-md text-body-md rounded-lg focus:ring-2 focus:ring-secondary-container focus:border-secondary-container appearance-none py-2 px-3 pr-10">
+<option>Bilgisayar Mühendisliği</option>
+<option>Elektrik-Elektronik Mühendisliği</option>
+<option>Makine Mühendisliği</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Select: Period -->
+<div class="flex-1 min-w-[150px]">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Dönem/Yarıyıl</label>
+<div class="relative">
+<select class="w-full bg-white border border-[#E2E8F0] text-on-surface font-body-md text-body-md rounded-lg focus:ring-2 focus:ring-secondary-container focus:border-secondary-container appearance-none py-2 px-3 pr-10">
+<option>3. Yarıyıl (2. Sınıf)</option>
+<option>1. Yarıyıl (1. Sınıf)</option>
+<option>5. Yarıyıl (3. Sınıf)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Select: Academician -->
+<div class="flex-1 min-w-[200px]">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Akademisyen</label>
+<div class="relative">
+<select class="w-full bg-white border border-[#E2E8F0] text-on-surface font-body-md text-body-md rounded-lg focus:ring-2 focus:ring-secondary-container focus:border-secondary-container appearance-none py-2 px-3 pr-10">
+<option>Tümü</option>
+<option>Prof. Dr. Ahmet Yılmaz</option>
+<option>Doç. Dr. Ayşe Kaya</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<button class="border-2 border-primary-container text-primary-container font-label-md text-label-md py-2 px-4 rounded-lg hover:bg-surface-variant transition-colors flex items-center gap-2 h-[42px]">
+<span class="material-symbols-outlined">filter_list</span>
+                    Filtrele
+                </button>
+</div>
+<!-- Calendar View Area -->
+<div class="flex-1 bg-white rounded-2xl shadow-[0px_4px_20px_rgba(0,100,130,0.08)] flex flex-col overflow-hidden relative border border-outline-variant/30">
+<!-- Calendar Header (Days) -->
+<div class="flex border-b border-[#E2E8F0] bg-surface-container-lowest sticky top-0 z-10">
+<!-- Time Column Spacer -->
+<div class="w-[80px] flex-shrink-0 border-r border-[#E2E8F0]"></div>
+<!-- Days -->
+<div class="flex-1 grid grid-cols-5 divide-x divide-[#E2E8F0]">
+<div class="py-3 text-center">
+<span class="font-title-lg text-title-lg text-primary block">Pazartesi</span>
+</div>
+<div class="py-3 text-center">
+<span class="font-title-lg text-title-lg text-primary block">Salı</span>
+</div>
+<div class="py-3 text-center">
+<span class="font-title-lg text-title-lg text-primary block">Çarşamba</span>
+</div>
+<div class="py-3 text-center bg-primary-fixed/20 relative">
+<!-- Today indicator -->
+<div class="absolute top-0 left-0 w-full h-1 bg-secondary-container"></div>
+<span class="font-title-lg text-title-lg text-primary block">Perşembe</span>
+</div>
+<div class="py-3 text-center">
+<span class="font-title-lg text-title-lg text-primary block">Cuma</span>
+</div>
+</div>
+</div>
+<!-- Calendar Body (Scrollable) -->
+<div class="flex-1 overflow-y-auto calendar-scroll relative bg-surface-container-lowest">
+<!-- Grid Background Lines -->
+<div class="absolute inset-0 flex flex-col pointer-events-none">
+<!-- Generates rows for 08:00 to 17:00. Height of 1 hour block = 80px -->
+<!-- Row 08:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 09:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 10:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 11:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 12:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full bg-surface-variant/20"></div> <!-- Lunch Break Hint -->
+<!-- Row 13:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 14:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 15:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 16:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+<!-- Row 17:00 --> <div class="h-[80px] border-b border-[#E2E8F0]/50 w-full"></div>
+</div>
+<!-- Layout Structure Container -->
+<div class="flex min-h-[800px] relative">
+<!-- Time Column (Y-Axis Labels) -->
+<div class="w-[80px] flex-shrink-0 border-r border-[#E2E8F0] relative bg-white z-10">
+<!-- Labels aligned to the top of their grid row -->
+<div class="absolute top-0 w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">08:00</span>
+</div>
+<div class="absolute top-[80px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">09:00</span>
+</div>
+<div class="absolute top-[160px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">10:00</span>
+</div>
+<div class="absolute top-[240px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">11:00</span>
+</div>
+<div class="absolute top-[320px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">12:00</span>
+</div>
+<div class="absolute top-[400px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">13:00</span>
+</div>
+<div class="absolute top-[480px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">14:00</span>
+</div>
+<div class="absolute top-[560px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">15:00</span>
+</div>
+<div class="absolute top-[640px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">16:00</span>
+</div>
+<div class="absolute top-[720px] w-full h-[80px] flex items-start justify-center pt-2">
+<span class="font-label-sm text-label-sm text-outline">17:00</span>
+</div>
+</div>
+<!-- Days Columns Container -->
+<div class="flex-1 grid grid-cols-5 divide-x divide-[#E2E8F0] relative">
+<!-- Monday -->
+<div class="relative w-full h-full p-1">
+<!-- Card: 09:00 to 11:00 (2 hrs = 160px height, top = 80px) -->
+<div class="absolute top-[80px] left-1 right-1 h-[158px] bg-primary-fixed/30 border-l-4 border-primary-container rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-primary-container bg-white px-1.5 py-0.5 rounded shadow-sm">BMB201</span>
+<span class="material-symbols-outlined text-primary-container text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-primary mt-1 leading-tight text-sm">Veri Yapıları</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Prof. Dr. A. Yılmaz</span>
+</div>
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Amfi-1</span>
+</div>
+</div>
+</div>
+<!-- Card: 13:00 to 15:00 -->
+<div class="absolute top-[400px] left-1 right-1 h-[158px] bg-surface-container-high/80 border-l-4 border-surface-tint rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-surface-tint bg-white px-1.5 py-0.5 rounded shadow-sm">BMB203</span>
+<span class="material-symbols-outlined text-surface-tint text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mt-1 leading-tight text-sm">Lojik Devreler</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Doç. Dr. M. Demir</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">D-102</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Tuesday -->
+<div class="relative w-full h-full p-1">
+<!-- Card: 10:00 to 12:00 -->
+<div class="absolute top-[160px] left-1 right-1 h-[158px] bg-primary-fixed/30 border-l-4 border-primary-container rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-primary-container bg-white px-1.5 py-0.5 rounded shadow-sm">BMB205</span>
+<span class="material-symbols-outlined text-primary-container text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-primary mt-1 leading-tight text-sm">Nesne Yönelimli Prog.</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Dr. Öğr. Ü. S. Kaya</span>
+</div>
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Bil-Lab-1</span>
+</div>
+</div>
+</div>
+<!-- OVERLAP CONFLICT EXAMPLE: 14:00 to 16:00 & 15:00 to 17:00 -->
+<!-- Card A (Background/Normal) -->
+<div class="absolute top-[480px] left-1 w-[80%] h-[158px] bg-surface-container-high/80 border-l-4 border-outline rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm z-10 opacity-60">
+<div>
+<span class="font-label-sm text-label-sm font-bold text-outline bg-white px-1.5 py-0.5 rounded shadow-sm">SEC201</span>
+<h4 class="font-title-lg text-title-lg text-on-surface mt-1 leading-tight text-sm">Girişimcilik</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Amfi-2</span>
+</div>
+</div>
+</div>
+<!-- Card B (Conflict/Error state) overlapping -->
+<div class="absolute top-[560px] right-1 w-[85%] h-[158px] bg-error-container border-l-4 border-error rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-[0px_4px_12px_rgba(186,26,26,0.2)] z-20">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-error bg-white px-1.5 py-0.5 rounded shadow-sm">BMB207</span>
+<span class="material-symbols-outlined text-error text-[18px]">warning</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-error-container mt-1 leading-tight text-sm">Olasılık ve İst.</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-error-container">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Prof. Dr. H. Çelik</span>
+</div>
+<div class="flex items-center gap-1 text-on-error-container">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Amfi-2</span>
+</div>
+</div>
+<div class="absolute -top-3 -right-2 bg-error text-white text-[10px] px-2 py-0.5 rounded-full font-bold shadow-sm z-30">
+                                        Çakışma
+                                    </div>
+</div>
+</div>
+<!-- Wednesday -->
+<div class="relative w-full h-full p-1">
+<!-- Empty morning -->
+<!-- Card: 13:00 to 16:00 (3 hrs = 240px) -->
+<div class="absolute top-[400px] left-1 right-1 h-[238px] bg-primary-fixed/30 border-l-4 border-primary-container rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-primary-container bg-white px-1.5 py-0.5 rounded shadow-sm">BMB209</span>
+<span class="material-symbols-outlined text-primary-container text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-primary mt-1 leading-tight text-sm">Elektrik Devreleri</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Doç. Dr. L. Ak</span>
+</div>
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Lab-4</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Thursday (Today) -->
+<div class="relative w-full h-full p-1 bg-primary-fixed/5">
+<!-- Card: 09:00 to 12:00 (3 hrs) -->
+<div class="absolute top-[80px] left-1 right-1 h-[238px] bg-surface-container-high/80 border-l-4 border-surface-tint rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-surface-tint bg-white px-1.5 py-0.5 rounded shadow-sm">BMB201 (U)</span>
+<span class="material-symbols-outlined text-surface-tint text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-on-surface mt-1 leading-tight text-sm">Veri Yapıları (Lab)</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">person</span>
+<span class="font-label-sm text-label-sm truncate">Arş. Gör. F. Işık</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">Bil-Lab-2</span>
+</div>
+</div>
+</div>
+<!-- Current Time Line Indicator (approx 14:30) -->
+<div class="absolute top-[520px] left-0 right-0 h-[2px] bg-error z-30 flex items-center pointer-events-none">
+<div class="w-2 h-2 rounded-full bg-error -ml-1"></div>
+</div>
+</div>
+<!-- Friday -->
+<div class="relative w-full h-full p-1">
+<!-- Card: 10:00 to 12:00 -->
+<div class="absolute top-[160px] left-1 right-1 h-[158px] bg-primary-fixed/30 border-l-4 border-primary-container rounded-lg p-2 flex flex-col justify-between course-card transition-all shadow-sm">
+<div>
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm font-bold text-primary-container bg-white px-1.5 py-0.5 rounded shadow-sm">TUR102</span>
+<span class="material-symbols-outlined text-primary-container text-[18px]">more_vert</span>
+</div>
+<h4 class="font-title-lg text-title-lg text-primary mt-1 leading-tight text-sm">Türk Dili II</h4>
+</div>
+<div class="mt-auto flex flex-col gap-0.5">
+<div class="flex items-center gap-1 text-on-primary-fixed-variant">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span class="font-label-sm text-label-sm font-bold">UZEM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

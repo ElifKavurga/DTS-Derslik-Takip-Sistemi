@@ -1,0 +1,219 @@
+<!DOCTYPE html><html lang="tr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>STS - Giriş Yap</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#0b1c30",
+                        "surface-container": "#e5eeff",
+                        "outline-variant": "#bfc8ce",
+                        "tertiary-fixed-dim": "#fdb970",
+                        "secondary-fixed-dim": "#fdbc07",
+                        "on-surface-variant": "#3f484d",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#845111",
+                        "secondary-container": "#fdbc07",
+                        "on-tertiary-fixed": "#2c1600",
+                        "inverse-surface": "#213145",
+                        "surface-variant": "#d3e4fe",
+                        "surface-bright": "#f8f9ff",
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-primary-container": "#9bdeff",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#ffdcbd",
+                        "tertiary": "#663b00",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#bfe9ff",
+                        "on-primary-fixed-variant": "#004d65",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#ffdea2",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary-container": "#ffcc9a",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-container": "#6b4d00",
+                        "on-secondary-fixed": "#261900",
+                        "on-background": "#0b1c30",
+                        "primary-fixed-dim": "#88d0f2",
+                        "secondary": "#7a5900",
+                        "outline": "#70787e",
+                        "surface-container-highest": "#d3e4fe",
+                        "primary": "#004b62",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#006482",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "surface-dim": "#cbdbf5",
+                        "inverse-primary": "#88d0f2",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#066684",
+                        "on-primary-fixed": "#001f2a",
+                        "accent": "#FAB900"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "card": "20px"
+                    },
+                    "spacing": {
+                        "xl": "64px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "margin-desktop": "32px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "lg": "40px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "title-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-pattern {
+            background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-surface min-h-screen flex items-center justify-center font-body-md text-on-surface">
+<div class="flex w-full min-h-screen lg:h-screen overflow-hidden">
+<!-- Left Side: Branding & Info -->
+<div class="hidden lg:flex w-1/2 bg-primary-container relative flex-col justify-between p-xl overflow-hidden">
+<!-- Decorative Background Elements -->
+<div class="absolute inset-0 bg-pattern opacity-50"></div>
+<div class="absolute -top-32 -left-32 w-[600px] h-[600px] bg-primary rounded-full blur-3xl opacity-30"></div>
+<div class="absolute -bottom-32 -right-32 w-[600px] h-[600px] bg-primary rounded-full blur-3xl opacity-30"></div>
+<div class="relative z-10">
+<img alt="STS Logo" class="w-48 mb-xl bg-white rounded-lg p-2" data-alt="The STS (Sınıf Takip Sistemi) logo on a white background, ensuring high contrast against the turquoise container." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjPEqpVQ0vyUXzmkNHJth4XR0z6ubXOc1Bfe6Dg4-S_Bdgf0yUWpNfIXqILgRe--pUO04azsDVZocqSZBSdnilaIXdSjEzADvLi3MZLuOmtJrHZqD9usjQKERK0g7a0tocym-ITjAbHB4yQHjnYKVZdasDGkzXHU2ULoAwYJTGmFF1zCBrRJuPrxPN8xkC5Pl836SxHkfjywNOrb1aW87T4epuzkXrZAslG5dI0mhPS_feAunWLDXcJPVVSsBzodmlQw">
+<h1 class="font-display-lg text-display-lg text-white mb-md max-w-lg">Derslik Takip ve Rezervasyon Sistemi
+                </h1>
+<p class="font-body-lg text-body-lg text-on-primary-container max-w-md">
+                    İnönü Üniversitesi'nin modern ve yenilikçi kampüs yönetim altyapısı. Derslik tahsisi, etkinlik yönetimi ve kaynak optimizasyonunu tek bir platformdan yönetin.
+                </p>
+</div>
+<div class="relative z-10 flex items-center gap-base">
+<div class="flex -space-x-4">
+<img alt="User" class="w-12 h-12 rounded-full border-2 border-primary-container" data-alt="A small circular avatar showing a professional university administrator in a modern office setting, bright lighting, corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQStvzeCxuha6XN7SVZW__wAIiPzHyr5_3HqalVcpKfUGGHq3gGEmVd07g_wp4K6nF5r6ngXJgkXkLcXFpnd_e8ksmP2DQ0qffVp9s7MTJ2XToPwyZZY_Lv_7bDXDtk5A25yh_zpcxOxhNoPvFZkVFO8H0U6BS1tkNJO28cUChZRA8prxraYNT7vEl021QfvsCCjDL553p-JLAwVx-fp75kpBT5gsKzKcE_76TkIluGxjBZ48G0CWt">
+<img alt="User" class="w-12 h-12 rounded-full border-2 border-primary-container" data-alt="A small circular avatar showing a university student in a bright library, modern lighting, clear corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3hynZ-BEfqwNCtsXJWKgB2H_iEppAQp8fCGeK61ReG2btZu4rzwKM1AMA719dB5m8Jnpcqca0l1d2VyWpERBZ-aVPZ-Ra1WHSKqOmkZK26iAhCXNlNeuLIDYs6P4NA1TQ4ZZYg7fMqQ0aUohAVN3xUP7kyzRGJtjxI7ZjQqF_HXSQi4WocNke0F3OXRC2FLOH-A1PsRaqtPTINqjJL8cHETct55ozlTqO_nBk5AI4EAsYm1WJlBV0">
+<img alt="User" class="w-12 h-12 rounded-full border-2 border-primary-container" data-alt="A small circular avatar showing a professor in a modern classroom, well lit, high quality corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAX0RWNg3k47gp0T7Xocaxnd6_EvX43s9jbbgm9wc87pt9TFoGCrWS12BvJNKamAQwWQPyWSbS2wALHk_1gWh-XG3sbPCI7It2AVzKt2F6oQNA-_wbdX1ndNOeJqIxi4k-DHWirshyqVP-d-3uieeMgqzJavDm_CtZU5fOS9BQFQptwLgb50uk_Lw5exELn8CU845wVbyPrDXfMhB9K0nbEu0XVz2N7zaY6M98XJQYvKK3KeUZOx3W">
+</div>
+<div class="ml-4 text-on-primary-container font-label-md text-label-md">
+<span class="font-bold text-white">5,000+</span> Günlük Aktif Kullanıcı
+                </div>
+</div>
+</div>
+<!-- Right Side: Login Form -->
+<div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-margin-mobile md:p-margin-desktop bg-surface relative">
+<div class="w-full max-w-md">
+<!-- Mobile Logo (Hidden on Desktop) -->
+<div class="lg:hidden mb-xl flex justify-center">
+<img alt="STS Logo" class="w-32 bg-white rounded-lg p-2 shadow-sm" data-alt="The STS (Sınıf Takip Sistemi) logo." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB852KVkb07Ta2nGr43nxzymJjGAVLmGiBbUNxSayE9cA5TupzgybuZJj3CurUobBGa7zX24DiLohTntsOvGRUC1v3u4ZsL-Nngpr2wwZ3qubROI01d1AYGVMQlDtwYCbxYNpAGqagHHWxuBgl-pNpxxYDlsG3qys_2q7zd6-3VdaPsfrnKgyeqjgcNGCGFlVvnN55gk0Bs_O5bayqPkEonanYpBZ-buDXOnoU8_g7CFYBaDECbie1W4s4_uYrSdI-RyA">
+</div>
+<!-- Login Card -->
+<div class="bg-surface-container-lowest rounded-card p-xl shadow-[0px_4px_20px_rgba(0,100,130,0.08)]">
+<div class="mb-lg text-center">
+<h2 class="font-headline-lg text-headline-lg text-primary-container mb-xs">Hoş Geldiniz</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Lütfen kurumsal kimlik bilgilerinizle giriş yapın.</p>
+</div>
+<form action="#" class="space-y-gutter" method="POST">
+<!-- Email Input -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-base" for="email">Kurumsal E-posta</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-outline-variant rounded-lg text-on-surface font-body-md focus:ring-accent focus:border-accent bg-surface-container-lowest transition-colors duration-200" id="email" name="email" placeholder="ornek@inonu.edu.tr" required="" type="email">
+</div>
+</div>
+<!-- Password Input -->
+<div>
+<label class="block font-label-md text-label-md text-on-surface mb-base" for="password">Şifre</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-3 border border-outline-variant rounded-lg text-on-surface font-body-md focus:ring-accent focus:border-accent bg-surface-container-lowest transition-colors duration-200" id="password" name="password" placeholder="••••••••" required="" type="password">
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
+<span class="material-symbols-outlined text-outline hover:text-primary transition-colors">visibility_off</span>
+</div>
+</div>
+</div>
+<!-- Options -->
+<div class="flex items-center justify-between">
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-outline-variant rounded" id="remember-me" name="remember-me" type="checkbox">
+<label class="ml-2 block font-body-md text-body-md text-on-surface-variant" for="remember-me">
+                                    Beni Hatırla
+                                </label>
+</div>
+<div class="text-sm">
+<a class="font-label-md text-label-md text-primary hover:text-primary-container transition-colors" href="#">Şifremi Unuttum</a>
+</div>
+</div>
+<!-- Submit Button -->
+<div>
+<button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-[16px] shadow-sm font-label-md text-label-md text-white bg-primary-container hover:bg-primary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-container transition-all duration-200 hover:shadow-[0px_8px_30px_rgba(0,100,130,0.12)]" type="submit">
+                                Giriş Yap
+                            </button>
+</div>
+</form>
+<div class="mt-lg border-t border-outline-variant pt-lg">
+<button class="w-full flex justify-center items-center py-3 px-4 border-2 border-outline-variant rounded-[16px] shadow-sm font-label-md text-label-md text-on-surface bg-surface-container-lowest hover:bg-surface-container-low focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200" type="button">
+<span class="material-symbols-outlined mr-2 text-primary-container">account_balance</span>
+                            e-Devlet ile Giriş
+                        </button>
+</div>
+</div>
+<!-- Footer -->
+<div class="mt-xl text-center">
+<p class="font-label-sm text-label-sm text-outline">
+                        © 2024 İnönü Üniversitesi Dijital Dönüşüm Ofisi
+                    </p>
+</div>
+</div>
+</div>
+</div>
+
+
+</body></html>

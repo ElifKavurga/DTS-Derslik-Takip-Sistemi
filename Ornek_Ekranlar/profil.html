@@ -1,0 +1,260 @@
+<!DOCTYPE html><html lang="tr" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Profil - Sınıf Takip Sistemi</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#0b1c30",
+                        "surface-container": "#e5eeff",
+                        "outline-variant": "#bfc8ce",
+                        "tertiary-fixed-dim": "#fdb970",
+                        "secondary-fixed-dim": "#fdbc07",
+                        "on-surface-variant": "#3f484d",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#845111",
+                        "secondary-container": "#fdbc07",
+                        "on-tertiary-fixed": "#2c1600",
+                        "inverse-surface": "#213145",
+                        "surface-variant": "#d3e4fe",
+                        "surface-bright": "#f8f9ff",
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-primary-container": "#9bdeff",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed": "#ffdcbd",
+                        "tertiary": "#663b00",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#bfe9ff",
+                        "on-primary-fixed-variant": "#004d65",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#ffdea2",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary-container": "#ffcc9a",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-container": "#6b4d00",
+                        "on-secondary-fixed": "#261900",
+                        "on-background": "#0b1c30",
+                        "primary-fixed-dim": "#88d0f2",
+                        "secondary": "#7a5900",
+                        "outline": "#70787e",
+                        "surface-container-highest": "#d3e4fe",
+                        "primary": "#004b62",
+                        "on-tertiary-fixed-variant": "#693c00",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#006482",
+                        "on-secondary-fixed-variant": "#5c4200",
+                        "surface-dim": "#cbdbf5",
+                        "inverse-primary": "#88d0f2",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#066684",
+                        "on-primary-fixed": "#001f2a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.25rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "64px",
+                        "margin-mobile": "16px",
+                        "sm": "12px",
+                        "margin-desktop": "32px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "xs": "4px",
+                        "lg": "40px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"],
+                        "headline-md": ["Hanken Grotesk"],
+                        "title-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "display-lg": ["Hanken Grotesk"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "title-lg": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f8f9ff; }
+        .shadow-soft { box-shadow: 0px 4px 20px rgba(0, 100, 130, 0.08); }
+        .shadow-hover { box-shadow: 0px 8px 30px rgba(0, 100, 130, 0.12); }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased bg-background flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="w-[280px] h-full fixed left-0 top-0 bg-primary-container z-20 flex flex-col p-md gap-base">
+<!-- Brand / Header -->
+<div class="flex flex-col items-center justify-center mb-lg mt-md">
+<!-- Utilizing the logo logic from image if needed, but sticking to JSON constraints for text -->
+<div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-sm shadow-soft">
+<span class="material-symbols-outlined text-primary-container text-[32px]">apartment</span>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-primary-container text-center">DTS Panel</h1>
+<p class="font-body-md text-body-md text-on-primary-container/80 text-center mt-xs">İnönü University</p>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-sm flex-1">
+<a class="flex items-center gap-md px-md py-sm text-on-primary-container/80 hover:text-on-primary-container hover:bg-primary/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Panel</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary-container/80 hover:text-on-primary-container hover:bg-primary/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="location_on">location_on</span>
+<span class="font-label-md text-label-md">Kampüs</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary-container/80 hover:text-on-primary-container hover:bg-primary/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Kullanıcılar</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-primary-container/80 hover:text-on-primary-container hover:bg-primary/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="vpn_key">vpn_key</span>
+<span class="font-label-md text-label-md">Yetkiler</span>
+</a>
+<!-- ACTIVE TAB: Profile -->
+<a class="flex items-center gap-md px-md py-sm bg-secondary-container text-on-secondary-container rounded-lg font-bold shadow-sm" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+<span class="font-label-md text-label-md">Profil</span>
+</a>
+</nav>
+<!-- Logout -->
+<div class="mt-auto">
+<a class="flex items-center gap-md px-md py-sm text-on-primary-container/80 hover:text-on-primary-container hover:bg-primary/50 transition-colors duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span class="font-label-md text-label-md">Çıkış Yap</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col ml-[280px] h-full">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest h-16 px-margin-desktop w-full flex justify-between items-center shadow-sm z-10 sticky top-0">
+<div class="flex items-center gap-md">
+<h2 class="font-title-lg text-title-lg font-bold text-primary">Derslik Takip Sistemi</h2>
+</div>
+<div class="flex items-center gap-md">
+<button class="text-on-surface-variant hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all duration-200 p-2 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-10 h-10 rounded-full bg-primary-container/20 overflow-hidden border border-outline-variant ml-sm cursor-pointer">
+<img alt="Administrator Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a university administrator, minimalist office background, bright lighting, modern corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoxvOnt8Cyo6XrLL4zF2ZIXvgwAk4RKv8BUDPYIfRLlErcL_gWtFKRXnp6u1-BSjF2YlRMdt85PcPaUDZ-2R45Ss4sSICQ2lvD60ZsdT-2hhe3PCYgUnk1KHAAKkAf9UjlAPkPMarwC19zntUKnMa_ueLb0orj4hRcHZiB8EVHDof1kMfQGzRC_GcUtsfD4QhfWMm8blfIZhWoWhwgfXUmspygEDPHAmZk30XWUTKdJLhkd0qbz8B2">
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto p-margin-desktop">
+<div class="max-w-[1440px] mx-auto flex flex-col gap-gutter">
+<!-- Page Title -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Profil</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Hesap bilgilerinizi görüntüleyin ve yönetin.</p>
+</div>
+<!-- Profile Overview Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Avatar & Quick Info -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<div class="bg-surface-container-lowest rounded-2xl p-gutter shadow-soft flex flex-col items-center text-center">
+<div class="relative mb-md">
+<div class="w-32 h-32 rounded-full overflow-hidden border-4 border-surface-container-low shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Close up professional portrait of a male academic administrator, clean bright office setting, wearing a smart casual navy shirt, confident and approachable expression, high key lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr5NGb45_q3HIyp_6fllLe9Qtl7NNFc31kfmvADBFUDBIFuQjjDFQP8sueUa4AyG2c53cArYxttfKap26NzBA44uOE09MMldHA_KeD8uAOCtOu8DFeJvUlTjNJna_d4EQlaevOcRJqe03kBISSnbqMJYn_a1df3OpQQ1yvc4FTliaJnBD_mQOao8rCr5VeqAj4Fq7xxldWnBdls2GOlzDUHDGEhamW5LAhY4Q65Kfiif-ASuFwUQcU">
+</div>
+<div class="absolute bottom-1 right-1 w-6 h-6 bg-secondary-container rounded-full border-2 border-white flex items-center justify-center" title="Aktif">
+<span class="material-symbols-outlined text-[14px] text-on-secondary-container">check</span>
+</div>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">Ahmet Yılmaz</h3>
+<p class="font-label-md text-label-md text-on-surface-variant bg-surface-container-low px-sm py-1 rounded-full mb-sm">Süper Admin</p>
+<p class="font-body-md text-body-md text-outline">Bilgi İşlem Daire Başkanlığı</p>
+</div>
+</div>
+<!-- Right Column: Details & Settings -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Details Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-gutter shadow-soft">
+<h3 class="font-title-lg text-title-lg text-primary mb-md border-b border-outline-variant/30 pb-sm">Kişisel Bilgiler</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-y-md gap-x-gutter">
+<div>
+<span class="font-label-sm text-label-sm text-outline block mb-1">Ad</span>
+<p class="font-body-md text-body-md text-on-surface">Ahmet</p>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block mb-1">Soyad</span>
+<p class="font-body-md text-body-md text-on-surface">Yılmaz</p>
+</div>
+<div class="md:col-span-2">
+<span class="font-label-sm text-label-sm text-outline block mb-1">Kurumsal E-posta</span>
+<p class="font-body-md text-body-md text-on-surface">ahmet.yilmaz@inonu.edu.tr</p>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block mb-1">Rol</span>
+<p class="font-body-md text-body-md text-on-surface">Süper Admin</p>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block mb-1">Bölüm</span>
+<p class="font-body-md text-body-md text-on-surface">Bilgi İşlem</p>
+</div>
+<div class="md:col-span-2">
+<span class="font-label-sm text-label-sm text-outline block mb-1">Hesap Oluşturma Tarihi</span>
+<p class="font-body-md text-body-md text-on-surface">12 Eylül 2023, 14:30</p>
+</div>
+</div>
+</div>
+<!-- Password Change Card -->
+<div class="bg-surface-container-lowest rounded-2xl p-gutter shadow-soft">
+<h3 class="font-title-lg text-title-lg text-primary mb-md border-b border-outline-variant/30 pb-sm">Şifre Değiştir</h3>
+<form class="flex flex-col gap-md max-w-md">
+<div>
+<label class="font-label-md text-label-md text-on-surface block mb-2">Yeni Şifre</label>
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-2 focus:border-secondary-container focus:ring-1 focus:ring-secondary-container outline-none transition-colors font-body-md" placeholder="••••••••" type="password">
+</div>
+<div>
+<label class="font-label-md text-label-md text-on-surface block mb-2">Yeni Şifre (Tekrar)</label>
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-2 focus:border-secondary-container focus:ring-1 focus:ring-secondary-container outline-none transition-colors font-body-md" placeholder="••••••••" type="password">
+</div>
+<div class="mt-sm">
+<button class="bg-primary-container text-white font-label-md text-label-md px-6 py-3 rounded-[16px] hover:bg-primary transition-colors shadow-sm w-fit" type="button">
+                                        Şifreyi Güncelle
+                                    </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+
+</body></html>
