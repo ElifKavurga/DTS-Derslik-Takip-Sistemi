@@ -1,0 +1,2 @@
+-- Initial schema placeholder for DTS.
+-- Business tables will be introduced in future migrations.

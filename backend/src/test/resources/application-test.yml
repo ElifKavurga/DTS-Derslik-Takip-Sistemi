@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:dts_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+application:
+  security:
+    jwt:
+      secret: test-development-secret-with-at-least-32-chars
+      expiration-minutes: 60
