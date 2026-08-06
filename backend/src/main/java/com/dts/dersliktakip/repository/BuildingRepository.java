@@ -7,4 +7,8 @@ import java.util.UUID;
 
 public interface BuildingRepository extends JpaRepository<Building, UUID> {
     List<Building> findTop5ByOrderByCreatedAtDesc();
+
+    boolean existsByFacultyId(UUID facultyId);
+
+    long countByFacultyId(UUID facultyId);
 }

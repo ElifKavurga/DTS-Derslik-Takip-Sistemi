@@ -218,51 +218,21 @@ export const Sidebar = ({
                       <Landmark className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
                       <span>Fakülte Yönetimi</span>
                     </NavLink>
-                    <NavLink
-                      to="/super-admin/binalar"
-                      onClick={onCloseMobile}
-                      className={({ isActive }) =>
-                        cn(
-                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
-                          isActive
-                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
-                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
-                        )
-                      }
-                    >
-                      <Building2 className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                    <div className="group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-400 opacity-60 cursor-not-allowed select-none">
+                      <Building2 className="h-4 w-4 shrink-0 text-slate-300" />
                       <span>Bina Yönetimi</span>
-                    </NavLink>
-                    <NavLink
-                      to="/super-admin/katlar"
-                      onClick={onCloseMobile}
-                      className={({ isActive }) =>
-                        cn(
-                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
-                          isActive
-                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
-                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
-                        )
-                      }
-                    >
-                      <Layers className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold text-slate-400">Yakında</span>
+                    </div>
+                    <div className="group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-400 opacity-60 cursor-not-allowed select-none">
+                      <Layers className="h-4 w-4 shrink-0 text-slate-300" />
                       <span>Kat Yönetimi</span>
-                    </NavLink>
-                    <NavLink
-                      to="/super-admin/bolumler"
-                      onClick={onCloseMobile}
-                      className={({ isActive }) =>
-                        cn(
-                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
-                          isActive
-                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
-                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
-                        )
-                      }
-                    >
-                      <GitBranch className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold text-slate-400">Yakında</span>
+                    </div>
+                    <div className="group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-400 opacity-60 cursor-not-allowed select-none">
+                      <GitBranch className="h-4 w-4 shrink-0 text-slate-300" />
                       <span>Bölüm Yönetimi</span>
-                    </NavLink>
+                      <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold text-slate-400">Yakında</span>
+                    </div>
                   </div>
                 )}
               </div>

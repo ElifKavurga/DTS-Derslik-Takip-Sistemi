@@ -6,6 +6,7 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
 import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
+import { FacultyPage } from '@/pages/campus/FacultyPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
@@ -68,7 +69,11 @@ export const router = createBrowserRouter([
           },
           {
             path: '/super-admin/fakulteler',
-            element: <UnderDevelopmentPage title="Fakülte Yönetimi" />,
+            element: <FacultyPage />,
+          },
+          {
+            path: '/super-admin/fakulteler/:id',
+            element: <UnderDevelopmentPage title="Fakülte Detayları (Binalar)" />,
           },
           {
             path: '/super-admin/binalar',

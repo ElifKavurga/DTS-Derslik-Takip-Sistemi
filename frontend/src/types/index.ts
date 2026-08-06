@@ -70,4 +70,6 @@ export type ChangePasswordResponse = {
 };
 
 export * from './dashboard';
+export * from './faculty';
+
 

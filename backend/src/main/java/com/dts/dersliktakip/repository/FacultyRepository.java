@@ -7,4 +7,12 @@ import java.util.UUID;
 
 public interface FacultyRepository extends JpaRepository<Faculty, UUID> {
     List<Faculty> findTop5ByOrderByCreatedAtDesc();
+
+    boolean existsByName(String name);
+
+    boolean existsByNameAndIdNot(String name, UUID id);
+
+    boolean existsByCode(String code);
+
+    boolean existsByCodeAndIdNot(String code, UUID id);
 }
