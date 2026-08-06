@@ -2,17 +2,107 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family:
-    "Hanken Grotesk", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #0b1c30;
-  background: #f8f9ff;
+@layer base {
+  :root {
+    --font-sans: "Hanken Grotesk", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --color-primary: #006482;
+    --color-primary-hover: #004b62;
+    --color-primary-light: #eff8ff;
+    --color-accent: #fabc07;
+    --color-bg-main: #f6f8fa;
+    --color-bg-card: #ffffff;
+    --color-border: #e2e8f0;
+    --color-border-soft: #f1f5f9;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+
+    font-family: var(--font-sans);
+    color: var(--color-text-main);
+    background-color: var(--color-bg-main);
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+  }
 }
 
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
+@layer components {
+  /* Premium Design System Cards */
+  .dts-card {
+    @apply rounded-[24px] border border-slate-200/40 bg-white p-6 transition-all duration-300 ease-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 8px 24px -2px rgba(15, 23, 42, 0.03), 0 16px 32px -4px rgba(15, 23, 42, 0.02);
+  }
+
+  .dts-card-hover {
+    @apply hover:-translate-y-0.5 hover:border-[#88d0f2]/40;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 16px 40px -6px rgba(15, 23, 42, 0.05), 0 24px 64px -8px rgba(15, 23, 42, 0.03);
+  }
+
+  /* Headings & Typography */
+  .dts-title {
+    @apply text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl;
+  }
+
+  .dts-subtitle {
+    @apply text-sm leading-6 text-slate-500;
+  }
+
+  /* Buttons */
+  .dts-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-[#006482] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#004b62] focus:outline-none focus:ring-4 focus:ring-[#006482]/10 active:scale-[0.98];
+  }
+
+  .dts-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100 active:scale-[0.98];
+  }
+
+  /* Inputs & Forms */
+  .dts-input {
+    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-900 shadow-sm outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-[#006482] focus:ring-4 focus:ring-[#006482]/10;
+  }
+
+  .dts-input-label {
+    @apply block text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 mb-2;
+  }
+
+  /* Badges */
+  .dts-badge-primary {
+    @apply inline-flex items-center rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-semibold text-[#006482];
+  }
+
+  .dts-badge-secondary {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600;
+  }
+
+  /* Tables */
+  .dts-table-container {
+    @apply overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-sm;
+  }
+
+  .dts-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+
+  .dts-th {
+    @apply bg-slate-50/70 px-6 py-4 text-xs font-semibold uppercase tracking-[0.10em] text-slate-500 border-b border-slate-200/80;
+  }
+
+  .dts-td {
+    @apply px-6 py-4 border-b border-slate-100 text-slate-800 align-middle;
+  }
+
+  .dts-tr-hover {
+    @apply hover:bg-slate-50/50 transition-colors duration-150;
+  }
+
+  /* Filters */
+  .dts-filter-bar {
+    @apply flex flex-wrap items-center gap-3 rounded-[24px] border border-slate-200/60 bg-white p-4 shadow-sm;
+  }
 }
 
 @keyframes auth-card-enter {
