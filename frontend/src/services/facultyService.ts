@@ -1,5 +1,5 @@
 import { apiClient } from '@/services/axios';
-import { FacultyListResponse, FacultyResponse, CreateFacultyRequest, UpdateFacultyRequest } from '@/types';
+import { FacultyListResponse, FacultyResponse, FacultyDetailResponse, CreateFacultyRequest, UpdateFacultyRequest } from '@/types';
 
 export const facultyService = {
   getAll: async () => {
@@ -7,7 +7,7 @@ export const facultyService = {
     return response.data;
   },
   getById: async (id: string) => {
-    const response = await apiClient.get<FacultyResponse>(`/faculties/${id}`);
+    const response = await apiClient.get<FacultyDetailResponse>(`/faculties/${id}`);
     return response.data;
   },
   create: async (payload: CreateFacultyRequest) => {

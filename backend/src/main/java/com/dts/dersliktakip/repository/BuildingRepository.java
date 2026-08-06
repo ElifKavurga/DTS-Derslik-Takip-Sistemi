@@ -11,4 +11,14 @@ public interface BuildingRepository extends JpaRepository<Building, UUID> {
     boolean existsByFacultyId(UUID facultyId);
 
     long countByFacultyId(UUID facultyId);
+
+    List<Building> findAllByFacultyId(UUID facultyId);
+
+    boolean existsByNameAndFacultyId(String name, UUID facultyId);
+
+    boolean existsByNameAndFacultyIdAndIdNot(String name, UUID facultyId, UUID buildingId);
+
+    boolean existsByCodeAndFacultyId(String code, UUID facultyId);
+
+    boolean existsByCodeAndFacultyIdAndIdNot(String code, UUID facultyId, UUID buildingId);
 }

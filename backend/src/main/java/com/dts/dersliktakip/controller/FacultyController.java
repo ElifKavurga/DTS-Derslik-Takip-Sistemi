@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.controller;
 
 import com.dts.dersliktakip.dto.CreateFacultyRequest;
+import com.dts.dersliktakip.dto.FacultyDetailResponse;
 import com.dts.dersliktakip.dto.FacultyListResponse;
 import com.dts.dersliktakip.dto.FacultyResponse;
 import com.dts.dersliktakip.dto.UpdateFacultyRequest;
@@ -30,8 +31,8 @@ public class FacultyController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<FacultyResponse> getFacultyById(@PathVariable UUID id) {
-        return ResponseEntity.ok(facultyService.getFacultyById(id));
+    public ResponseEntity<FacultyDetailResponse> getFacultyById(@PathVariable UUID id) {
+        return ResponseEntity.ok(facultyService.getFacultyDetailById(id));
     }
 
     @PostMapping

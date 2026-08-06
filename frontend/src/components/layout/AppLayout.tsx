@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useHeaderStore } from '@/store/useHeaderStore';
 import { cn } from '@/utils/cn';
 
 const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
@@ -15,11 +16,18 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Profil',
     breadcrumbs: ['Hesap', 'Profil'],
   },
+  faculties: {
+    title: 'Fakülte Yönetimi',
+    breadcrumbs: ['Ana Ekran', 'Kampüs Yönetimi', 'Fakülteler'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
   if (pathname.includes('/profile')) {
     return pageMeta.profile;
+  }
+  if (pathname.includes('/super-admin/fakulteler') && !pathname.match(/^\/super-admin\/fakulteler\/[a-f0-9-]+$/i)) {
+    return pageMeta.faculties;
   }
 
   return pageMeta.dashboard;
@@ -30,7 +38,16 @@ export const AppLayout = () => {
   const role = useAuthStore((state) => state.user?.role);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const meta = useMemo(() => resolvePageMeta(location.pathname), [location.pathname]);
+
+  const { title, breadcrumbs, setMeta } = useHeaderStore();
+  const defaultMeta = useMemo(() => resolvePageMeta(location.pathname), [location.pathname]);
+
+  useEffect(() => {
+    const isDynamicRoute = location.pathname.match(/^\/super-admin\/fakulteler\/[a-f0-9-]+$/i);
+    if (!isDynamicRoute) {
+      setMeta(defaultMeta.title, defaultMeta.breadcrumbs);
+    }
+  }, [location.pathname, defaultMeta, setMeta]);
 
   return (
     <div className="min-h-screen bg-[#f6f8fa] text-slate-950">
@@ -43,7 +60,7 @@ export const AppLayout = () => {
       />
 
       <div className={cn('min-h-screen transition-all duration-300', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]')}>
-        <Header title={meta.title} breadcrumbs={meta.breadcrumbs} onOpenSidebar={() => setMobileOpen(true)} />
+        <Header title={title} breadcrumbs={breadcrumbs} onOpenSidebar={() => setMobileOpen(true)} />
         <main>
           <PageContainer>
             <Outlet />

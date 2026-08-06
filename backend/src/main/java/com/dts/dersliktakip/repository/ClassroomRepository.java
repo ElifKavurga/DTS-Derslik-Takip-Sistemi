@@ -6,4 +6,6 @@ import java.util.UUID;
 
 public interface ClassroomRepository extends JpaRepository<Classroom, UUID> {
     long countByFloorBuildingFacultyId(UUID facultyId);
+
+    long countByFloorBuildingId(UUID buildingId);
 }

@@ -7,6 +7,7 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
 import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
 import { FacultyPage } from '@/pages/campus/FacultyPage';
+import { FacultyDetailPage } from '@/pages/campus/FacultyDetailPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
@@ -73,7 +74,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/super-admin/fakulteler/:id',
-            element: <UnderDevelopmentPage title="Fakülte Detayları (Binalar)" />,
+            element: <FacultyDetailPage />,
           },
           {
             path: '/super-admin/binalar',

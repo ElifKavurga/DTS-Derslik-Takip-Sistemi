@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.mapper;
 
 import com.dts.dersliktakip.dto.CreateFacultyRequest;
+import com.dts.dersliktakip.dto.FacultyDetailResponse;
 import com.dts.dersliktakip.dto.FacultyResponse;
 import com.dts.dersliktakip.dto.UpdateFacultyRequest;
 import com.dts.dersliktakip.entity.Faculty;
@@ -13,6 +14,8 @@ import java.util.List;
 public interface FacultyMapper {
 
     FacultyResponse toResponse(Faculty faculty);
+
+    FacultyDetailResponse toDetailResponse(Faculty faculty);
 
     List<FacultyResponse> toResponseList(List<Faculty> faculties);
 

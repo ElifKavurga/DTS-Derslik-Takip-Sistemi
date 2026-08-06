@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.CreateFacultyRequest;
+import com.dts.dersliktakip.dto.FacultyDetailResponse;
 import com.dts.dersliktakip.dto.FacultyResponse;
 import com.dts.dersliktakip.dto.UpdateFacultyRequest;
 import com.dts.dersliktakip.entity.Faculty;
@@ -42,6 +43,17 @@ public class FacultyService {
         Faculty faculty = facultyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Fakülte bulunamadı."));
         return enrichResponse(facultyMapper.toResponse(faculty));
+    }
+
+    @Transactional(readOnly = true)
+    public FacultyDetailResponse getFacultyDetailById(UUID id) {
+        Faculty faculty = facultyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Fakülte bulunamadı."));
+        FacultyDetailResponse response = facultyMapper.toDetailResponse(faculty);
+        response.setTotalBuildings(buildingRepository.countByFacultyId(id));
+        response.setTotalFloors(floorRepository.countByBuildingFacultyId(id));
+        response.setTotalClassrooms(classroomRepository.countByFloorBuildingFacultyId(id));
+        return response;
     }
 
     @Transactional

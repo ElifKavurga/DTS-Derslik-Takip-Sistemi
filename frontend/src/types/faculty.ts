@@ -13,6 +13,17 @@ export interface FacultyListResponse {
   faculties: FacultyResponse[];
 }
 
+export interface FacultyDetailResponse {
+  id: string;
+  name: string;
+  code: string;
+  createdAt: string;
+  updatedAt: string;
+  totalBuildings: number;
+  totalFloors: number;
+  totalClassrooms: number;
+}
+
 export interface CreateFacultyRequest {
   name: string;
   code: string;

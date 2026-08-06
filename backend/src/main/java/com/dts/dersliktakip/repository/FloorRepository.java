@@ -6,4 +6,8 @@ import java.util.UUID;
 
 public interface FloorRepository extends JpaRepository<Floor, UUID> {
     long countByBuildingFacultyId(UUID facultyId);
+
+    boolean existsByBuildingId(UUID buildingId);
+
+    long countByBuildingId(UUID buildingId);
 }
