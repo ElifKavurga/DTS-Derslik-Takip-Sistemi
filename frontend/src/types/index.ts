@@ -73,5 +73,6 @@ export * from './dashboard';
 export * from './faculty';
 export * from './building';
 export * from './floor';
+export * from './floorLayout';
 
 

@@ -1,9 +1,12 @@
 package com.dts.dersliktakip.controller;
 
+import com.dts.dersliktakip.dto.FloorDetailResponse;
 import com.dts.dersliktakip.dto.FloorListResponse;
 import com.dts.dersliktakip.dto.FloorResponse;
 import com.dts.dersliktakip.dto.CreateFloorRequest;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
+import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
+import com.dts.dersliktakip.service.FloorLayoutService;
 import com.dts.dersliktakip.service.FloorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,20 @@ import java.util.UUID;
 public class FloorController {
 
     private final FloorService floorService;
+    private final FloorLayoutService floorLayoutService;
+
+    @GetMapping("/floors/{floorId}")
+    public ResponseEntity<FloorDetailResponse> getFloorDetail(@PathVariable UUID floorId) {
+        return ResponseEntity.ok(floorLayoutService.getFloorDetail(floorId));
+    }
+
+    @PostMapping("/floors/{floorId}/layout")
+    public ResponseEntity<FloorDetailResponse> saveLayout(
+            @PathVariable UUID floorId,
+            @Valid @RequestBody SaveFloorLayoutRequest request
+    ) {
+        return ResponseEntity.ok(floorLayoutService.saveLayout(floorId, request));
+    }
 
     @GetMapping("/buildings/{buildingId}/floors")
     public ResponseEntity<FloorListResponse> getFloorsByBuildingId(@PathVariable UUID buildingId) {

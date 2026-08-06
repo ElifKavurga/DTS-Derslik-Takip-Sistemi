@@ -1,0 +1,24 @@
+package com.dts.dersliktakip.entity;
+
+public enum SpaceObjectType {
+    CLASSROOM,
+    LABORATORY,
+    AMPHITHEATER,
+    ACADEMICIAN_OFFICE,
+    ADMINISTRATIVE_OFFICE,
+    MALE_WC,
+    FEMALE_WC,
+    DISABLED_WC,
+    MOSQUE,
+    REST_AREA,
+    LIBRARY,
+    STORAGE,
+    TECHNICAL_ROOM,
+    ELECTRICAL_ROOM,
+    SERVER_ROOM,
+    ELEVATOR,
+    STAIRS,
+    EMERGENCY_EXIT,
+    FIRE_CABINET,
+    FIRST_AID
+}

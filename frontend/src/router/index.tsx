@@ -9,6 +9,7 @@ import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
 import { FacultyPage } from '@/pages/campus/FacultyPage';
 import { FacultyDetailPage } from '@/pages/campus/FacultyDetailPage';
 import { BuildingDetailPage } from '@/pages/campus/BuildingDetailPage';
+import { FloorEditorPage } from '@/pages/campus/FloorEditorPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
@@ -83,10 +84,6 @@ export const router = createBrowserRouter([
             element: <BuildingDetailPage />,
           },
           {
-            path: '/super-admin/katlar',
-            element: <UnderDevelopmentPage title="Kat Yönetimi" />,
-          },
-          {
             path: '/super-admin/bolumler',
             element: <UnderDevelopmentPage title="Bölüm Yönetimi" />,
           },
@@ -99,6 +96,11 @@ export const router = createBrowserRouter([
             element: <ProfilePage />,
           },
         ],
+      },
+      // Full-screen editor routes (no DashboardLayout sidebar/header)
+      {
+        path: '/super-admin/katlar/:id',
+        element: <FloorEditorPage />,
       },
     ],
   },

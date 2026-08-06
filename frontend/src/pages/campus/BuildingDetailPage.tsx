@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Landmark, Building2, Layers, MapPinned, ChevronLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, Layers, MapPinned, ChevronLeft } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 import { PageHeader } from '@/components/ui/PageHeader';
