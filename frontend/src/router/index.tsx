@@ -8,9 +8,11 @@ import { NotFoundPage } from '@/pages/errors/NotFoundPage';
 import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
 import { FacultyPage } from '@/pages/campus/FacultyPage';
 import { FacultyDetailPage } from '@/pages/campus/FacultyDetailPage';
+import { BuildingDetailPage } from '@/pages/campus/BuildingDetailPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
+
 
 export const router = createBrowserRouter([
   {
@@ -77,8 +79,8 @@ export const router = createBrowserRouter([
             element: <FacultyDetailPage />,
           },
           {
-            path: '/super-admin/binalar',
-            element: <UnderDevelopmentPage title="Bina Yönetimi" />,
+            path: '/super-admin/binalar/:id',
+            element: <BuildingDetailPage />,
           },
           {
             path: '/super-admin/katlar',

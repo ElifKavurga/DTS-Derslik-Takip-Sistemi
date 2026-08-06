@@ -8,4 +8,8 @@ public interface ClassroomRepository extends JpaRepository<Classroom, UUID> {
     long countByFloorBuildingFacultyId(UUID facultyId);
 
     long countByFloorBuildingId(UUID buildingId);
+
+    boolean existsByFloorId(UUID floorId);
+
+    long countByFloorId(UUID floorId);
 }

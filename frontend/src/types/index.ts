@@ -72,5 +72,6 @@ export type ChangePasswordResponse = {
 export * from './dashboard';
 export * from './faculty';
 export * from './building';
+export * from './floor';
 
 

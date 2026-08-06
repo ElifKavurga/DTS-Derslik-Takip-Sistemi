@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.service;
 
+import com.dts.dersliktakip.dto.BuildingDetailResponse;
 import com.dts.dersliktakip.dto.CreateBuildingRequest;
 import com.dts.dersliktakip.dto.BuildingResponse;
 import com.dts.dersliktakip.dto.UpdateBuildingRequest;
@@ -27,6 +28,22 @@ public class BuildingService {
     private final FloorRepository floorRepository;
     private final ClassroomRepository classroomRepository;
     private final BuildingMapper buildingMapper;
+
+    @Transactional(readOnly = true)
+    public BuildingDetailResponse getBuildingDetailById(UUID buildingId) {
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı."));
+
+        return BuildingDetailResponse.builder()
+                .id(building.getId())
+                .name(building.getName())
+                .code(building.getCode())
+                .facultyId(building.getFaculty().getId())
+                .facultyName(building.getFaculty().getName())
+                .totalFloors(floorRepository.countByBuildingId(buildingId))
+                .totalClassrooms(classroomRepository.countByFloorBuildingId(buildingId))
+                .build();
+    }
 
     @Transactional(readOnly = true)
     public List<BuildingResponse> getBuildingsByFacultyId(UUID facultyId) {

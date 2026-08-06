@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.controller;
 
+import com.dts.dersliktakip.dto.BuildingDetailResponse;
 import com.dts.dersliktakip.dto.BuildingListResponse;
 import com.dts.dersliktakip.dto.BuildingResponse;
 import com.dts.dersliktakip.dto.CreateBuildingRequest;
@@ -22,6 +23,11 @@ import java.util.UUID;
 public class BuildingController {
 
     private final BuildingService buildingService;
+
+    @GetMapping("/buildings/{buildingId}")
+    public ResponseEntity<BuildingDetailResponse> getBuildingById(@PathVariable UUID buildingId) {
+        return ResponseEntity.ok(buildingService.getBuildingDetailById(buildingId));
+    }
 
     @GetMapping("/faculties/{facultyId}/buildings")
     public ResponseEntity<BuildingListResponse> getBuildingsByFacultyId(@PathVariable UUID facultyId) {

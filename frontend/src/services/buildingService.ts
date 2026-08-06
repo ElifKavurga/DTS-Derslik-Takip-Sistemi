@@ -1,7 +1,11 @@
 import { apiClient } from '@/services/axios';
-import { BuildingListResponse, BuildingResponse, CreateBuildingRequest, UpdateBuildingRequest } from '@/types';
+import { BuildingListResponse, BuildingResponse, BuildingDetailResponse, CreateBuildingRequest, UpdateBuildingRequest } from '@/types';
 
 export const buildingService = {
+  getById: async (id: string) => {
+    const response = await apiClient.get<BuildingDetailResponse>(`/buildings/${id}`);
+    return response.data;
+  },
   getByFacultyId: async (facultyId: string) => {
     const response = await apiClient.get<BuildingListResponse>(`/faculties/${facultyId}/buildings`);
     return response.data;
