@@ -1,5 +1,7 @@
 package com.dts.dersliktakip.controller;
 
+import com.dts.dersliktakip.dto.ChangePasswordRequest;
+import com.dts.dersliktakip.dto.ChangePasswordResponse;
 import com.dts.dersliktakip.dto.ProfileResponse;
 import com.dts.dersliktakip.dto.UpdateProfileRequest;
 import com.dts.dersliktakip.dto.UpdateProfileResponse;
@@ -32,5 +34,12 @@ public class ProfileController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(profileService.updateProfile(principal.getId(), request));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<ChangePasswordResponse> changePassword(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        return ResponseEntity.ok(profileService.changePassword(principal.getId(), request));
     }
 }

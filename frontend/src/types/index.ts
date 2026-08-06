@@ -58,3 +58,13 @@ export type UpdateProfileRequest = {
 };
 
 export type UpdateProfileResponse = ProfileResponse;
+
+export type ChangePasswordRequest = {
+  currentPassword?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+};
+
+export type ChangePasswordResponse = {
+  message: string;
+};

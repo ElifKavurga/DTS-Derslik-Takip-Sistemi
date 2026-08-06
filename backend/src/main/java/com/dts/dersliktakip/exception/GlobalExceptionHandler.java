@@ -61,7 +61,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             InvalidResetTokenException.class,
             ExpiredResetTokenException.class,
-            UserNotFoundException.class
+            UserNotFoundException.class,
+            IllegalArgumentException.class
     })
     public ResponseEntity<ApiErrorResponse> handleResetPasswordException(
             RuntimeException exception,
