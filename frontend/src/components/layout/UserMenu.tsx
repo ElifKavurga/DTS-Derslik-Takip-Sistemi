@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/utils/cn';
+import { queryClient } from '@/services/queryClient';
 
 const roleLabels = {
   SUPER_ADMIN: 'Süper Admin',
@@ -39,6 +40,9 @@ export const UserMenu = () => {
 
   const handleLogout = () => {
     logout();
+    sessionStorage.clear();
+    localStorage.clear();
+    queryClient.clear();
     setOpen(false);
     navigate('/giris', { replace: true });
   };
@@ -91,18 +95,15 @@ export const UserMenu = () => {
               <User className="h-4 w-4 text-slate-400" />
               Profil
             </Link>
-            <button
-              type="button"
-              disabled
-              className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-400"
+            <Link
+              to="/profile"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
               role="menuitem"
             >
-              <KeyRound className="h-4 w-4 text-slate-300" />
+              <KeyRound className="h-4 w-4 text-slate-400" />
               Şifre Değiştir
-              <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-400">
-                Yakında
-              </span>
-            </button>
+            </Link>
           </div>
 
           <div className="border-t border-slate-100 p-1.5 bg-slate-50/30">
