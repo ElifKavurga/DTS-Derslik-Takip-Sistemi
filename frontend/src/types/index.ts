@@ -68,3 +68,6 @@ export type ChangePasswordRequest = {
 export type ChangePasswordResponse = {
   message: string;
 };
+
+export * from './dashboard';
+

@@ -5,6 +5,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
+import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
@@ -64,6 +65,26 @@ export const router = createBrowserRouter([
           {
             path: '/academician/dashboard',
             element: <DashboardPage />,
+          },
+          {
+            path: '/super-admin/fakulteler',
+            element: <UnderDevelopmentPage title="Fakülte Yönetimi" />,
+          },
+          {
+            path: '/super-admin/binalar',
+            element: <UnderDevelopmentPage title="Bina Yönetimi" />,
+          },
+          {
+            path: '/super-admin/katlar',
+            element: <UnderDevelopmentPage title="Kat Yönetimi" />,
+          },
+          {
+            path: '/super-admin/bolumler',
+            element: <UnderDevelopmentPage title="Bölüm Yönetimi" />,
+          },
+          {
+            path: '/super-admin/kullanicilar',
+            element: <UnderDevelopmentPage title="Kullanıcı Yönetimi" />,
           },
           {
             path: '/profile',

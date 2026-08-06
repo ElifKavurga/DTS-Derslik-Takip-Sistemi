@@ -1,7 +1,14 @@
+import { useState } from 'react';
 import {
+  Building2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  GitBranch,
+  Landmark,
+  Layers,
   LayoutDashboard,
+  Map,
   User,
   X,
 } from 'lucide-react';
@@ -88,6 +95,7 @@ export const Sidebar = ({
 }: SidebarProps) => {
   const dashboardPath = getDashboardPathByRole(role);
   const visibleUpcomingNavigation = upcomingNavigation.filter((item) => canShowItem(item, role));
+  const [campusExpanded, setCampusExpanded] = useState(false);
 
   return (
     <>
@@ -161,6 +169,104 @@ export const Sidebar = ({
                 </NavLink>
               );
             })}
+
+            {/* Kampüs Yönetimi Dropdown (Süper Admin) */}
+            {role === 'SUPER_ADMIN' && (
+              <div className="space-y-1 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (collapsed) {
+                      onToggleCollapsed();
+                      setCampusExpanded(true);
+                    } else {
+                      setCampusExpanded(!campusExpanded);
+                    }
+                  }}
+                  className={cn(
+                    'group flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-600 transition duration-150 hover:bg-slate-100/70 hover:text-slate-900',
+                    campusExpanded && !collapsed && 'text-slate-900 font-semibold'
+                  )}
+                  title={collapsed ? 'Kampüs Yönetimi' : undefined}
+                >
+                  <Map className="h-4.5 w-4.5 shrink-0" />
+                  <span className={cn('truncate text-left flex-1', collapsed && 'lg:hidden')}>Kampüs Yönetimi</span>
+                  {!collapsed && (
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400 group-hover:text-slate-900',
+                        campusExpanded && 'rotate-180 text-slate-900'
+                      )}
+                    />
+                  )}
+                </button>
+
+                {campusExpanded && !collapsed && (
+                  <div className="pl-6 space-y-1 mt-1 transition-all duration-300">
+                    <NavLink
+                      to="/super-admin/fakulteler"
+                      onClick={onCloseMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                          isActive
+                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                        )
+                      }
+                    >
+                      <Landmark className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span>Fakülte Yönetimi</span>
+                    </NavLink>
+                    <NavLink
+                      to="/super-admin/binalar"
+                      onClick={onCloseMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                          isActive
+                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                        )
+                      }
+                    >
+                      <Building2 className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span>Bina Yönetimi</span>
+                    </NavLink>
+                    <NavLink
+                      to="/super-admin/katlar"
+                      onClick={onCloseMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                          isActive
+                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                        )
+                      }
+                    >
+                      <Layers className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span>Kat Yönetimi</span>
+                    </NavLink>
+                    <NavLink
+                      to="/super-admin/bolumler"
+                      onClick={onCloseMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                          isActive
+                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                        )
+                      }
+                    >
+                      <GitBranch className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span>Bölüm Yönetimi</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {visibleUpcomingNavigation.length > 0 && (
