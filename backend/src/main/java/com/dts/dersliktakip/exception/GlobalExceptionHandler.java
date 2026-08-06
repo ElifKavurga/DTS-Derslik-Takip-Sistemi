@@ -4,9 +4,10 @@ import com.dts.dersliktakip.dto.ApiErrorResponse;
 import com.dts.dersliktakip.dto.FieldErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,8 +34,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password", request.getRequestURI(), List.of());
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(
+            AuthenticationException exception,
+            HttpServletRequest request
+    ) {
+        String message = exception instanceof DisabledException
+                ? "Account is inactive"
+                : "Invalid email or password";
+
+        return buildResponse(HttpStatus.UNAUTHORIZED, message, request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -52,7 +60,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception exception, HttpServletRequest request) {
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage(), request.getRequestURI(), List.of());
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected system error", request.getRequestURI(), List.of());
     }
 
     private FieldErrorResponse toFieldErrorResponse(FieldError fieldError) {

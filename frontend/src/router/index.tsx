@@ -1,5 +1,6 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
@@ -19,6 +20,10 @@ export const router = createBrowserRouter([
         path: '/login',
         element: <LoginPage />,
       },
+      {
+        path: '/forgot-password',
+        element: <ForgotPasswordPage />,
+      },
     ],
   },
   {
@@ -29,6 +34,18 @@ export const router = createBrowserRouter([
         children: [
           {
             path: '/dashboard',
+            element: <DashboardPage />,
+          },
+          {
+            path: '/super-admin/dashboard',
+            element: <DashboardPage />,
+          },
+          {
+            path: '/department-admin/dashboard',
+            element: <DashboardPage />,
+          },
+          {
+            path: '/academician/dashboard',
             element: <DashboardPage />,
           },
           {
