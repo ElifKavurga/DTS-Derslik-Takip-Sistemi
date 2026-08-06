@@ -58,6 +58,18 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
     }
 
+    @ExceptionHandler({
+            InvalidResetTokenException.class,
+            ExpiredResetTokenException.class,
+            UserNotFoundException.class
+    })
+    public ResponseEntity<ApiErrorResponse> handleResetPasswordException(
+            RuntimeException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), List.of());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGenericException(Exception exception, HttpServletRequest request) {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected system error", request.getRequestURI(), List.of());

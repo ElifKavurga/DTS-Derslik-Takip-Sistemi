@@ -2,6 +2,7 @@ import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { DashboardLayout } from '@/layouts/DashboardLayout';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
@@ -11,18 +12,34 @@ import { PublicRoute } from '@/router/PublicRoute';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/giris" replace />,
   },
   {
     element: <PublicRoute />,
     children: [
       {
-        path: '/login',
+        path: '/giris',
         element: <LoginPage />,
       },
       {
-        path: '/forgot-password',
+        path: '/sifremi-unuttum',
         element: <ForgotPasswordPage />,
+      },
+      {
+        path: '/sifre-sifirla',
+        element: <ResetPasswordPage />,
+      },
+      {
+        path: '/login',
+        element: <Navigate to="/giris" replace />,
+      },
+      {
+        path: '/forgot-password',
+        element: <Navigate to="/sifremi-unuttum" replace />,
+      },
+      {
+        path: '/reset-password',
+        element: <Navigate to="/sifre-sifirla" replace />,
       },
     ],
   },

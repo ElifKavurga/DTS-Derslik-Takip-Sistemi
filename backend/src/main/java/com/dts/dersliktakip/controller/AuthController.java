@@ -1,8 +1,11 @@
 package com.dts.dersliktakip.controller;
 
 import com.dts.dersliktakip.dto.AuthResponse;
+import com.dts.dersliktakip.dto.ForgotPasswordRequest;
 import com.dts.dersliktakip.dto.LoginRequest;
 import com.dts.dersliktakip.dto.RefreshTokenRequest;
+import com.dts.dersliktakip.dto.ResetPasswordRequest;
+import com.dts.dersliktakip.dto.ResetPasswordResponse;
 import com.dts.dersliktakip.dto.UserResponse;
 import com.dts.dersliktakip.security.UserPrincipal;
 import com.dts.dersliktakip.service.AuthService;
@@ -31,6 +34,16 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ResetPasswordResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResetPasswordResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
 
     @GetMapping("/me")

@@ -16,8 +16,21 @@ export type LoginRequest = {
   password: string;
 };
 
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token: string;
+  newPassword: string;
+};
+
 export type AuthResponse = {
   accessToken: string;
   refreshToken: string;
   user: AuthUser;
+};
+
+export type ResetPasswordResponse = {
+  message: string;
 };
