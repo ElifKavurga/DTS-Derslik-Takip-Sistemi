@@ -1,4 +1,4 @@
-import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
+import { ChevronDown, LogOut, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -52,68 +52,56 @@ export const UserMenu = () => {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2.5 rounded-xl border border-slate-200/60 bg-white px-2.5 py-1.5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-[#006482]/10"
+        className="flex items-center gap-2 rounded-xl border border-slate-200/50 bg-white p-1 pr-3 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-[#006482]/10"
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#006482] text-xs font-semibold text-white">
+        <span className="flex h-7.5 w-7.5 items-center justify-center rounded-full bg-[#006482] text-xs font-semibold text-white shadow-sm">
           {initials}
         </span>
         <span className="hidden min-w-0 sm:block">
-          <span className="block max-w-[140px] truncate text-xs font-semibold text-slate-900">
+          <span className="block max-w-[130px] truncate text-xs font-bold text-slate-800">
             {user?.fullName ?? 'DTS Kullanıcısı'}
           </span>
-          <span className="block text-[10px] font-medium text-slate-400">
+          <span className="block text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">
             {user?.role ? roleLabels[user.role] : 'Kullanıcı'}
           </span>
         </span>
-        <ChevronDown className={cn('h-3.5 w-3.5 text-slate-400 transition', open && 'rotate-180')} />
+        <ChevronDown className={cn('h-3.5 w-3.5 text-slate-400 transition ml-0.5', open && 'rotate-180')} />
       </button>
 
       {open && (
         <div
-          className="absolute right-0 z-30 mt-2 w-60 overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_12px_36px_rgba(15,23,42,0.08)] animate-in fade-in slide-in-from-top-1 duration-150"
+          className="absolute right-0 z-30 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_12px_30px_rgba(15,23,42,0.06)] animate-in fade-in slide-in-from-top-1 duration-150"
           role="menu"
         >
-          <div className="border-b border-slate-100 px-4 py-3 bg-slate-50/50">
-            <p className="truncate text-sm font-semibold text-slate-900">
+          <div className="border-b border-slate-100 px-4 py-3 bg-slate-50/40">
+            <p className="truncate text-xs font-bold text-slate-900">
               {user?.fullName ?? 'DTS Kullanıcısı'}
             </p>
-            <p className="mt-0.5 truncate text-xs text-slate-400">{user?.email}</p>
-            <span className="mt-2 inline-flex rounded-full bg-[#eff8ff] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#006482]">
-              {user?.role ? roleLabels[user.role] : 'Kullanıcı'}
-            </span>
+            <p className="mt-0.5 truncate text-[10px] text-slate-500">{user?.email}</p>
           </div>
 
-          <div className="p-1.5">
+          <div className="p-1">
             <Link
               to="/profile"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+              className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100/60 hover:text-slate-900"
               role="menuitem"
             >
-              <User className="h-4 w-4 text-slate-400" />
-              Profil
-            </Link>
-            <Link
-              to="/profile"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
-              role="menuitem"
-            >
-              <KeyRound className="h-4 w-4 text-slate-400" />
-              Şifre Değiştir
+              <User className="h-3.5 w-3.5 text-slate-400" />
+              Hesap Ayarları
             </Link>
           </div>
 
-          <div className="border-t border-slate-100 p-1.5 bg-slate-50/30">
+          <div className="border-t border-slate-100 p-1 bg-slate-50/20">
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium text-red-600 transition hover:bg-red-50/80"
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50"
               role="menuitem"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               Çıkış Yap
             </button>
           </div>

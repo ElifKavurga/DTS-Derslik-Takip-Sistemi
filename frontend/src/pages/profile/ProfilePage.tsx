@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Landmark, Mail, Phone, User, Award, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Eye, EyeOff, Shield, Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -190,13 +190,42 @@ export const ProfilePage = () => {
 
   return (
     <div className="space-y-5">
-      <PageTitle title="Hesap Ayarları" description="Kişisel bilgilerinizi güncelleyin ve hesap şifrenizi yönetin." />
+      <PageTitle title="Hesap Ayarları" description="Kişisel bilgilerinizi ve hesap ayarlarınızı buradan yönetin." />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 items-start">
-        {/* Left Side: Profile Summary Panel */}
-        <aside className="lg:col-span-1 space-y-4">
-          <section className="dts-card p-5">
-            <div className="flex items-center gap-4 border-b border-slate-100 pb-5">
+        {/* Left Side: Settings Navigation Menu */}
+        <aside className="lg:col-span-1 space-y-1">
+          <button
+            type="button"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-bold bg-[#006482]/10 text-[#006482] text-left transition"
+          >
+            <User className="h-4 w-4" />
+            <span>Profil Ayarları</span>
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100/60 hover:text-slate-900 text-left transition cursor-not-allowed opacity-50"
+            disabled
+          >
+            <Shield className="h-4 w-4" />
+            <span>Güvenlik & Erişim</span>
+          </button>
+          <button
+            type="button"
+            className="w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-500 hover:bg-slate-100/60 hover:text-slate-900 text-left transition cursor-not-allowed opacity-50"
+            disabled
+          >
+            <Bell className="h-4 w-4" />
+            <span>Bildirim Tercihleri</span>
+          </button>
+        </aside>
+
+        {/* Right Side: Unified Settings Card */}
+        <main className="lg:col-span-3">
+          <section className="dts-card p-6 lg:p-8 space-y-8">
+            
+            {/* Header: Avatar and Role/Faculty Meta */}
+            <div className="flex items-center gap-4.5 border-b border-slate-100 pb-6 mb-6">
               <div className="relative shrink-0">
                 {profile?.avatarUrl ? (
                   <img
@@ -212,68 +241,32 @@ export const ProfilePage = () => {
                 <span className="absolute bottom-0 right-0 rounded-full border-2 border-white bg-green-500 p-1" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-sm font-bold tracking-tight text-slate-900 truncate">
-                  {profile?.fullName}
-                </h2>
-                <p className="text-xs font-semibold text-[#006482] mt-0.5">
-                  {profile?.role ? roleLabels[profile.role] : 'Kullanıcı'}
+                <h4 className="text-sm font-bold text-slate-950 truncate">{profile?.fullName}</h4>
+                <p className="text-[11px] font-semibold text-slate-400 mt-0.5">
+                  {profile?.role ? roleLabels[profile.role] : 'Kullanıcı'} • {profile?.faculty ?? 'Mühendislik Fakültesi'}
                 </p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{profile?.department ?? 'Bilgisayar Mühendisliği'}</p>
               </div>
             </div>
 
-            <div className="pt-4 space-y-3.5">
-              <div className="flex items-center gap-3">
-                <Mail className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">E-posta</p>
-                  <p className="text-xs font-semibold text-slate-700 truncate">{profile?.email}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Landmark className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fakülte</p>
-                  <p className="text-xs font-semibold text-slate-700">{profile?.faculty ?? 'Mühendislik Fakültesi'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Building2 className="h-4.5 w-4.5 text-slate-400 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bölüm</p>
-                  <p className="text-xs font-semibold text-slate-700">{profile?.department ?? 'Bilgisayar Mühendisliği'}</p>
-                </div>
-              </div>
-            </div>
-          </section>
-        </aside>
-
-        {/* Right Side: Unified Settings Card */}
-        <main className="lg:col-span-3">
-          <section className="dts-card p-6 lg:p-8 space-y-8">
-            
             {/* Part 1: Profile Details Form */}
             <div>
               <div className="mb-5">
-                <h3 className="text-base font-bold tracking-tight text-slate-900">Profil Bilgileri</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Kişisel ve iletişim bilgilerinizi güncelleyin.</p>
+                <h3 className="text-sm font-bold tracking-tight text-slate-900">Kişisel Bilgiler</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Ad soyad, unvan ve telefon bilgilerinizi güncelleyin.</p>
               </div>
 
               <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="firstName" className="dts-input-label">Ad</label>
-                    <div className="group relative">
-                      <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
-                      <input
-                        id="firstName"
-                        type="text"
-                        placeholder="Adınız"
-                        className="dts-input pl-10"
-                        {...registerProfile('firstName')}
-                      />
-                    </div>
+                    <input
+                      id="firstName"
+                      type="text"
+                      placeholder="Adınız"
+                      className="dts-input"
+                      {...registerProfile('firstName')}
+                    />
                     {profileErrors.firstName && (
                       <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.firstName.message}</p>
                     )}
@@ -281,16 +274,13 @@ export const ProfilePage = () => {
 
                   <div>
                     <label htmlFor="lastName" className="dts-input-label">Soyad</label>
-                    <div className="group relative">
-                      <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
-                      <input
-                        id="lastName"
-                        type="text"
-                        placeholder="Soyadınız"
-                        className="dts-input pl-10"
-                        {...registerProfile('lastName')}
-                      />
-                    </div>
+                    <input
+                      id="lastName"
+                      type="text"
+                      placeholder="Soyadınız"
+                      className="dts-input"
+                      {...registerProfile('lastName')}
+                    />
                     {profileErrors.lastName && (
                       <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.lastName.message}</p>
                     )}
@@ -300,16 +290,13 @@ export const ProfilePage = () => {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label htmlFor="phone" className="dts-input-label">Telefon</label>
-                    <div className="group relative">
-                      <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
-                      <input
-                        id="phone"
-                        type="text"
-                        placeholder="+90 555 123 45 67"
-                        className="dts-input pl-10"
-                        {...registerProfile('phone')}
-                      />
-                    </div>
+                    <input
+                      id="phone"
+                      type="text"
+                      placeholder="+90 555 123 45 67"
+                      className="dts-input"
+                      {...registerProfile('phone')}
+                    />
                     {profileErrors.phone && (
                       <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.phone.message}</p>
                     )}
@@ -317,16 +304,13 @@ export const ProfilePage = () => {
 
                   <div>
                     <label htmlFor="title" className="dts-input-label">Unvan</label>
-                    <div className="group relative">
-                      <Award className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
-                      <input
-                        id="title"
-                        type="text"
-                        placeholder="Örn. Prof. Dr."
-                        className="dts-input pl-10"
-                        {...registerProfile('title')}
-                      />
-                    </div>
+                    <input
+                      id="title"
+                      type="text"
+                      placeholder="Örn. Prof. Dr."
+                      className="dts-input"
+                      {...registerProfile('title')}
+                    />
                     {profileErrors.title && (
                       <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.title.message}</p>
                     )}
@@ -335,16 +319,13 @@ export const ProfilePage = () => {
 
                 <div>
                   <label htmlFor="email" className="dts-input-label">Kurumsal E-posta (Salt Okunur)</label>
-                  <div className="relative bg-slate-50/50 rounded-2xl">
-                    <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
-                    <input
-                      id="email"
-                      type="email"
-                      value={profile?.email ?? ''}
-                      disabled
-                      className="dts-input pl-10 bg-slate-50/80 text-slate-400 cursor-not-allowed border-slate-200/50"
-                    />
-                  </div>
+                  <input
+                    id="email"
+                    type="email"
+                    value={profile?.email ?? ''}
+                    disabled
+                    className="dts-input bg-slate-50/80 text-slate-400 cursor-not-allowed border-slate-200/50"
+                  />
                 </div>
 
                 <div className="flex justify-end pt-2">
@@ -365,8 +346,8 @@ export const ProfilePage = () => {
             {/* Part 2: Change Password Form */}
             <div>
               <div className="mb-5">
-                <h3 className="text-base font-bold tracking-tight text-slate-900">Şifre Değiştir</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Hesap güvenliğiniz için şifrenizi güncelleyin.</p>
+                <h3 className="text-sm font-bold tracking-tight text-slate-900">Şifre Değiştir</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">Hesap güvenliğiniz için şifrenizi güncelleyin.</p>
               </div>
 
               <form onSubmit={handleSubmitPassword(onPasswordSubmit)} className="space-y-4">
@@ -374,12 +355,11 @@ export const ProfilePage = () => {
                   <div>
                     <label htmlFor="currentPassword" className="dts-input-label">Mevcut Şifre</label>
                     <div className="group relative">
-                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
                       <input
                         id="currentPassword"
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        className="dts-input pl-10 pr-10"
+                        className="dts-input pr-10"
                         {...registerPassword('currentPassword')}
                       />
                       <button
@@ -398,12 +378,11 @@ export const ProfilePage = () => {
                   <div>
                     <label htmlFor="newPassword" className="dts-input-label">Yeni Şifre</label>
                     <div className="group relative">
-                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
                       <input
                         id="newPassword"
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        className="dts-input pl-10 pr-10"
+                        className="dts-input pr-10"
                         {...registerPassword('newPassword')}
                       />
                       <button
@@ -422,12 +401,11 @@ export const ProfilePage = () => {
                   <div>
                     <label htmlFor="confirmPassword" className="dts-input-label">Yeni Şifre (Tekrar)</label>
                     <div className="group relative">
-                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 group-focus-within:text-[#006482]" />
                       <input
                         id="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        className="dts-input pl-10 pr-10"
+                        className="dts-input pr-10"
                         {...registerPassword('confirmPassword')}
                       />
                       <button
