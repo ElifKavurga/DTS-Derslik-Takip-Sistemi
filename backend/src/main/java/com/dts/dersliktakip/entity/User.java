@@ -42,6 +42,21 @@ public class User {
     @Column(nullable = false, length = 30)
     private Role role;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 100)
+    private String title;
+
+    @Column(length = 150)
+    private String department;
+
+    @Column(length = 150)
+    private String faculty;
+
+    @Column(name = "avatar_url", length = 255)
+    private String avatarUrl;
+
     @Column(nullable = false)
     private boolean active = true;
 

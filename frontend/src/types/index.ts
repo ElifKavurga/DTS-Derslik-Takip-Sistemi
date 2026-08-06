@@ -34,3 +34,27 @@ export type AuthResponse = {
 export type ResetPasswordResponse = {
   message: string;
 };
+
+export type ProfileResponse = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  role: Role;
+  phone?: string | null;
+  title?: string | null;
+  department?: string | null;
+  faculty?: string | null;
+  avatarUrl?: string | null;
+};
+
+export type UpdateProfileRequest = {
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  title?: string | null;
+  avatarUrl?: string | null;
+};
+
+export type UpdateProfileResponse = ProfileResponse;

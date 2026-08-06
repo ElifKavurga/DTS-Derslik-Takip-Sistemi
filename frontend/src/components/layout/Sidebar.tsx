@@ -136,7 +136,7 @@ export const Sidebar = ({
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {primaryNavigation.map((item) => {
               const Icon = item.icon;
               const path = item.path ?? dashboardPath;
@@ -148,15 +148,15 @@ export const Sidebar = ({
                   onClick={onCloseMobile}
                   className={({ isActive }) =>
                     cn(
-                      'group flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-xs font-medium transition duration-150',
+                      'group flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition duration-150',
                       isActive
-                        ? 'bg-[#006482] text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                        ? 'bg-[#006482] text-white font-semibold shadow-[0_4px_12px_rgba(0,100,130,0.16)]'
+                        : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
                     )
                   }
                   title={collapsed ? item.label : undefined}
                 >
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon className="h-4.5 w-4.5 shrink-0" />
                   <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.label}</span>
                 </NavLink>
               );
@@ -173,7 +173,7 @@ export const Sidebar = ({
               >
                 Modüller
               </p>
-              <div className="mt-3 space-y-0.5">
+              <div className="mt-3 space-y-1">
                 {visibleUpcomingNavigation.map((item) => {
                   const Icon = item.icon;
 
@@ -182,10 +182,10 @@ export const Sidebar = ({
                       key={item.label}
                       type="button"
                       disabled={item.disabled}
-                      className="flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-xs font-medium text-slate-400 transition hover:bg-slate-50 disabled:cursor-not-allowed"
+                      className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-100/70 disabled:cursor-not-allowed"
                       title={collapsed ? `${item.label} - Yakında` : undefined}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
+                      <Icon className="h-4.5 w-4.5 shrink-0" />
                       <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.label}</span>
                       <span
                         className={cn(

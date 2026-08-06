@@ -48,11 +48,11 @@ export const UserMenu = () => {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-3 rounded-xl border border-slate-200/60 bg-white px-2.5 py-1.5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-[#006482]/10"
+        className="flex items-center gap-2.5 rounded-xl border border-slate-200/60 bg-white px-2.5 py-1.5 text-left shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-[#006482]/10"
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#006482] text-xs font-semibold text-white">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#006482] text-xs font-semibold text-white">
           {initials}
         </span>
         <span className="hidden min-w-0 sm:block">
