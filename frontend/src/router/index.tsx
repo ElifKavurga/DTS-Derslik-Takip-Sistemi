@@ -11,6 +11,7 @@ import { FacultyDetailPage } from '@/pages/campus/FacultyDetailPage';
 import { BuildingDetailPage } from '@/pages/campus/BuildingDetailPage';
 import { FloorEditorPage } from '@/pages/campus/FloorEditorPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
+import { UsersPage } from '@/pages/admin/UsersPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -89,7 +90,7 @@ export const router = createBrowserRouter([
           },
           {
             path: '/super-admin/kullanicilar',
-            element: <UnderDevelopmentPage title="Kullanıcı Yönetimi" />,
+            element: <UsersPage />,
           },
           {
             path: '/profile',

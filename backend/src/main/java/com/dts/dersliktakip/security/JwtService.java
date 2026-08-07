@@ -28,8 +28,9 @@ public class JwtService {
         return generateToken(subject, Map.of(), jwtProperties.expirationMinutes());
     }
 
-    public String generateAccessToken(String subject, Role role) {
-        return generateToken(subject, Map.of("role", role.name()), jwtProperties.expirationMinutes());
+    public String generateAccessToken(String subject, java.util.Set<Role> roles) {
+        java.util.List<String> roleNames = roles == null ? java.util.List.of() : roles.stream().map(Role::name).toList();
+        return generateToken(subject, Map.of("roles", roleNames), jwtProperties.expirationMinutes());
     }
 
     public String generateRefreshToken(String subject) {

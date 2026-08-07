@@ -71,7 +71,7 @@ public class DashboardService {
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
                         .email(user.getEmail())
-                        .role(user.getRole())
+                        .role(user.getRoles() != null && !user.getRoles().isEmpty() ? user.getRoles().iterator().next() : null)
                         .createdAt(user.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());

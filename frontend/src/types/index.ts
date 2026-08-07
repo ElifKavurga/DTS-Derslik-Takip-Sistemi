@@ -9,6 +9,7 @@ export type AuthUser = {
   fullName: string;
   email: string;
   role: Role;
+  roles?: Role[];
 };
 
 export type LoginRequest = {
@@ -42,6 +43,7 @@ export type ProfileResponse = {
   fullName: string;
   email: string;
   role: Role;
+  roles?: Role[];
   phone?: string | null;
   title?: string | null;
   department?: string | null;

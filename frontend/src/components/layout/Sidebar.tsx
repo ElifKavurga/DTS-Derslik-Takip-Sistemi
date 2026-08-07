@@ -44,6 +44,12 @@ const primaryNavigation: NavigationItem[] = [
     path: '/profile',
     icon: User,
   },
+  {
+    label: 'Kullanıcılar',
+    path: '/super-admin/kullanicilar',
+    icon: User,
+    roles: ['SUPER_ADMIN'],
+  },
 ];
 
 // Gelecek sprintlerde aktifleşecek modüller

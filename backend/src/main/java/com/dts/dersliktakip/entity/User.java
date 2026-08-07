@@ -4,6 +4,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,6 +19,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 
 @Getter
 @Setter
@@ -38,9 +44,11 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @ElementCollection(targetClass = Role.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private Role role;
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role", length = 30)
+    private Set<Role> roles = new HashSet<>();
 
     @Column(length = 20)
     private String phone;
@@ -53,6 +61,9 @@ public class User {
 
     @Column(length = 150)
     private String faculty;
+
+    @Column(length = 150)
+    private String office;
 
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
