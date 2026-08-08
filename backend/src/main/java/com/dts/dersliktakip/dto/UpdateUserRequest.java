@@ -4,6 +4,7 @@ import com.dts.dersliktakip.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Set;
+import java.util.UUID;
 
 public record UpdateUserRequest(
         @NotBlank String firstName,
@@ -13,6 +14,8 @@ public record UpdateUserRequest(
         String phone,
         boolean active,
         String title,
+        UUID facultyId,
+        UUID departmentId,
         String faculty,
         String department,
         String office

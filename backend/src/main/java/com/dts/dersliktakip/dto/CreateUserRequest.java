@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.Set;
+import java.util.UUID;
 
 public record CreateUserRequest(
         @NotBlank String firstName,
@@ -15,6 +16,8 @@ public record CreateUserRequest(
         String phone,
         boolean active,
         String title,
+        UUID facultyId,
+        UUID departmentId,
         String faculty,
         String department,
         String office

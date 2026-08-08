@@ -1,14 +1,14 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import {
   Plus, Edit2, Trash2,
   ChevronUp, ChevronDown, ChevronsUpDown,
-  SlidersHorizontal, X, Mail, Building2, BookOpen, MapPin,
+  SlidersHorizontal, X, Mail, Building2, BookOpen,
   GraduationCap, Eye, KeyRound, ToggleLeft, ToggleRight,
   MoreVertical,
 } from 'lucide-react';
@@ -19,7 +19,10 @@ import { PrimaryButton }   from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { ConfirmDialog }   from '@/components/ui/ConfirmDialog';
 import { FormModal }       from '@/components/ui/FormModal';
+import { AppSelect }       from '@/components/ui/AppSelect';
 import { userService }     from '@/services/userService';
+import { facultyService }  from '@/services/facultyService';
+import { departmentService } from '@/services/departmentService';
 import { Role }            from '@/types';
 
 // ── Rol meta ─────────────────────────────────────────────────────────────────
@@ -27,6 +30,30 @@ const ROLE_META: Record<Role, { label: string; cls: string }> = {
   SUPER_ADMIN:      { label: 'Süper Admin',  cls: 'bg-indigo-950 text-white border-indigo-900' },
   DEPARTMENT_ADMIN: { label: 'Bölüm Admini', cls: 'bg-orange-500 text-white border-orange-400' },
   ACADEMICIAN:      { label: 'Akademisyen',  cls: 'bg-sky-600 text-white border-sky-500'   },
+};
+
+const ACADEMIC_TITLE_OPTIONS = [
+  { label: 'Profesör Dr.', value: 'Profesör Dr.' },
+  { label: 'Doçent Dr.', value: 'Doçent Dr.' },
+  { label: 'Dr. Öğretim Üyesi', value: 'Dr. Öğretim Üyesi' },
+  { label: 'Araştırma Görevlisi', value: 'Araştırma Görevlisi' },
+];
+
+const LEGACY_TITLE_MAP: Record<string, string> = {
+  PROFESOR: 'Profesör Dr.',
+  DOCENT: 'Doçent Dr.',
+  DR_OGRETIM_UYESI: 'Dr. Öğretim Üyesi',
+  ARASTIRMA_GOREVLISI: 'Araştırma Görevlisi',
+  'Prof. Dr.': 'Profesör Dr.',
+  'Doç. Dr.': 'Doçent Dr.',
+  'Dr. Öğr. Üyesi': 'Dr. Öğretim Üyesi',
+  'Arş. Gör.': 'Araştırma Görevlisi',
+};
+
+const normalizeAcademicTitle = (title?: string | null) => {
+  const trimmed = title?.trim();
+  if (!trimmed) return '';
+  return LEGACY_TITLE_MAP[trimmed] ?? (ACADEMIC_TITLE_OPTIONS.some((option) => option.value === trimmed) ? trimmed : '');
 };
 
 // ── Avatar initials ──────────────────────────────────────────────────────────
@@ -43,17 +70,33 @@ const initials = (first: string, last: string) =>
 
 // ── Zod şeması ───────────────────────────────────────────────────────────────
 const userSchema = z.object({
-  firstName:  z.string().min(1, 'Ad zorunludur.'),
-  lastName:   z.string().min(1, 'Soyad zorunludur.'),
-  email:      z.string().email('Geçerli bir e-posta giriniz.'),
-  password:   z.string().min(6).optional(),
-  roles:      z.array(z.enum(['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'])).min(1, 'En az bir rol seçilmelidir.'),
-  phone:      z.string().optional(),
-  active:     z.boolean().optional(),
-  title:      z.string().optional(),
-  faculty:    z.string().optional(),
-  department: z.string().optional(),
-  office:     z.string().optional(),
+  firstName:    z.string().min(1, 'Ad zorunludur.'),
+  lastName:     z.string().min(1, 'Soyad zorunludur.'),
+  email:        z.string().email('Geçerli bir e-posta giriniz.'),
+  password:     z.string().min(6).optional(),
+  roles:        z.array(z.enum(['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'])).min(1, 'En az bir rol seçilmelidir.'),
+  phone:        z.string().optional(),
+  active:       z.boolean().optional(),
+  title:        z.string().optional(),
+  facultyId:    z.string().optional(),
+  departmentId: z.string().optional(),
+}).superRefine((values, ctx) => {
+  const roles = values.roles ?? [];
+  const needsFacultyDepartment = roles.includes('ACADEMICIAN') || roles.includes('DEPARTMENT_ADMIN');
+  if (needsFacultyDepartment && !values.facultyId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['facultyId'], message: 'Fakülte seçimi zorunludur.' });
+  }
+  if (needsFacultyDepartment && !values.departmentId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['departmentId'], message: 'Bölüm seçimi zorunludur.' });
+  }
+  if (roles.includes('ACADEMICIAN')) {
+    if (!values.title?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['title'], message: 'Akademisyenler için unvan seçilmelidir.' });
+    }
+    if (!values.phone?.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['phone'], message: 'Telefon zorunludur.' });
+    }
+  }
 });
 
 const pwSchema = z.object({
@@ -227,7 +270,6 @@ const UserCard = ({ user, onEdit, onDelete, onToggleActive, onResetPw, onViewPro
         <InfoRow icon={<Building2 className="h-3 w-3" />}   text={user.faculty}    />
         <InfoRow icon={<GraduationCap className="h-3 w-3" />} text={user.title}    />
         <InfoRow icon={<BookOpen className="h-3 w-3" />}    text={user.department} />
-        <InfoRow icon={<MapPin className="h-3 w-3" />}      text={user.office}     />
       </div>
 
       {/* ── Sağ: Roller + Durum + Aksiyonlar ── */}
@@ -339,36 +381,49 @@ const FilterPopover = ({
           <div className="space-y-3">
             <div>
               <label className="dts-input-label">Rol</label>
-              <select value={filterRole} onChange={(e) => onChangeRole(e.target.value)} className="dts-input py-2 text-xs">
-                <option value="">Tüm Roller</option>
-                {(Object.keys(ROLE_META) as Role[]).map((r) => <option key={r} value={r}>{ROLE_META[r].label}</option>)}
-              </select>
+              <AppSelect
+                value={filterRole}
+                onChange={onChangeRole}
+                options={[{ label: 'Tüm Roller', value: '' }, ...Object.keys(ROLE_META).map((role) => ({ label: ROLE_META[role as Role].label, value: role }))]}
+                placeholder="Tüm Roller"
+              />
             </div>
             {faculties.length > 0 && (
               <div>
                 <label className="dts-input-label">Fakülte</label>
-                <select value={filterFaculty} onChange={(e) => onChangeFaculty(e.target.value)} className="dts-input py-2 text-xs">
-                  <option value="">Tüm Fakülteler</option>
-                  {faculties.map((f) => <option key={f} value={f}>{f}</option>)}
-                </select>
+                <AppSelect
+                  value={filterFaculty}
+                  onChange={onChangeFaculty}
+                  options={[{ label: 'Tüm Fakülteler', value: '' }, ...faculties.map((faculty) => ({ label: faculty, value: faculty }))]}
+                  searchable
+                  placeholder="Tüm Fakülteler"
+                />
               </div>
             )}
             {departments.length > 0 && (
               <div>
                 <label className="dts-input-label">Bölüm</label>
-                <select value={filterDepartment} onChange={(e) => onChangeDepartment(e.target.value)} className="dts-input py-2 text-xs">
-                  <option value="">Tüm Bölümler</option>
-                  {departments.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                <AppSelect
+                  value={filterDepartment}
+                  onChange={onChangeDepartment}
+                  options={[{ label: 'Tüm Bölümler', value: '' }, ...departments.map((department) => ({ label: department, value: department }))]}
+                  searchable
+                  placeholder="Tüm Bölümler"
+                />
               </div>
             )}
             <div>
               <label className="dts-input-label">Durum</label>
-              <select value={filterActive} onChange={(e) => onChangeActive(e.target.value)} className="dts-input py-2 text-xs">
-                <option value="">Tüm Durumlar</option>
-                <option value="true">Aktif</option>
-                <option value="false">Pasif</option>
-              </select>
+              <AppSelect
+                value={filterActive}
+                onChange={onChangeActive}
+                options={[
+                  { label: 'Tüm Durumlar', value: '' },
+                  { label: 'Aktif', value: 'true' },
+                  { label: 'Pasif', value: 'false' },
+                ]}
+                placeholder="Tüm Durumlar"
+              />
             </div>
           </div>
         </div>
@@ -414,7 +469,6 @@ const ProfileViewModal = ({ user, onClose }: { user: any; onClose: () => void })
             { icon: <Building2 className="h-3.5 w-3.5" />,    label: 'Fakülte',  value: user.faculty },
             { icon: <BookOpen className="h-3.5 w-3.5" />,     label: 'Bölüm',    value: user.department },
             { icon: <GraduationCap className="h-3.5 w-3.5" />, label: 'Unvan',   value: user.title },
-            { icon: <MapPin className="h-3.5 w-3.5" />,       label: 'Ofis',     value: user.office },
             { icon: <Mail className="h-3.5 w-3.5" />,         label: 'Telefon',  value: user.phone },
           ].map(({ icon, label, value }) =>
             value ? (
@@ -483,11 +537,31 @@ export const UsersPage = () => {
   const [viewingUser,   setViewingUser]   = useState<any | null>(null);
   const [pwResetUser,   setPwResetUser]   = useState<any | null>(null);
 
+    const { register, handleSubmit, reset, watch, control, setValue, formState: { errors } } = useForm<UserFormValues>({
+    resolver: zodResolver(userSchema),
+    defaultValues: { firstName: '', lastName: '', email: '', password: undefined, roles: [], active: true, facultyId: '', departmentId: '' },
+  });
+  const watchedRoles = watch('roles') || [];
+  const watchedFacultyId = watch('facultyId');
+  const watchedDepartmentId = watch('departmentId');
+  const needsFacultyDepartment = watchedRoles.includes('ACADEMICIAN') || watchedRoles.includes('DEPARTMENT_ADMIN');
+  const isAcademician = watchedRoles.includes('ACADEMICIAN');
+
   const { data, isLoading } = useQuery({ queryKey: ['users'], queryFn: userService.getAll });
   const usersList: any[] = useMemo(() => data ?? [], [data]);
-
-  const faculties   = useMemo(() => [...new Set(usersList.map((u) => u.faculty).filter(Boolean))].sort() as string[], [usersList]);
+  const faculties = useMemo(() => [...new Set(usersList.map((u) => u.faculty).filter(Boolean))].sort() as string[], [usersList]);
   const departments = useMemo(() => [...new Set(usersList.map((u) => u.department).filter(Boolean))].sort() as string[], [usersList]);
+
+  const facultiesQuery = useQuery({ queryKey: ['faculties'], queryFn: facultyService.getAll });
+  const departmentsQuery = useQuery({
+    queryKey: ['departments', watchedFacultyId],
+    queryFn: () => departmentService.getByFaculty(watchedFacultyId ?? ''),
+    enabled: !!watchedFacultyId,
+  });
+
+  const facultiesOptions = useMemo(() => ((facultiesQuery.data?.faculties ?? []) as any[]).map((item) => ({ label: item.name, value: item.id })), [facultiesQuery.data]);
+  const departmentOptions = useMemo(() => (departmentsQuery.data ?? []).map((item) => ({ label: item.name, value: item.id })), [departmentsQuery.data]);
+
   const activeFilterCount = [filterRole, filterFaculty, filterDepartment, filterActive].filter(Boolean).length;
 
   const filteredUsers = useMemo(() => {
@@ -514,26 +588,29 @@ export const UsersPage = () => {
   };
 
   // Form
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<UserFormValues>({
-    resolver: zodResolver(userSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', password: undefined, roles: [], active: true },
-  });
-  const watchedRoles = watch('roles') || [];
-  const isAcademician = watchedRoles.includes('ACADEMICIAN');
 
   const handleOpenCreate = () => {
     setEditingUser(null);
-    reset({ firstName: '', lastName: '', email: '', password: undefined, roles: [], active: true });
+    reset({ firstName: '', lastName: '', email: '', password: undefined, roles: [], active: true, facultyId: '', departmentId: '', title: '', phone: '' });
     setIsModalOpen(true);
   };
   const handleOpenEdit = (user: any) => {
     setEditingUser(user);
+    const facultyOption = (facultiesQuery.data?.faculties ?? []).find((item: any) => item.name === user.faculty);
+    const initialFacultyId = facultyOption?.id ?? '';
+    const initialDepartmentId = (departmentsQuery.data ?? []).find((item: any) => item.name === user.department)?.id ?? '';
+
     reset({
-      firstName: user.firstName, lastName: user.lastName, email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
       password: undefined,
       roles: user.roles ?? (user.role ? [user.role] : []),
-      phone: user.phone, active: user.active,
-      title: user.title, faculty: user.faculty, department: user.department, office: user.office,
+      phone: user.phone,
+      active: user.active,
+      title: normalizeAcademicTitle(user.title),
+      facultyId: initialFacultyId,
+      departmentId: initialDepartmentId,
     });
     setIsModalOpen(true);
   };
@@ -569,9 +646,30 @@ export const UsersPage = () => {
     onError: (err: AxiosError<{ message: string }>) => toast.error(err.response?.data?.message || 'Hata oluştu.'),
   });
 
+  const getFacultyName = (facultyId?: string) => (facultiesQuery.data?.faculties ?? []).find((item: any) => item.id === facultyId)?.name;
+  const getDepartmentName = (departmentId?: string) => (departmentsQuery.data ?? []).find((item: any) => item.id === departmentId)?.name;
+
   const onSubmit = (values: UserFormValues) => {
-    if (editingUser) updateMutation.mutate({ id: editingUser.id, payload: values });
-    else createMutation.mutate(values);
+    const payload = {
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      roles: values.roles,
+      phone: values.phone,
+      active: values.active ?? true,
+      title: values.title,
+      facultyId: values.facultyId || null,
+      departmentId: values.departmentId || null,
+      faculty: values.facultyId ? getFacultyName(values.facultyId) : editingUser?.faculty,
+      department: values.departmentId ? getDepartmentName(values.departmentId) : editingUser?.department,
+    } as any;
+
+    if (!editingUser) {
+      payload.password = values.password;
+      createMutation.mutate(payload);
+    } else {
+      updateMutation.mutate({ id: editingUser.id, payload });
+    }
   };
 
   const sortOptions: { key: SortKey; label: string }[] = [
@@ -763,13 +861,75 @@ export const UsersPage = () => {
             </div>
             {errors.roles && <p className="text-[11px] text-red-500">{(errors.roles as any)?.message}</p>}
           </div>
+          {needsFacultyDepartment && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="dts-input-label">Fakülte</label>
+                <Controller
+                  name="facultyId"
+                  control={control}
+                  render={({ field }) => (
+                    <AppSelect
+                      options={facultiesOptions}
+                      value={field.value}
+                      onChange={(value) => {
+                        field.onChange(value);
+                        setValue('departmentId', '');
+                      }}
+                      searchable
+                      hasError={!!errors.facultyId}
+                      placeholder="Seçiniz..."
+                    />
+                  )}
+                />
+                {errors.facultyId && <p className="text-[11px] text-red-500">{(errors.facultyId as any)?.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <label className="dts-input-label">Bölüm</label>
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <AppSelect
+                      options={departmentOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!watchedFacultyId}
+                      searchable
+                      hasError={!!errors.departmentId}
+                      placeholder={watchedFacultyId ? 'Seçiniz...' : 'Önce fakülte seçin'}
+                    />
+                  )}
+                />
+                {errors.departmentId && <p className="text-[11px] text-red-500">{(errors.departmentId as any)?.message}</p>}
+              </div>
+            </div>
+          )}
           {isAcademician && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="space-y-1"><label className="dts-input-label">Unvan</label><input type="text" {...register('title')} className="dts-input" /></div>
-              <div className="space-y-1"><label className="dts-input-label">Telefon</label><input type="text" {...register('phone')} className="dts-input" /></div>
-              <div className="space-y-1"><label className="dts-input-label">Fakülte</label><input type="text" {...register('faculty')} className="dts-input" /></div>
-              <div className="space-y-1"><label className="dts-input-label">Bölüm</label><input type="text" {...register('department')} className="dts-input" /></div>
-              <div className="space-y-1 md:col-span-2"><label className="dts-input-label">Ofis</label><input type="text" {...register('office')} className="dts-input" /></div>
+              <div className="space-y-1">
+                <label className="dts-input-label">Unvan</label>
+                <Controller
+                  name="title"
+                  control={control}
+                  render={({ field }) => (
+                    <AppSelect
+                      options={ACADEMIC_TITLE_OPTIONS}
+                      value={field.value}
+                      onChange={field.onChange}
+                      searchable
+                      hasError={!!errors.title}
+                      placeholder="Seçiniz..."
+                    />
+                  )}
+                />
+                {errors.title && <p className="text-[11px] text-red-500">{errors.title.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <label className="dts-input-label">Telefon</label>
+                <input type="text" {...register('phone')} className={`dts-input ${errors.phone ? 'border-red-300' : ''}`} />
+                {errors.phone && <p className="text-[11px] text-red-500">{errors.phone.message}</p>}
+              </div>
             </div>
           )}
           {editingUser && (

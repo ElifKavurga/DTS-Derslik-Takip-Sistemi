@@ -12,6 +12,7 @@ import { BuildingDetailPage } from '@/pages/campus/BuildingDetailPage';
 import { FloorEditorPage } from '@/pages/campus/FloorEditorPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { UsersPage } from '@/pages/admin/UsersPage';
+import { CoursesPage } from '@/pages/admin/CoursesPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -91,6 +92,14 @@ export const router = createBrowserRouter([
           {
             path: '/super-admin/kullanicilar',
             element: <UsersPage />,
+          },
+          {
+            path: '/super-admin/dersler',
+            element: <CoursesPage />,
+          },
+          {
+            path: '/department-admin/dersler',
+            element: <CoursesPage />,
           },
           {
             path: '/profile',

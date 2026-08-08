@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Settings2, MousePointer2 } from 'lucide-react';
 import type { Node } from '@xyflow/react';
 import { PALETTE_ITEM_MAP, SpaceObjectType } from '@/types';
+import { AppSelect } from '@/components/ui/AppSelect';
 import { SPACE_ICONS, SPACE_PROPERTY_FIELDS, PropertyField } from './spaceNodeConfig';
 
 interface PropertiesPanelProps {
@@ -82,16 +83,13 @@ function renderField(field: PropertyField, nodeData: Record<string, unknown>, on
       );
     case 'select':
       return (
-        <select
+        <AppSelect
           key={field.key}
-          defaultValue={(rawValue as string) ?? ''}
-          className="dts-input text-xs"
-          onChange={(e) => onChange(field.key, e.target.value)}
-        >
-          {field.options?.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
+          value={(rawValue as string) ?? ''}
+          onChange={(value) => onChange(field.key, value)}
+          options={field.options?.map((opt) => ({ label: opt.label, value: opt.value })) ?? []}
+          className="text-xs"
+        />
       );
     default:
       return null;

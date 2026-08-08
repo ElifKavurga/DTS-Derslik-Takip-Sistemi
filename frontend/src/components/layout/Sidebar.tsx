@@ -5,11 +5,14 @@ import {
   ChevronLeft,
   ChevronRight,
   GitBranch,
+  GraduationCap,
   Landmark,
   Layers,
   LayoutDashboard,
   Map,
   User,
+  Users,
+  BookOpen,
   X,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
@@ -43,12 +46,6 @@ const primaryNavigation: NavigationItem[] = [
     label: 'Profil',
     path: '/profile',
     icon: User,
-  },
-  {
-    label: 'Kullanıcılar',
-    path: '/super-admin/kullanicilar',
-    icon: User,
-    roles: ['SUPER_ADMIN'],
   },
 ];
 
@@ -102,6 +99,7 @@ export const Sidebar = ({
   const dashboardPath = getDashboardPathByRole(role);
   const visibleUpcomingNavigation = upcomingNavigation.filter((item) => canShowItem(item, role));
   const [campusExpanded, setCampusExpanded] = useState(false);
+  const [academicExpanded, setAcademicExpanded] = useState(false);
 
   return (
     <>
@@ -239,6 +237,81 @@ export const Sidebar = ({
                       <span>Bölüm Yönetimi</span>
                       <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold text-slate-400">Yakında</span>
                     </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Akademik Planlama Dropdown (Süper Admin, Bölüm Admini) */}
+            {(role === 'SUPER_ADMIN' || role === 'DEPARTMENT_ADMIN') && (
+              <div className="space-y-1 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (collapsed) {
+                      onToggleCollapsed();
+                      setAcademicExpanded(true);
+                    } else {
+                      setAcademicExpanded(!academicExpanded);
+                    }
+                  }}
+                  className={cn(
+                    'group flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-600 transition duration-150 hover:bg-slate-100/70 hover:text-slate-900',
+                    academicExpanded && !collapsed && 'text-slate-900 font-semibold'
+                  )}
+                  title={collapsed ? 'Akademik Planlama' : undefined}
+                >
+                  <GraduationCap className="h-4.5 w-4.5 shrink-0" />
+                  <span className={cn('truncate text-left flex-1', collapsed && 'lg:hidden')}>Akademik Planlama</span>
+                  {!collapsed && (
+                    <ChevronDown
+                      className={cn(
+                        'h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400 group-hover:text-slate-900',
+                        academicExpanded && 'rotate-180 text-slate-900'
+                      )}
+                    />
+                  )}
+                </button>
+
+                {academicExpanded && !collapsed && (
+                  <div className="pl-6 space-y-1 mt-1 transition-all duration-300">
+                    <div className="group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium text-slate-400 opacity-60 cursor-not-allowed select-none">
+                      <GraduationCap className="h-4 w-4 shrink-0 text-slate-300" />
+                      <span>Akademisyenler</span>
+                      <span className="ml-auto rounded-full bg-slate-100 px-1.5 py-0.5 text-[8px] font-semibold text-slate-400">Yakında</span>
+                    </div>
+                    {role === 'SUPER_ADMIN' && (
+                      <NavLink
+                        to="/super-admin/kullanicilar"
+                        onClick={onCloseMobile}
+                        className={({ isActive }) =>
+                          cn(
+                            'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                            isActive
+                              ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                              : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                          )
+                        }
+                      >
+                        <Users className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                        <span>Kullanıcılar</span>
+                      </NavLink>
+                    )}
+                    <NavLink
+                      to={role === 'SUPER_ADMIN' ? "/super-admin/dersler" : "/department-admin/dersler"}
+                      onClick={onCloseMobile}
+                      className={({ isActive }) =>
+                        cn(
+                          'group flex h-9 items-center gap-2.5 rounded-xl px-3 text-[13px] font-medium transition duration-150',
+                          isActive
+                            ? 'bg-[#eff8ff] text-[#006482] font-semibold'
+                            : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-900',
+                        )
+                      }
+                    >
+                      <BookOpen className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482]" />
+                      <span>Dersler</span>
+                    </NavLink>
                   </div>
                 )}
               </div>
