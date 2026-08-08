@@ -6,6 +6,7 @@ import com.dts.dersliktakip.dto.UserResponse;
 import com.dts.dersliktakip.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ import java.util.UUID;
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class UserController {
 
     private final UserService userService;

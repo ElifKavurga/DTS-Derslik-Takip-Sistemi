@@ -537,7 +537,7 @@ export const UsersPage = () => {
   const [viewingUser,   setViewingUser]   = useState<any | null>(null);
   const [pwResetUser,   setPwResetUser]   = useState<any | null>(null);
 
-    const { register, handleSubmit, reset, watch, control, setValue, formState: { errors } } = useForm<UserFormValues>({
+  const { register, handleSubmit, reset, watch, control, setValue, setError, formState: { errors } } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: { firstName: '', lastName: '', email: '', password: undefined, roles: [], active: true, facultyId: '', departmentId: '' },
   });
@@ -650,6 +650,11 @@ export const UsersPage = () => {
   const getDepartmentName = (departmentId?: string) => (departmentsQuery.data ?? []).find((item: any) => item.id === departmentId)?.name;
 
   const onSubmit = (values: UserFormValues) => {
+    if (!editingUser && !values.password?.trim()) {
+      setError('password', { type: 'manual', message: 'Parola zorunludur.' });
+      return;
+    }
+
     const payload = {
       firstName: values.firstName,
       lastName: values.lastName,

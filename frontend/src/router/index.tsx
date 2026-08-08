@@ -5,7 +5,6 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { NotFoundPage } from '@/pages/errors/NotFoundPage';
-import { UnderDevelopmentPage } from '@/pages/errors/UnderDevelopmentPage';
 import { FacultyPage } from '@/pages/campus/FacultyPage';
 import { FacultyDetailPage } from '@/pages/campus/FacultyDetailPage';
 import { BuildingDetailPage } from '@/pages/campus/BuildingDetailPage';
@@ -13,6 +12,8 @@ import { FloorEditorPage } from '@/pages/campus/FloorEditorPage';
 import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { CoursesPage } from '@/pages/admin/CoursesPage';
+import { DepartmentsPage } from '@/pages/admin/DepartmentsPage';
+import { DepartmentDetailPage } from '@/pages/admin/DepartmentDetailPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -87,7 +88,11 @@ export const router = createBrowserRouter([
           },
           {
             path: '/super-admin/bolumler',
-            element: <UnderDevelopmentPage title="Bölüm Yönetimi" />,
+            element: <DepartmentsPage />,
+          },
+          {
+            path: '/super-admin/bolumler/:id',
+            element: <DepartmentDetailPage />,
           },
           {
             path: '/super-admin/kullanicilar',

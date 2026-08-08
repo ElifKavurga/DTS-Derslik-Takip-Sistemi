@@ -203,7 +203,7 @@ export const FacultyDetailPage = () => {
 
         <PageHeader
           title={faculty?.name || ''}
-          description="Bu fakülteye ait binaları görüntüleyebilir ve yönetebilirsiniz."
+          description="Bu fakülteye ait binaları görüntüleyebilir, yönetebilirsiniz."
           action={
             buildingsList.length > 0 ? (
               <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4.5 w-4.5" />}>

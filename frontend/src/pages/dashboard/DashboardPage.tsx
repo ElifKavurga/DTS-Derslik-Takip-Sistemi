@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   Building2,
+  BookOpen,
   GitBranch,
   GraduationCap,
   Landmark,
@@ -147,16 +148,16 @@ export const DashboardPage = () => {
           </Link>
 
           <Link
-            to="/super-admin/binalar"
+            to="/super-admin/dersler"
             className="dts-card dts-card-hover flex items-center justify-between p-4 group transition-colors hover:border-[#006482]/40"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                <Building2 className="h-5 w-5" />
+                <BookOpen className="h-5 w-5" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-bold text-slate-800">Bina Ekle</p>
-                <p className="text-[10px] text-slate-400">Yeni bir bina tanımla</p>
+                <p className="text-xs font-bold text-slate-800">Ders Ekle</p>
+                <p className="text-[10px] text-slate-400">Yeni bir ders tanımla</p>
               </div>
             </div>
             <Plus className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition duration-200" />

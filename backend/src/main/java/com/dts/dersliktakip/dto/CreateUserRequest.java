@@ -12,7 +12,7 @@ public record CreateUserRequest(
         @NotBlank String lastName,
         @Email @NotBlank String email,
         @NotBlank String password,
-        Set<Role> roles,
+        @NotEmpty Set<Role> roles,
         String phone,
         boolean active,
         String title,

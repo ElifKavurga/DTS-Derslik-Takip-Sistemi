@@ -19,4 +19,8 @@ public interface AcademicianRepository extends JpaRepository<Academician, UUID> 
     List<Academician> findByDepartmentId(UUID departmentId);
 
     Optional<Academician> findByEmail(String email);
+
+    long countByDepartment_Id(UUID departmentId);
+
+    boolean existsByDepartment_Id(UUID departmentId);
 }

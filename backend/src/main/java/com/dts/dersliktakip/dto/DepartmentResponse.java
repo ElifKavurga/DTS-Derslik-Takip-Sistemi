@@ -6,6 +6,9 @@ public record DepartmentResponse(
         UUID id,
         String name,
         String code,
-        UUID facultyId
+        UUID facultyId,
+        String facultyName,
+        long academicianCount,
+        long courseCount
 ) {
 }

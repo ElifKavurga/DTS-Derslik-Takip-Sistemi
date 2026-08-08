@@ -20,6 +20,10 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Fakülte Yönetimi',
     breadcrumbs: ['Ana Ekran', 'Kampüs Yönetimi', 'Fakülteler'],
   },
+  departments: {
+    title: 'Bölüm Yönetimi',
+    breadcrumbs: ['Ana Ekran', 'Bölüm Yönetimi'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
@@ -28,6 +32,9 @@ const resolvePageMeta = (pathname: string) => {
   }
   if (pathname.includes('/super-admin/fakulteler') && !pathname.match(/^\/super-admin\/fakulteler\/[a-f0-9-]+$/i)) {
     return pageMeta.faculties;
+  }
+  if (pathname.includes('/super-admin/bolumler') && !pathname.match(/^\/super-admin\/bolumler\/[a-f0-9-]+$/i)) {
+    return pageMeta.departments;
   }
 
   return pageMeta.dashboard;
@@ -43,7 +50,9 @@ export const AppLayout = () => {
   const defaultMeta = useMemo(() => resolvePageMeta(location.pathname), [location.pathname]);
 
   useEffect(() => {
-    const isDynamicRoute = location.pathname.match(/^\/super-admin\/fakulteler\/[a-f0-9-]+$/i);
+    const isDynamicRoute =
+      location.pathname.match(/^\/super-admin\/fakulteler\/[a-f0-9-]+$/i) ||
+      location.pathname.match(/^\/super-admin\/bolumler\/[a-f0-9-]+$/i);
     if (!isDynamicRoute) {
       setMeta(defaultMeta.title, defaultMeta.breadcrumbs);
     }

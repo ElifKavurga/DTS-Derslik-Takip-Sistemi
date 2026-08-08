@@ -2,6 +2,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
   Landmark,
   LayoutDashboard,
   User,
@@ -62,6 +63,12 @@ export const Sidebar = ({
       label: 'Fakülte Yönetimi',
       path: '/super-admin/fakulteler',
       icon: Landmark,
+      roles: ['SUPER_ADMIN'],
+    },
+    {
+      label: 'Bölüm Yönetimi',
+      path: '/super-admin/bolumler',
+      icon: GraduationCap,
       roles: ['SUPER_ADMIN'],
     },
     {

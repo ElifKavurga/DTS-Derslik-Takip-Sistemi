@@ -16,6 +16,10 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByDepartmentId(UUID departmentId);
+
+    long countByDepartment_Id(UUID departmentId);
+
+    boolean existsByDepartment_Id(UUID departmentId);
     
     boolean existsByCode(String code);
     

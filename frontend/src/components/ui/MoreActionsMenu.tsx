@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -15,11 +16,19 @@ interface MoreActionsMenuProps {
 
 export const MoreActionsMenu = ({ actions }: MoreActionsMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -32,21 +41,57 @@ export const MoreActionsMenu = ({ actions }: MoreActionsMenuProps) => {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeMenu = () => setIsOpen(false);
+    window.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    return () => {
+      window.removeEventListener('scroll', closeMenu, true);
+      window.removeEventListener('resize', closeMenu);
+    };
+  }, [isOpen]);
+
+  const toggleMenu = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const width = 176;
+      const estimatedHeight = actions.length * 40 + 12;
+      const margin = 8;
+      const opensUp = window.innerHeight - rect.bottom < estimatedHeight + margin;
+      const top = opensUp
+        ? Math.max(margin, rect.top - estimatedHeight - margin)
+        : Math.min(rect.bottom + margin, window.innerHeight - estimatedHeight - margin);
+      const left = Math.min(
+        Math.max(margin, rect.right - width),
+        window.innerWidth - width - margin,
+      );
+
+      setMenuStyle({ top, left, width });
+    }
+
+    setIsOpen((value) => !value);
+  };
+
   return (
-    <div className="relative shrink-0" ref={menuRef}>
+    <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation(); // Stop row click navigation
-          setIsOpen(!isOpen);
-        }}
+        onClick={toggleMenu}
         className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition"
       >
         <MoreVertical className="h-4.5 w-4.5" />
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-1 z-30 w-36 rounded-2xl border border-slate-200/50 bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-100">
+      {isOpen && menuStyle && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, width: menuStyle.width, zIndex: 9999 }}
+          className="rounded-2xl border border-slate-200/50 bg-white p-1.5 shadow-2xl shadow-slate-300/40 animate-in fade-in zoom-in-95 duration-100"
+        >
           {actions.map((action, idx) => (
             <button
               key={idx}
@@ -69,7 +114,8 @@ export const MoreActionsMenu = ({ actions }: MoreActionsMenuProps) => {
               {action.label}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
