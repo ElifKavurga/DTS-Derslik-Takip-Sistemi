@@ -35,6 +35,7 @@ public class UserService {
     private final AcademicianRepository academicianRepository;
     private final FacultyRepository facultyRepository;
     private final DepartmentRepository departmentRepository;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<UserResponse> listUsers() {
@@ -67,6 +68,12 @@ public class UserService {
         user.setOffice(request.office());
         User saved = userRepository.save(user);
         syncAcademicianRecord(saved, request.facultyId(), request.departmentId());
+        notificationService.createForRole(
+                Role.SUPER_ADMIN,
+                "Yeni kullanıcı oluşturuldu",
+                saved.getFirstName() + " " + saved.getLastName() + " sisteme eklendi.",
+                "/super-admin/kullanicilar"
+        );
         return userMapper.toResponse(saved);
     }
 

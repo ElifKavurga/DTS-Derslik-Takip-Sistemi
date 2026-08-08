@@ -16,6 +16,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("select count(u) from User u join u.roles r where r = :role")
     long countByRole(@Param("role") com.dts.dersliktakip.entity.Role role);
 
+    @Query("select distinct u from User u join u.roles r where r = :role and u.active = true")
+    List<User> findActiveUsersByRole(@Param("role") com.dts.dersliktakip.entity.Role role);
+
     List<User> findTop5ByOrderByCreatedAtDesc();
 }
 

@@ -34,6 +34,7 @@ public class CourseService {
     private final AcademicianRepository academicianRepository;
     private final CourseMapper courseMapper;
     private final AccessScopeService accessScopeService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public CourseListResponse getAllCourses(User currentUser) {
@@ -94,6 +95,12 @@ public class CourseService {
         course.setActive(request.active());
 
         course = courseRepository.save(course);
+        notificationService.createForUser(
+                currentUser,
+                "Yeni ders oluşturuldu",
+                course.getCode() + " - " + course.getName() + " sisteme eklendi.",
+                accessScopeService.isSuperAdmin(currentUser) ? "/super-admin/dersler" : "/department-admin/dersler"
+        );
         return courseMapper.toResponse(course);
     }
 

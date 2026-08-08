@@ -5,6 +5,7 @@ import com.dts.dersliktakip.dto.FacultyDetailResponse;
 import com.dts.dersliktakip.dto.FacultyResponse;
 import com.dts.dersliktakip.dto.UpdateFacultyRequest;
 import com.dts.dersliktakip.entity.Faculty;
+import com.dts.dersliktakip.entity.Role;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.mapper.FacultyMapper;
@@ -31,6 +32,7 @@ public class FacultyService {
     private final ClassroomRepository classroomRepository;
     private final FacultyMapper facultyMapper;
     private final AccessScopeService accessScopeService;
+    private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
     public List<FacultyResponse> getAllFaculties() {
@@ -80,7 +82,14 @@ public class FacultyService {
 
         Faculty faculty = facultyMapper.toEntity(request);
         Faculty savedFaculty = facultyRepository.save(faculty);
-        return enrichResponse(facultyMapper.toResponse(savedFaculty));
+        FacultyResponse response = enrichResponse(facultyMapper.toResponse(savedFaculty));
+        notificationService.createForRole(
+                Role.SUPER_ADMIN,
+                "Yeni fakülte oluşturuldu",
+                savedFaculty.getName() + " sisteme eklendi.",
+                "/super-admin/fakulteler/" + savedFaculty.getId()
+        );
+        return response;
     }
 
     @Transactional
