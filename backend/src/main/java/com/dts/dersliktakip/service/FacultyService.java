@@ -5,6 +5,7 @@ import com.dts.dersliktakip.dto.FacultyDetailResponse;
 import com.dts.dersliktakip.dto.FacultyResponse;
 import com.dts.dersliktakip.dto.UpdateFacultyRequest;
 import com.dts.dersliktakip.entity.Faculty;
+import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.mapper.FacultyMapper;
 import com.dts.dersliktakip.repository.BuildingRepository;
@@ -29,10 +30,22 @@ public class FacultyService {
     private final FloorRepository floorRepository;
     private final ClassroomRepository classroomRepository;
     private final FacultyMapper facultyMapper;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
     public List<FacultyResponse> getAllFaculties() {
         List<Faculty> faculties = facultyRepository.findAll();
+        return facultyMapper.toResponseList(faculties).stream()
+                .map(this::enrichResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FacultyResponse> getVisibleFaculties(User currentUser) {
+        List<Faculty> faculties = accessScopeService.isSuperAdmin(currentUser)
+                ? facultyRepository.findAll()
+                : List.of(accessScopeService.requireFacultyScope(currentUser));
+
         return facultyMapper.toResponseList(faculties).stream()
                 .map(this::enrichResponse)
                 .toList();

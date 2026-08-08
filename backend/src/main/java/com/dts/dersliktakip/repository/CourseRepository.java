@@ -13,6 +13,9 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAll();
+
+    @EntityGraph(attributePaths = {"faculty", "department", "academician"})
+    List<Course> findAllByDepartmentId(UUID departmentId);
     
     boolean existsByCode(String code);
     

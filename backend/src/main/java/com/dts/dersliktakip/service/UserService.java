@@ -115,6 +115,13 @@ public class UserService {
         userRepository.delete(user);
     }
 
+    @Transactional
+    public void syncAcademicianRecords() {
+        userRepository.findAll().stream()
+                .filter(user -> user.getRoles() != null && user.getRoles().contains(Role.ACADEMICIAN))
+                .forEach(user -> syncAcademicianRecord(user, null, null));
+    }
+
     private void syncAcademicianRecord(User user, UUID facultyId, UUID departmentId) {
         Set<Role> roles = user.getRoles();
         boolean isAcademician = roles != null && roles.contains(Role.ACADEMICIAN);

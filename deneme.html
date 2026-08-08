@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full bg-[#F8FAFC]">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STS - Sınıf Takip Sistemi | Ana Ekran</title>
+  
+  <!-- Fonts: Hanken Grotesk & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#006482',
+            accent: '#FAB900',
+            bgmain: '#F8FAFC',
+            surface: '#FFFFFF'
+          },
+          fontFamily: {
+            sans: ['"Hanken Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          boxShadow: {
+            'card': '0px 4px 20px rgba(0, 100, 130, 0.08)',
+            'card-hover': '0px 8px 30px rgba(0, 100, 130, 0.15)',
+            'topbar': '0px 2px 12px rgba(0, 100, 130, 0.05)',
+            'action': '0px 4px 16px rgba(0, 100, 130, 0.25)',
+            'action-hover': '0px 8px 25px rgba(0, 100, 130, 0.35)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Hanken Grotesk', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+  </style>
+</head>
+<body class="h-full flex overflow-hidden selection:bg-[#006482] selection:text-white">
+
+  <!-- SOL MENÜ (SIDEBAR) -->
+  <aside class="w-64 bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 select-none shadow-[2px_0_12px_rgba(0,100,130,0.03)] z-20 hidden md:flex">
+    <div>
+      <!-- Logo -->
+      <div class="h-20 flex items-center px-6 border-b border-slate-100">
+        <div class="flex items-center space-x-3.5">
+          <div class="w-10 h-10 rounded-xl bg-[#006482] flex items-center justify-center text-white font-black text-lg shadow-[0_4px_12px_rgba(0,100,130,0.25)] relative">
+            STS
+            <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#FAB900] border-2 border-white"></span>
+          </div>
+          <div>
+            <span class="font-black text-slate-900 block leading-tight text-base tracking-tight">STS</span>
+            <span class="text-[10px] text-slate-500 font-bold tracking-wider block uppercase">SINIF TAKİP SİSTEMİ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menü Listesi -->
+      <nav class="py-6 px-3 space-y-1.5">
+        <!-- Aktif Menü Öğesi -->
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-bold rounded-xl bg-[#006482] text-white shadow-[0_4px_16px_rgba(0,100,130,0.2)] border-l-4 border-[#FAB900] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">dashboard</span>
+          <span>Ana Ekran</span>
+        </a>
+        
+        <!-- Pasif Menü Öğeleri -->
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100/70 hover:text-[#006482] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">school</span>
+          <span>Fakülte Yönetimi</span>
+        </a>
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100/70 hover:text-[#006482] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">domain</span>
+          <span>Bina Yönetimi</span>
+        </a>
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100/70 hover:text-[#006482] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">meeting_room</span>
+          <span>Derslik Yönetimi</span>
+        </a>
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100/70 hover:text-[#006482] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">calendar_month</span>
+          <span>Ders Programı</span>
+        </a>
+        <a href="#" class="flex items-center px-4 py-3 text-sm font-semibold rounded-xl text-slate-600 hover:bg-slate-100/70 hover:text-[#006482] group transition-all">
+          <span class="material-symbols-outlined mr-3 text-xl group-hover:scale-110 transition-transform">group</span>
+          <span>Kullanıcı Yönetimi</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Alt Kurum Bilgisi -->
+    <div class="p-4 border-t border-slate-100 bg-[#F8FAFC]">
+      <div class="flex items-center justify-between text-xs">
+        <div class="truncate max-w-[130px]">
+          <span class="font-bold text-slate-800 block truncate">İnönü Üniversitesi</span>
+          <span class="text-[10px] text-slate-500 block truncate">Rektörlük Yerleşkesi</span>
+        </div>
+        <span class="px-2.5 py-1 rounded-full text-[10px] bg-[#006482]/10 text-[#006482] font-bold uppercase">v2.4</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- SAĞ İÇERİK GOVDESI -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+    <!-- ÜST MENÜ (TOPBAR) -->
+    <header class="h-20 bg-white border-b border-slate-200/60 px-6 md:px-8 flex items-center justify-between shrink-0 shadow-topbar z-10">
+      <!-- Arama Çubuğu -->
+      <div class="flex items-center w-72 sm:w-96">
+        <div class="relative w-full">
+          <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+          <input
+            type="text"
+            placeholder="Sistemde ara (Fakülte, Derslik, Akademisyen)..."
+            class="w-full pl-11 pr-4 py-2.5 text-sm bg-[#F8FAFC] border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#006482] focus:bg-white text-slate-800 placeholder-slate-400 transition-all font-medium"
+          />
+        </div>
+      </div>
+
+      <!-- Sağ Eylemler -->
+      <div class="flex items-center space-x-5">
+        <!-- Bildirim Zili (#FAB900 Nokta) -->
+        <button class="relative p-2.5 text-slate-500 hover:text-[#006482] hover:bg-slate-100/80 rounded-xl transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-2xl">notifications</span>
+          <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-[#FAB900] rounded-full ring-2 ring-white animate-pulse"></span>
+        </button>
+
+        <!-- Kullanıcı Profili -->
+        <div class="flex items-center space-x-3 border-l border-slate-200/80 pl-5">
+          <div class="w-10 h-10 rounded-full bg-[#006482] text-white flex items-center justify-center font-bold text-sm cursor-pointer hover:ring-2 hover:ring-[#FAB900] transition-all shadow-sm">
+            HD
+          </div>
+          <div class="hidden sm:block cursor-pointer">
+            <p class="text-sm font-bold text-slate-900 leading-none">Dr. Öğr. Üyesi Hakan Demir</p>
+            <p class="text-xs font-semibold text-[#006482] mt-1">Bilgisayar Mühendisliği</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ANA İÇERİK (DASHBOARD) -->
+    <main class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8">
+
+      <!-- HOŞ GELDİNİZ BANNER -->
+      <section class="relative overflow-hidden bg-[#006482] rounded-2xl p-8 text-white shadow-[0px_6px_24px_rgba(0,100,130,0.2)] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div class="relative z-10 max-w-2xl">
+          <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3.5 py-1 rounded-full text-xs font-semibold text-[#FAB900] mb-3 border border-white/10">
+            <span class="material-symbols-outlined text-sm">verified</span>
+            <span>İnönü Üniversitesi - Sınıf Takip Sistemi</span>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight">
+            Hoş Geldiniz, Dr. Öğr. Üyesi Hakan Demir 👋
+          </h1>
+          <p class="text-cyan-50 text-sm mt-2 leading-relaxed">
+            Kampüs genelindeki fakülte, bina ve dersliklerin anlık doluluk durumlarını takip edebilir, haftalık ders programını inceleyebilir ve hızlı sınıf rezervasyonları yapabilirsiniz.
+          </p>
+        </div>
+
+        <div class="relative z-10 flex flex-wrap gap-3 shrink-0">
+          <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-center">
+            <span class="text-xs text-cyan-100 block font-medium">Aktif Derslik</span>
+            <span class="text-xl font-bold text-[#FAB900]">142 / 160</span>
+          </div>
+          <div class="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/20 text-center">
+            <span class="text-xs text-cyan-100 block font-medium">Anlık Doluluk</span>
+            <span class="text-xl font-bold text-emerald-300">%78</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 İSTATİSTİK KARTI -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Toplam Fakülte -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300 transform hover:-translate-y-1 group">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Toplam Fakülte</span>
+              <span class="text-3xl font-extrabold text-slate-900 mt-2 block">12</span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-[#006482]/10 text-[#006482] flex items-center justify-center group-hover:bg-[#006482] group-hover:text-white transition-colors duration-300">
+              <span class="material-symbols-outlined text-3xl">school</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-emerald-600 font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">trending_up</span> Kampüs Geneli
+            </span>
+            <span class="text-slate-400 font-medium">Aktif Birimler</span>
+          </div>
+        </div>
+
+        <!-- Toplam Bina -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300 transform hover:-translate-y-1 group">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Toplam Bina</span>
+              <span class="text-3xl font-extrabold text-slate-900 mt-2 block">28</span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-[#006482]/10 text-[#006482] flex items-center justify-center group-hover:bg-[#006482] group-hover:text-white transition-colors duration-300">
+              <span class="material-symbols-outlined text-3xl">domain</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-[#006482] font-bold">5 Blok Yeni</span>
+            <span class="text-slate-400 font-medium">Yerleşkeler</span>
+          </div>
+        </div>
+
+        <!-- Aktif Derslik -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300 transform hover:-translate-y-1 group">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Aktif Derslik</span>
+              <span class="text-3xl font-extrabold text-slate-900 mt-2 block">142</span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-[#006482]/10 text-[#006482] flex items-center justify-center group-hover:bg-[#006482] group-hover:text-white transition-colors duration-300">
+              <span class="material-symbols-outlined text-3xl">meeting_room</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-emerald-600 font-bold">18 Boş Sınıf</span>
+            <span class="text-slate-400 font-medium">%88 Kapasite</span>
+          </div>
+        </div>
+
+        <!-- Günlük Rezervasyon -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-card hover:shadow-card-hover transition-all duration-300 transform hover:-translate-y-1 group">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Günlük Rezervasyon</span>
+              <span class="text-3xl font-extrabold text-slate-900 mt-2 block">38</span>
+            </div>
+            <div class="w-14 h-14 rounded-2xl bg-[#006482]/10 text-[#006482] flex items-center justify-center group-hover:bg-[#006482] group-hover:text-white transition-colors duration-300">
+              <span class="material-symbols-outlined text-3xl">calendar_today</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-amber-700 font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">schedule</span> +12 Bugün
+            </span>
+            <span class="text-slate-400 font-medium">Tam Onaylı</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- İKİ SÜTUNLU İÇERİK -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- SOL SÜTUN: BUGÜNÜN DERS PROGRAMI (ZAMAN ÇİZELGESİ) -->
+        <div class="lg:col-span-7 bg-white p-7 rounded-2xl border border-slate-100 shadow-card">
+          <div class="flex items-center justify-between pb-5 border-b border-slate-100">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-[#006482]/10 text-[#006482] flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-xl">view_timeline</span>
+              </div>
+              <div>
+                <h2 class="text-lg font-extrabold text-slate-900">Bugünün Ders Programı</h2>
+                <p class="text-xs text-slate-500 font-medium">8 Ağustos 2026 • Canlı Zaman Çizelgesi</p>
+              </div>
+            </div>
+            <span class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full">4 Ders</span>
+          </div>
+
+          <div class="mt-6 space-y-4">
+            <!-- Ders 1 -->
+            <div class="p-4 rounded-xl border border-slate-100 hover:border-[#006482]/30 hover:shadow-md transition-all bg-slate-50/50 hover:bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-start space-x-3.5">
+                <div class="px-3 py-1.5 bg-[#006482] text-white rounded-lg text-xs font-mono font-bold shrink-0 mt-0.5 shadow-sm">
+                  08:30 - 10:15
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-[#006482] font-mono">BM-301</span>
+                    <span class="text-xs font-bold text-slate-800">• Algoritmalar ve Veri Yapıları</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">location_on</span>
+                    Mühendislik Fakültesi - Amfi 1
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Prof. Dr. Ahmet Yılmaz</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 text-xs rounded-full bg-slate-100 text-slate-700 font-medium shrink-0">Tamamlandı</span>
+            </div>
+
+            <!-- Ders 2 (Aktif) -->
+            <div class="p-4 rounded-xl border-2 border-[#006482]/30 shadow-sm transition-all bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-start space-x-3.5">
+                <div class="px-3 py-1.5 bg-[#006482] text-white rounded-lg text-xs font-mono font-bold shrink-0 mt-0.5 shadow-sm">
+                  10:30 - 12:15
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-[#006482] font-mono">BM-405</span>
+                    <span class="text-xs font-bold text-slate-800">• Yazılım Mimarisi ve Tasarımı</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">location_on</span>
+                    A Blok - Derslik 204
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Dr. Öğr. Üyesi Hakan Demir</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 text-xs rounded-full bg-emerald-100 text-emerald-800 font-bold shrink-0">Devam Ediyor</span>
+            </div>
+
+            <!-- Ders 3 -->
+            <div class="p-4 rounded-xl border border-slate-100 hover:border-[#006482]/30 hover:shadow-md transition-all bg-slate-50/50 hover:bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-start space-x-3.5">
+                <div class="px-3 py-1.5 bg-[#006482] text-white rounded-lg text-xs font-mono font-bold shrink-0 mt-0.5 shadow-sm">
+                  13:30 - 15:15
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-[#006482] font-mono">TIP-102</span>
+                    <span class="text-xs font-bold text-slate-800">• Anatomi ve Fizyoloji I</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">location_on</span>
+                    Morfoloji Binası - Amfi 3
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Prof. Dr. Melis Kaya</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 text-xs rounded-full bg-[#FAB900]/20 text-amber-900 font-bold shrink-0">Sıradaki</span>
+            </div>
+
+            <!-- Ders 4 -->
+            <div class="p-4 rounded-xl border border-slate-100 hover:border-[#006482]/30 hover:shadow-md transition-all bg-slate-50/50 hover:bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-start space-x-3.5">
+                <div class="px-3 py-1.5 bg-[#006482] text-white rounded-lg text-xs font-mono font-bold shrink-0 mt-0.5 shadow-sm">
+                  15:30 - 17:15
+                </div>
+                <div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold text-[#006482] font-mono">FEN-201</span>
+                    <span class="text-xs font-bold text-slate-800">• Genel Biyoloji Laboratuvarı</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-xs">location_on</span>
+                    FEB-1 - Lab 102
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Dr. Öğr. Üyesi Elif Çelik</p>
+                </div>
+              </div>
+              <span class="px-3 py-1 text-xs rounded-full bg-slate-100 text-slate-600 font-medium shrink-0">Planlandı</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SAĞ SÜTUN: HIZLI İŞLEMLER VE YAKLAŞAN REZERVASYONLAR -->
+        <div class="lg:col-span-5 space-y-8">
+          
+          <!-- Hızlı İşlemler -->
+          <div class="bg-white p-7 rounded-2xl border border-slate-100 shadow-card">
+            <h2 class="text-lg font-extrabold text-slate-900 mb-5 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#006482]">bolt</span>
+              Hızlı İşlemler
+            </h2>
+
+            <div class="space-y-3">
+              <!-- Ana Eylem Butonu (#006482 Arka Plan, Hover Lift & Gölge) -->
+              <button class="w-full bg-[#006482] text-white py-3.5 px-5 rounded-xl font-bold text-sm shadow-action hover:shadow-action-hover transform hover:-translate-y-0.5 transition-all flex items-center justify-between group cursor-pointer">
+                <span class="flex items-center gap-2.5">
+                  <span class="w-7 h-7 rounded-lg bg-[#FAB900] text-slate-900 flex items-center justify-center font-bold text-base">+</span>
+                  <span>Yeni Rezervasyon Ekle</span>
+                </span>
+                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </button>
+
+              <button class="w-full bg-slate-50 hover:bg-[#006482]/5 text-slate-700 hover:text-[#006482] py-3 px-4 rounded-xl font-semibold text-xs border border-slate-200/80 transition-all flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm">filter_alt</span>
+                  Anlık Boş Sınıfları Gör
+                </span>
+                <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">18 Boş</span>
+              </button>
+
+              <button class="w-full bg-slate-50 hover:bg-[#006482]/5 text-slate-700 hover:text-[#006482] py-3 px-4 rounded-xl font-semibold text-xs border border-slate-200/80 transition-all flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm">floor</span>
+                  Kat Planı ve Yerleşim İncele
+                </span>
+                <span class="material-symbols-outlined text-xs">chevron_right</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Yaklaşan Rezervasyonlar -->
+          <div class="bg-white p-7 rounded-2xl border border-slate-100 shadow-card">
+            <h2 class="text-lg font-extrabold text-slate-900 mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#006482]">event_upcoming</span>
+              Yaklaşan Rezervasyonlar
+            </h2>
+
+            <div class="divide-y divide-slate-100">
+              <div class="py-3.5 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-slate-800">AİİT Ortak Sınavı</p>
+                  <p class="text-[11px] text-[#006482] font-semibold mt-0.5">Mühendislik Amfi-2</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Doç. Dr. Ahmet Y.</p>
+                </div>
+                <span class="px-2.5 py-1 text-[11px] font-mono bg-slate-100 text-slate-700 font-semibold rounded-lg shrink-0">Yarın 09:00</span>
+              </div>
+
+              <div class="py-3.5 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-slate-800">Pratik Laboratuvar Sınavı</p>
+                  <p class="text-[11px] text-[#006482] font-semibold mt-0.5">Morfoloji Lab-1</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Prof. Dr. Melis K.</p>
+                </div>
+                <span class="px-2.5 py-1 text-[11px] font-mono bg-slate-100 text-slate-700 font-semibold rounded-lg shrink-0">Yarın 14:00</span>
+              </div>
+
+              <div class="py-3.5 flex items-center justify-between">
+                <div>
+                  <p class="text-xs font-bold text-slate-800">Bölüm Semineri</p>
+                  <p class="text-[11px] text-[#006482] font-semibold mt-0.5">FEB-1 Derslik 101</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Dr. Öğr. Üyesi Elif Ç.</p>
+                </div>
+                <span class="px-2.5 py-1 text-[11px] font-mono bg-slate-100 text-slate-700 font-semibold rounded-lg shrink-0">10 Ağst 10:30</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+</body>
+</html>
