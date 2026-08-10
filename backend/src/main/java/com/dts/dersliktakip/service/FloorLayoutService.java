@@ -98,6 +98,10 @@ public class FloorLayoutService {
 
     @Transactional
     public FloorDetailResponse saveLayout(UUID floorId, SaveFloorLayoutRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Kat planı isteği boş olamaz.");
+        }
+
         Floor floor = floorRepository.findById(floorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
 
@@ -110,6 +114,7 @@ public class FloorLayoutService {
                 });
 
         validateBackground(request);
+        validateCanvasState(request);
 
         layout.setBackgroundImageBase64(normalize(request.getBackgroundImageBase64()));
         layout.setBackgroundImageType(normalize(request.getBackgroundImageType()));
@@ -129,10 +134,14 @@ public class FloorLayoutService {
         spaceObjectRepository.flush();
 
         if (request.getObjects() != null && !request.getObjects().isEmpty()) {
+            Set<UUID> spaceObjectIds = new HashSet<>();
             Set<UUID> linkedClassroomIds = new HashSet<>();
             List<SpaceObject> objects = request.getObjects().stream()
                     .map(req -> {
                         validateSpaceObject(req);
+                        if (!spaceObjectIds.add(req.getId())) {
+                            throw new IllegalArgumentException("Aynı nesne ID'si kat planına birden fazla kez gönderilemez.");
+                        }
                         SpaceObject obj = spaceObjectMapper.toEntity(req);
                         obj.setFloor(floor);
                         Classroom classroom = resolveClassroom(floor, req);
@@ -159,12 +168,38 @@ public class FloorLayoutService {
     }
 
     private void validateSpaceObject(SpaceObjectRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Kat planı nesnesi boş olamaz.");
+        }
+        if (request.getId() == null) {
+            throw new IllegalArgumentException("Nesne ID zorunludur.");
+        }
+        if (request.getType() == null) {
+            throw new IllegalArgumentException("Nesne türü zorunludur.");
+        }
         validateRequiredFinite(request.getPositionX(), "Nesne X konumu");
         validateRequiredFinite(request.getPositionY(), "Nesne Y konumu");
         validateOptionalPositiveDimension(request.getWidth(), "Nesne genişliği");
         validateOptionalPositiveDimension(request.getHeight(), "Nesne yüksekliği");
         if (request.getRotation() != null && !Double.isFinite(request.getRotation())) {
             throw new IllegalArgumentException("Nesne dönüş değeri geçerli olmalıdır.");
+        }
+        if (!isClassroomPlacementType(request.getType()) && request.getClassroomId() != null) {
+            throw new IllegalArgumentException("Bu nesne türü derslik kaydına bağlanamaz.");
+        }
+        if (request.getCapacity() != null && request.getCapacity() < 0) {
+            throw new IllegalArgumentException("Kapasite negatif olamaz.");
+        }
+    }
+
+    private void validateCanvasState(SaveFloorLayoutRequest request) {
+        validateOptionalFinite(request.getBackgroundX(), "Kroki X konumu");
+        validateOptionalFinite(request.getBackgroundY(), "Kroki Y konumu");
+        validateOptionalFinite(request.getViewportX(), "Görünüm X konumu");
+        validateOptionalFinite(request.getViewportY(), "Görünüm Y konumu");
+        if (request.getViewportZoom() != null
+                && (!Double.isFinite(request.getViewportZoom()) || request.getViewportZoom() <= 0)) {
+            throw new IllegalArgumentException("Görünüm yakınlaştırma değeri pozitif olmalıdır.");
         }
     }
 
@@ -238,6 +273,12 @@ public class FloorLayoutService {
 
     private void validateRequiredFinite(Double value, String fieldName) {
         if (value == null || !Double.isFinite(value)) {
+            throw new IllegalArgumentException(fieldName + " geçerli bir değer olmalıdır.");
+        }
+    }
+
+    private void validateOptionalFinite(Double value, String fieldName) {
+        if (value != null && !Double.isFinite(value)) {
             throw new IllegalArgumentException(fieldName + " geçerli bir değer olmalıdır.");
         }
     }

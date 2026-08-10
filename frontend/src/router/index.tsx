@@ -75,6 +75,9 @@ export const router = createBrowserRouter([
             element: <DashboardPage />,
           },
           {
+            element: <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />,
+            children: [
+          {
             path: '/super-admin/fakulteler',
             element: <FacultyPage />,
           },
@@ -102,6 +105,8 @@ export const router = createBrowserRouter([
             path: '/super-admin/dersler',
             element: <CoursesPage />,
           },
+            ],
+          },
           {
             path: '/department-admin/dersler',
             element: <CoursesPage />,
@@ -114,8 +119,13 @@ export const router = createBrowserRouter([
       },
       // Full-screen editor routes (no DashboardLayout sidebar/header)
       {
-        path: '/super-admin/katlar/:id',
-        element: <FloorEditorPage />,
+        element: <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />,
+        children: [
+          {
+            path: '/super-admin/katlar/:id',
+            element: <FloorEditorPage />,
+          },
+        ],
       },
     ],
   },
