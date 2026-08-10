@@ -2,6 +2,7 @@ package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
 import com.dts.dersliktakip.dto.SpaceObjectRequest;
+import com.dts.dersliktakip.dto.FloorDetailResponse;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.ClassroomType;
@@ -184,6 +185,95 @@ class FloorLayoutServiceTest {
                     assertThat(spaceObject.getClassroom()).isNull();
                     assertThat(spaceObject.getWidth()).isEqualTo(100.0);
                     assertThat(spaceObject.getHeight()).isEqualTo(80.0);
+                });
+    }
+
+    @Test
+    void saveLayoutPreservesMetadataOnReload() {
+        SpaceObjectRequest requestObject = spaceObject(SpaceObjectType.CLASSROOM, classroomA.getId(), 180.0, 120.0);
+        requestObject.setMetadataJson("{\"equipment\":{\"hasAirConditioning\":true,\"hasProjector\":true},\"isLocked\":true}");
+
+        floorLayoutService.saveLayout(floorA.getId(), layoutRequest(List.of(requestObject)));
+
+        FloorDetailResponse detail = floorLayoutService.getFloorDetail(floorA.getId());
+
+        assertThat(detail.getObjects())
+                .hasSize(1)
+                .first()
+                .satisfies(spaceObject -> {
+                    assertThat(spaceObject.getClassroomId()).isEqualTo(classroomA.getId());
+                    assertThat(spaceObject.getMetadataJson()).contains("\"hasAirConditioning\":true");
+                    assertThat(spaceObject.getMetadataJson()).contains("\"isLocked\":true");
+                });
+    }
+
+    @Test
+    void saveLayoutKeepsFloorLayoutsSeparated() {
+        SpaceObjectRequest floorAObject = spaceObject(SpaceObjectType.CLASSROOM, classroomA.getId(), 160.0, 100.0);
+        floorAObject.setPositionX(360.0);
+        floorAObject.setPositionY(260.0);
+
+        SpaceObjectRequest floorBObject = spaceObject(SpaceObjectType.LABORATORY, laboratoryB.getId(), 180.0, 120.0);
+        floorBObject.setPositionX(40.0);
+        floorBObject.setPositionY(60.0);
+
+        floorLayoutService.saveLayout(floorA.getId(), layoutRequest(List.of(floorAObject)));
+        floorLayoutService.saveLayout(floorB.getId(), layoutRequest(List.of(floorBObject)));
+
+        FloorDetailResponse floorADetail = floorLayoutService.getFloorDetail(floorA.getId());
+        FloorDetailResponse floorBDetail = floorLayoutService.getFloorDetail(floorB.getId());
+
+        assertThat(floorADetail.getObjects())
+                .hasSize(1)
+                .first()
+                .satisfies(spaceObject -> {
+                    assertThat(spaceObject.getClassroomId()).isEqualTo(classroomA.getId());
+                    assertThat(spaceObject.getPositionX()).isEqualTo(360.0);
+                    assertThat(spaceObject.getPositionY()).isEqualTo(260.0);
+                });
+        assertThat(floorBDetail.getObjects())
+                .hasSize(1)
+                .first()
+                .satisfies(spaceObject -> {
+                    assertThat(spaceObject.getClassroomId()).isEqualTo(laboratoryB.getId());
+                    assertThat(spaceObject.getPositionX()).isEqualTo(40.0);
+                    assertThat(spaceObject.getPositionY()).isEqualTo(60.0);
+                });
+    }
+
+    @Test
+    void saveLayoutRollsBackWhenReplacementPayloadIsInvalid() {
+        SpaceObjectRequest validObject = spaceObject(SpaceObjectType.CLASSROOM, classroomA.getId(), 160.0, 100.0);
+        validObject.setPositionX(320.0);
+        validObject.setPositionY(220.0);
+        SaveFloorLayoutRequest initialRequest = layoutRequest(List.of(validObject));
+        initialRequest.setBackgroundX(12.0);
+        initialRequest.setBackgroundY(24.0);
+
+        floorLayoutService.saveLayout(floorA.getId(), initialRequest);
+
+        SaveFloorLayoutRequest invalidRequest = layoutRequest(List.of(spaceObject(
+                SpaceObjectType.MALE_WC,
+                classroomA.getId(),
+                100.0,
+                80.0
+        )));
+        invalidRequest.setBackgroundX(999.0);
+
+        assertThatThrownBy(() -> floorLayoutService.saveLayout(floorA.getId(), invalidRequest))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        FloorDetailResponse detail = floorLayoutService.getFloorDetail(floorA.getId());
+
+        assertThat(detail.getBackgroundX()).isEqualTo(12.0);
+        assertThat(detail.getBackgroundY()).isEqualTo(24.0);
+        assertThat(detail.getObjects())
+                .hasSize(1)
+                .first()
+                .satisfies(spaceObject -> {
+                    assertThat(spaceObject.getClassroomId()).isEqualTo(classroomA.getId());
+                    assertThat(spaceObject.getPositionX()).isEqualTo(320.0);
+                    assertThat(spaceObject.getPositionY()).isEqualTo(220.0);
                 });
     }
 
