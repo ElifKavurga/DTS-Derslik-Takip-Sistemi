@@ -59,6 +59,7 @@ public class FloorLayoutService {
                 .id(floor.getId())
                 .name(floor.getName())
                 .level(floor.getLevel())
+                .planMode(floor.getPlanMode())
                 .buildingId(floor.getBuilding().getId())
                 .buildingName(floor.getBuilding().getName())
                 .facultyId(floor.getBuilding().getFaculty().getId())
@@ -183,6 +184,9 @@ public class FloorLayoutService {
         validateOptionalPositiveDimension(request.getHeight(), "Nesne yüksekliği");
         if (request.getRotation() != null && !Double.isFinite(request.getRotation())) {
             throw new IllegalArgumentException("Nesne dönüş değeri geçerli olmalıdır.");
+        }
+        if ((request.getSlotRow() == null) != (request.getSlotColumn() == null)) {
+            throw new IllegalArgumentException("Slot satır ve sütun bilgisi birlikte gönderilmelidir.");
         }
         if (!isClassroomPlacementType(request.getType()) && request.getClassroomId() != null) {
             throw new IllegalArgumentException("Bu nesne türü derslik kaydına bağlanamaz.");

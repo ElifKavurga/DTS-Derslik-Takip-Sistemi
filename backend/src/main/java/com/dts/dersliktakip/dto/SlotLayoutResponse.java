@@ -4,21 +4,21 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.dts.dersliktakip.entity.PlanMode;
+
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FloorResponse {
+public class SlotLayoutResponse {
     private UUID id;
-    private String name;
-    private Integer level;
-    private PlanMode planMode;
-    private UUID buildingId;
+    private UUID floorId;
+    private Integer rows;
+    private Integer columns;
     private Instant createdAt;
     private Instant updatedAt;
-    private long totalClassrooms;
+    private List<SpaceObjectResponse> objects;
 }

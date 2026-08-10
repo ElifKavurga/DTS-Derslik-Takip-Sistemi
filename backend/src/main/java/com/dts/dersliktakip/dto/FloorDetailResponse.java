@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.dts.dersliktakip.entity.PlanMode;
 
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +17,7 @@ public class FloorDetailResponse {
     private UUID id;
     private String name;
     private Integer level;
+    private PlanMode planMode;
     private UUID buildingId;
     private String buildingName;
     private UUID facultyId;

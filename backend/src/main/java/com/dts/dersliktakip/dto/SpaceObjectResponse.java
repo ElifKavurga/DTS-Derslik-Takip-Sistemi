@@ -26,5 +26,7 @@ public class SpaceObjectResponse {
     private Double width;
     private Double height;
     private Double rotation;
+    private Integer slotRow;
+    private Integer slotColumn;
     private String metadataJson;
 }

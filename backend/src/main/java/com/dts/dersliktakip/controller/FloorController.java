@@ -7,8 +7,11 @@ import com.dts.dersliktakip.dto.ClassroomPlacementResponse;
 import com.dts.dersliktakip.dto.CreateFloorRequest;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
 import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
+import com.dts.dersliktakip.dto.SaveSlotLayoutRequest;
+import com.dts.dersliktakip.dto.SlotLayoutResponse;
 import com.dts.dersliktakip.service.FloorLayoutService;
 import com.dts.dersliktakip.service.FloorService;
+import com.dts.dersliktakip.service.SlotLayoutService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +30,7 @@ public class FloorController {
 
     private final FloorService floorService;
     private final FloorLayoutService floorLayoutService;
+    private final SlotLayoutService slotLayoutService;
 
     @GetMapping("/floors/{floorId}")
     public ResponseEntity<FloorDetailResponse> getFloorDetail(@PathVariable UUID floorId) {
@@ -44,6 +48,19 @@ public class FloorController {
             @Valid @RequestBody SaveFloorLayoutRequest request
     ) {
         return ResponseEntity.ok(floorLayoutService.saveLayout(floorId, request));
+    }
+
+    @GetMapping("/floors/{floorId}/slot-layout")
+    public ResponseEntity<SlotLayoutResponse> getSlotLayout(@PathVariable UUID floorId) {
+        return ResponseEntity.ok(slotLayoutService.getSlotLayout(floorId));
+    }
+
+    @PostMapping("/floors/{floorId}/slot-layout")
+    public ResponseEntity<SlotLayoutResponse> saveSlotLayout(
+            @PathVariable UUID floorId,
+            @Valid @RequestBody SaveSlotLayoutRequest request
+    ) {
+        return ResponseEntity.ok(slotLayoutService.saveSlotLayout(floorId, request));
     }
 
     @GetMapping("/buildings/{buildingId}/floors")

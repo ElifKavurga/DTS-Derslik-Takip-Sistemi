@@ -55,6 +55,12 @@ public class SpaceObject {
     @Column(nullable = false)
     private Double rotation = 0.0;
 
+    @Column(name = "slot_row")
+    private Integer slotRow;
+
+    @Column(name = "slot_column")
+    private Integer slotColumn;
+
     @Column(columnDefinition = "TEXT", name = "metadata_json")
     private String metadataJson;
 

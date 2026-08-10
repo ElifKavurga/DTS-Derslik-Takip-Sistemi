@@ -16,12 +16,14 @@ public interface FloorMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "building", ignore = true)
+    @Mapping(target = "planMode", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Floor toEntity(CreateFloorRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "building", ignore = true)
+    @Mapping(target = "planMode", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(UpdateFloorRequest request, @MappingTarget Floor floor);

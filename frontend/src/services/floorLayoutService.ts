@@ -1,5 +1,11 @@
 import { apiClient } from '@/services/axios';
-import { ClassroomPlacement, FloorDetailResponse, SaveFloorLayoutRequest } from '@/types';
+import {
+  ClassroomPlacement,
+  FloorDetailResponse,
+  SaveFloorLayoutRequest,
+  SaveSlotLayoutRequest,
+  SlotLayoutResponse,
+} from '@/types';
 
 export const floorLayoutService = {
   getFloorDetail: async (floorId: string): Promise<FloorDetailResponse> => {
@@ -14,6 +20,16 @@ export const floorLayoutService = {
 
   getClassroomsForPlacement: async (floorId: string): Promise<ClassroomPlacement[]> => {
     const response = await apiClient.get<ClassroomPlacement[]>(`/floors/${floorId}/classrooms`);
+    return response.data;
+  },
+
+  getSlotLayout: async (floorId: string): Promise<SlotLayoutResponse> => {
+    const response = await apiClient.get<SlotLayoutResponse>(`/floors/${floorId}/slot-layout`);
+    return response.data;
+  },
+
+  saveSlotLayout: async (floorId: string, payload: SaveSlotLayoutRequest): Promise<SlotLayoutResponse> => {
+    const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout`, payload);
     return response.data;
   },
 };

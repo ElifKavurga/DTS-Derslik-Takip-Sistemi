@@ -237,6 +237,8 @@ const EditorInner = () => {
           type: obj.type, status: obj.status,
           label: obj.label, code: obj.code, capacity: obj.capacity,
           rotation: obj.rotation,
+          slotRow: obj.slotRow,
+          slotColumn: obj.slotColumn,
         },
       };
     });
@@ -328,6 +330,8 @@ const EditorInner = () => {
           width:     getNodeDimension(n, 'width', 160),
           height:    getNodeDimension(n, 'height', 100),
           rotation:  (d['rotation'] as number | undefined) ?? 0,
+          slotRow:   d['slotRow'] as number | undefined,
+          slotColumn: d['slotColumn'] as number | undefined,
           metadataJson: buildSpaceMetadata(d),
         };
       });

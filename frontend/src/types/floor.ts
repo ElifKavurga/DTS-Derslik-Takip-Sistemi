@@ -1,7 +1,10 @@
+import type { PlanMode } from './floorLayout';
+
 export interface FloorResponse {
   id: string;
   name: string;
   level: number;
+  planMode: PlanMode;
   buildingId: string;
   createdAt: string;
   updatedAt: string;

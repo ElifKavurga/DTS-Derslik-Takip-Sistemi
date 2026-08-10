@@ -25,6 +25,7 @@ export type SpaceObjectType =
 
 export type SpaceObjectStatus = 'EMPTY' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE';
 export type ClassroomPlacementType = 'CLASSROOM' | 'LABORATORY' | 'AMPHITHEATER';
+export type PlanMode = 'FLOOR_PLAN' | 'SLOT_LAYOUT';
 
 export interface ClassroomPlacement {
   id: string;
@@ -110,6 +111,8 @@ export interface SpaceObjectResponse {
   width: number;
   height: number;
   rotation: number;
+  slotRow?: number;
+  slotColumn?: number;
   metadataJson?: string;
 }
 
@@ -117,6 +120,7 @@ export interface FloorDetailResponse {
   id: string;
   name: string;
   level: number;
+  planMode: PlanMode;
   buildingId: string;
   buildingName: string;
   facultyId: string;
@@ -148,6 +152,8 @@ export interface SpaceObjectRequest {
   width: number;
   height: number;
   rotation: number;
+  slotRow?: number;
+  slotColumn?: number;
   metadataJson?: string;
 }
 
@@ -164,6 +170,22 @@ export interface SaveFloorLayoutRequest {
   viewportY: number;
   viewportZoom: number;
   objects: SpaceObjectRequest[];
+}
+
+export interface SlotLayoutResponse {
+  id: string;
+  floorId: string;
+  rows: number;
+  columns: number;
+  createdAt: string;
+  updatedAt: string;
+  objects: SpaceObjectResponse[];
+}
+
+export interface SaveSlotLayoutRequest {
+  rows?: number;
+  columns?: number;
+  objects?: SpaceObjectRequest[];
 }
 
 // ─── Palette item (left panel metadata) ──────────────────────────────────────

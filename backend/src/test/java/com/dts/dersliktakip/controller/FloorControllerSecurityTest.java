@@ -47,4 +47,11 @@ class FloorControllerSecurityTest {
         mockMvc.perform(get("/api/floors/{floorId}/classrooms", UUID.randomUUID()))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    @WithMockUser(roles = "DEPARTMENT_ADMIN")
+    void slotLayoutRejectsNonSuperAdminRole() throws Exception {
+        mockMvc.perform(get("/api/floors/{floorId}/slot-layout", UUID.randomUUID()))
+                .andExpect(status().isForbidden());
+    }
 }
