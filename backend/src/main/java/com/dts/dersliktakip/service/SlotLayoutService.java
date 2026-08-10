@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.service;
 
+import com.dts.dersliktakip.dto.CreateSlotClassroomRequest;
 import com.dts.dersliktakip.dto.SaveSlotLayoutRequest;
 import com.dts.dersliktakip.dto.SlotLayoutResponse;
 import com.dts.dersliktakip.dto.SpaceObjectRequest;
@@ -78,6 +79,88 @@ public class SlotLayoutService {
         if (request.getObjects() != null && !request.getObjects().isEmpty()) {
             saveSlotObjects(floor, rows, columns, request.getObjects());
         }
+
+        return toResponse(savedLayout, getObjects(floorId));
+    }
+
+    @Transactional
+    public SlotLayoutResponse createClassroomAndPlace(UUID floorId, CreateSlotClassroomRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Sınıf oluşturma isteği boş olamaz.");
+        }
+
+        Floor floor = floorRepository.findById(floorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
+
+        String code = normalize(request.getCode());
+        String name = normalize(request.getName());
+        if (code == null) {
+            throw new IllegalArgumentException("Sınıf kodu zorunludur.");
+        }
+        if (name == null) {
+            throw new IllegalArgumentException("Sınıf adı zorunludur.");
+        }
+        if (request.getCapacity() == null || request.getCapacity() <= 0) {
+            throw new IllegalArgumentException("Kapasite 1 veya daha büyük olmalıdır.");
+        }
+        if (classroomRepository.findByFloorIdAndCodeIgnoreCase(floorId, code).isPresent()) {
+            throw new IllegalArgumentException("Bu katta aynı koda sahip bir sınıf zaten mevcut.");
+        }
+
+        SlotLayout slotLayout = slotLayoutRepository.findByFloorId(floorId)
+                .orElseGet(() -> {
+                    SlotLayout created = new SlotLayout();
+                    created.setFloor(floor);
+                    return created;
+                });
+        slotLayout.setColumns(Math.max(slotLayout.getColumns(), 3));
+        slotLayout.setRows(Math.max(slotLayout.getRows(), 1));
+        floor.setPlanMode(PlanMode.SLOT_LAYOUT);
+        SlotLayout savedLayout = slotLayoutRepository.save(slotLayout);
+
+        Classroom classroom = new Classroom();
+        classroom.setFloor(floor);
+        classroom.setCode(code);
+        classroom.setName(name);
+        classroom.setCapacity(request.getCapacity());
+        classroom.setType(ClassroomType.CLASSROOM);
+        classroom.setEquipment(normalize(request.getEquipment()));
+        classroom = classroomRepository.save(classroom);
+
+        Set<String> occupiedSlots = new HashSet<>();
+        for (SpaceObject object : spaceObjectRepository.findAllByFloorId(floorId)) {
+            if (object.getClassroom() != null
+                    && object.getType() == SpaceObjectType.CLASSROOM
+                    && hasSlot(object.getSlotRow(), object.getSlotColumn())) {
+                occupiedSlots.add(slotKey(object.getSlotRow(), object.getSlotColumn()));
+            }
+        }
+        int placementIndex = 0;
+        while (occupiedSlots.contains(slotKey(placementIndex / 3, placementIndex % 3))) {
+            placementIndex++;
+        }
+
+        SpaceObject placement = new SpaceObject();
+        placement.setId(UUID.randomUUID());
+        placement.setFloor(floor);
+        placement.setClassroom(classroom);
+        placement.setType(SpaceObjectType.CLASSROOM);
+        placement.setStatus(SpaceObjectStatus.EMPTY);
+        placement.setLabel(classroom.getName());
+        placement.setCode(classroom.getCode());
+        placement.setCapacity(classroom.getCapacity());
+        placement.setPositionX(0.0);
+        placement.setPositionY(0.0);
+        placement.setWidth(160.0);
+        placement.setHeight(100.0);
+        placement.setRotation(0.0);
+        placement.setSlotRow(placementIndex / 3);
+        placement.setSlotColumn(placementIndex % 3);
+        spaceObjectRepository.save(placement);
+
+        int neededRows = Math.max(1, (int) Math.ceil((placementIndex + 1) / 3.0));
+        savedLayout.setRows(Math.max(savedLayout.getRows(), neededRows));
+        savedLayout.setColumns(Math.max(savedLayout.getColumns(), 3));
 
         return toResponse(savedLayout, getObjects(floorId));
     }
@@ -235,6 +318,12 @@ public class SlotLayoutService {
 
     private String slotKey(Integer row, Integer column) {
         return row + ":" + column;
+    }
+
+    private String normalize(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void validateTypeCompatibility(SpaceObjectType objectType, ClassroomType classroomType) {

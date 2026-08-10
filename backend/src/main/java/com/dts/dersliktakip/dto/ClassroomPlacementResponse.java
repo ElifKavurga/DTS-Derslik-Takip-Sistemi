@@ -18,4 +18,5 @@ public class ClassroomPlacementResponse {
     private String code;
     private Integer capacity;
     private ClassroomType type;
+    private String equipment;
 }

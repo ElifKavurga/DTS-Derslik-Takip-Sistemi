@@ -93,6 +93,7 @@ public class FloorLayoutService {
                         .code(classroom.getCode())
                         .capacity(classroom.getCapacity())
                         .type(classroom.getType())
+                        .equipment(classroom.getEquipment())
                         .build())
                 .toList();
     }

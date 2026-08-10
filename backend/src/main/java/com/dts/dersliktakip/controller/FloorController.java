@@ -4,6 +4,7 @@ import com.dts.dersliktakip.dto.FloorDetailResponse;
 import com.dts.dersliktakip.dto.FloorListResponse;
 import com.dts.dersliktakip.dto.FloorResponse;
 import com.dts.dersliktakip.dto.ClassroomPlacementResponse;
+import com.dts.dersliktakip.dto.CreateSlotClassroomRequest;
 import com.dts.dersliktakip.dto.CreateFloorRequest;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
 import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
@@ -61,6 +62,15 @@ public class FloorController {
             @Valid @RequestBody SaveSlotLayoutRequest request
     ) {
         return ResponseEntity.ok(slotLayoutService.saveSlotLayout(floorId, request));
+    }
+
+    @PostMapping("/floors/{floorId}/slot-layout/classrooms")
+    public ResponseEntity<SlotLayoutResponse> createSlotClassroom(
+            @PathVariable UUID floorId,
+            @Valid @RequestBody CreateSlotClassroomRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(slotLayoutService.createClassroomAndPlace(floorId, request));
     }
 
     @GetMapping("/buildings/{buildingId}/floors")

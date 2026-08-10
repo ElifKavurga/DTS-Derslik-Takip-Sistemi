@@ -5,6 +5,7 @@ import {
   SaveFloorLayoutRequest,
   SaveSlotLayoutRequest,
   SlotLayoutResponse,
+  CreateSlotClassroomRequest,
 } from '@/types';
 
 export const floorLayoutService = {
@@ -30,6 +31,11 @@ export const floorLayoutService = {
 
   saveSlotLayout: async (floorId: string, payload: SaveSlotLayoutRequest): Promise<SlotLayoutResponse> => {
     const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout`, payload);
+    return response.data;
+  },
+
+  createSlotClassroom: async (floorId: string, payload: CreateSlotClassroomRequest): Promise<SlotLayoutResponse> => {
+    const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout/classrooms`, payload);
     return response.data;
   },
 };

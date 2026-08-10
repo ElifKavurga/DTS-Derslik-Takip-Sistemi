@@ -33,6 +33,7 @@ export interface ClassroomPlacement {
   code: string;
   capacity: number;
   type: ClassroomPlacementType;
+  equipment?: string;
 }
 
 // ─── Equipment / extra fields stored per node ─────────────────────────────────
@@ -186,6 +187,13 @@ export interface SaveSlotLayoutRequest {
   rows?: number;
   columns?: number;
   objects?: SpaceObjectRequest[];
+}
+
+export interface CreateSlotClassroomRequest {
+  code: string;
+  name: string;
+  capacity: number;
+  equipment?: string;
 }
 
 // ─── Palette item (left panel metadata) ──────────────────────────────────────

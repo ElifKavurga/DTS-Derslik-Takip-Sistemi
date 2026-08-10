@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.service;
 
+import com.dts.dersliktakip.dto.CreateSlotClassroomRequest;
 import com.dts.dersliktakip.dto.SaveSlotLayoutRequest;
 import com.dts.dersliktakip.dto.SlotLayoutResponse;
 import com.dts.dersliktakip.dto.SpaceObjectRequest;
@@ -246,6 +247,50 @@ class SlotLayoutServiceTest {
         assertThatThrownBy(() -> slotLayoutService.saveSlotLayout(floor.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("birlikte");
+    }
+
+    @Test
+    void createClassroomAndPlaceCreatesClassroomAndSlotPlacementAtomically() {
+        SlotLayoutResponse response = slotLayoutService.createClassroomAndPlace(
+                floor.getId(),
+                CreateSlotClassroomRequest.builder()
+                        .code("D103")
+                        .name("Derslik 103")
+                        .capacity(30)
+                        .equipment("Projeksiyon")
+                        .build()
+        );
+
+        Classroom created = classroomRepository.findByFloorIdAndCodeIgnoreCase(floor.getId(), "D103")
+                .orElseThrow();
+
+        assertThat(created.getType()).isEqualTo(ClassroomType.CLASSROOM);
+        assertThat(created.getFloor().getId()).isEqualTo(floor.getId());
+        assertThat(created.getEquipment()).isEqualTo("Projeksiyon");
+        assertThat(spaceObjectRepository.findAllByFloorId(floor.getId()))
+                .anySatisfy(spaceObject -> {
+                    assertThat(spaceObject.getClassroom().getId()).isEqualTo(created.getId());
+                    assertThat(spaceObject.getSlotRow()).isZero();
+                    assertThat(spaceObject.getSlotColumn()).isZero();
+                });
+        assertThat(response.getObjects())
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(created.getId());
+                    assertThat(object.getCode()).isEqualTo("D103");
+                });
+    }
+
+    @Test
+    void createClassroomAndPlaceRejectsDuplicateCodeOnSameFloor() {
+        CreateSlotClassroomRequest request = CreateSlotClassroomRequest.builder()
+                .code("D101")
+                .name("Derslik 101")
+                .capacity(30)
+                .build();
+
+        assertThatThrownBy(() -> slotLayoutService.createClassroomAndPlace(floor.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("aynı koda");
     }
 
     private Classroom createClassroom(String code, ClassroomType type) {
