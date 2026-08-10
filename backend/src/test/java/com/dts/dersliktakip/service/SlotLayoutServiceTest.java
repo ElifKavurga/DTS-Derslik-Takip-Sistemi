@@ -66,6 +66,7 @@ class SlotLayoutServiceTest {
     private Classroom classroom;
     private Classroom secondClassroom;
     private Classroom laboratory;
+    private Classroom amphitheater;
 
     @BeforeEach
     void setUp() {
@@ -91,6 +92,7 @@ class SlotLayoutServiceTest {
         classroom = createClassroom("D101", ClassroomType.CLASSROOM);
         secondClassroom = createClassroom("D102", ClassroomType.CLASSROOM);
         laboratory = createClassroom("LAB01", ClassroomType.LABORATORY);
+        amphitheater = createClassroom("AMF01", ClassroomType.AMPHITHEATER);
     }
 
     @AfterEach
@@ -222,8 +224,28 @@ class SlotLayoutServiceTest {
     }
 
     @Test
-    void saveSlotLayoutRejectsNonClassroomObjects() {
-        SpaceObjectRequest object = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0);
+    void saveSlotLayoutAllowsLaboratoryAndAmphitheaterObjects() {
+        SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
+                .rows(3)
+                .columns(4)
+                .objects(List.of(
+                        slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), 0, 0),
+                        slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 1),
+                        slotObject(SpaceObjectType.AMPHITHEATER, amphitheater.getId(), 0, 2)
+                ))
+                .build();
+
+        SlotLayoutResponse response = slotLayoutService.saveSlotLayout(floor.getId(), request);
+
+        assertThat(response.getObjects()).hasSize(3);
+        assertThat(response.getObjects())
+                .extracting("type")
+                .containsExactlyInAnyOrder(SpaceObjectType.CLASSROOM, SpaceObjectType.LABORATORY, SpaceObjectType.AMPHITHEATER);
+    }
+
+    @Test
+    void saveSlotLayoutRejectsNonTeachingSpaceObjects() {
+        SpaceObjectRequest object = slotObject(SpaceObjectType.MALE_WC, null, 0, 0);
         SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
                 .rows(3)
                 .columns(4)
@@ -232,7 +254,7 @@ class SlotLayoutServiceTest {
 
         assertThatThrownBy(() -> slotLayoutService.saveSlotLayout(floor.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("yalnızca sınıflar");
+                .hasMessageContaining("sınıf, laboratuvar ve amfi");
     }
 
     @Test
@@ -291,6 +313,35 @@ class SlotLayoutServiceTest {
         assertThatThrownBy(() -> slotLayoutService.createClassroomAndPlace(floor.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("aynı koda");
+    }
+
+    @Test
+    void createClassroomAndPlaceCreatesLaboratoryAndAmphitheaterSlots() {
+        slotLayoutService.createClassroomAndPlace(
+                floor.getId(),
+                CreateSlotClassroomRequest.builder()
+                        .type(ClassroomType.LABORATORY)
+                        .code("LAB02")
+                        .name("Bilgisayar Laboratuvarı")
+                        .capacity(24)
+                        .build()
+        );
+
+        SlotLayoutResponse response = slotLayoutService.createClassroomAndPlace(
+                floor.getId(),
+                CreateSlotClassroomRequest.builder()
+                        .type(ClassroomType.AMPHITHEATER)
+                        .code("AMF02")
+                        .name("Büyük Amfi")
+                        .capacity(120)
+                        .build()
+        );
+
+        assertThat(response.getObjects())
+                .filteredOn(object -> object.getCode().equals("LAB02") || object.getCode().equals("AMF02"))
+                .hasSize(2)
+                .extracting("type")
+                .containsExactlyInAnyOrder(SpaceObjectType.LABORATORY, SpaceObjectType.AMPHITHEATER);
     }
 
     private Classroom createClassroom(String code, ClassroomType type) {

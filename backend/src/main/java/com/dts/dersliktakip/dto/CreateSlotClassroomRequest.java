@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.dto;
 
+import com.dts.dersliktakip.entity.ClassroomType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -29,4 +30,6 @@ public class CreateSlotClassroomRequest {
 
     @Size(max = 500, message = "Donanım bilgisi en fazla 500 karakter olabilir.")
     private String equipment;
+
+    private ClassroomType type;
 }

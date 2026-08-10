@@ -86,25 +86,27 @@ public class SlotLayoutService {
     @Transactional
     public SlotLayoutResponse createClassroomAndPlace(UUID floorId, CreateSlotClassroomRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Sınıf oluşturma isteği boş olamaz.");
+            throw new IllegalArgumentException("Ders alanı oluşturma isteği boş olamaz.");
         }
 
         Floor floor = floorRepository.findById(floorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
 
+        ClassroomType classroomType = request.getType() != null ? request.getType() : ClassroomType.CLASSROOM;
+        SpaceObjectType objectType = toSpaceObjectType(classroomType);
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
         if (code == null) {
-            throw new IllegalArgumentException("Sınıf kodu zorunludur.");
+            throw new IllegalArgumentException("Ders alanı kodu zorunludur.");
         }
         if (name == null) {
-            throw new IllegalArgumentException("Sınıf adı zorunludur.");
+            throw new IllegalArgumentException("Ders alanı adı zorunludur.");
         }
         if (request.getCapacity() == null || request.getCapacity() <= 0) {
             throw new IllegalArgumentException("Kapasite 1 veya daha büyük olmalıdır.");
         }
         if (classroomRepository.findByFloorIdAndCodeIgnoreCase(floorId, code).isPresent()) {
-            throw new IllegalArgumentException("Bu katta aynı koda sahip bir sınıf zaten mevcut.");
+            throw new IllegalArgumentException("Bu katta aynı koda sahip bir ders alanı zaten mevcut.");
         }
 
         SlotLayout slotLayout = slotLayoutRepository.findByFloorId(floorId)
@@ -123,14 +125,14 @@ public class SlotLayoutService {
         classroom.setCode(code);
         classroom.setName(name);
         classroom.setCapacity(request.getCapacity());
-        classroom.setType(ClassroomType.CLASSROOM);
+        classroom.setType(classroomType);
         classroom.setEquipment(normalize(request.getEquipment()));
         classroom = classroomRepository.save(classroom);
 
         Set<String> occupiedSlots = new HashSet<>();
         for (SpaceObject object : spaceObjectRepository.findAllByFloorId(floorId)) {
             if (object.getClassroom() != null
-                    && object.getType() == SpaceObjectType.CLASSROOM
+                    && isTeachingSpaceType(object.getType())
                     && hasSlot(object.getSlotRow(), object.getSlotColumn())) {
                 occupiedSlots.add(slotKey(object.getSlotRow(), object.getSlotColumn()));
             }
@@ -144,7 +146,7 @@ public class SlotLayoutService {
         placement.setId(UUID.randomUUID());
         placement.setFloor(floor);
         placement.setClassroom(classroom);
-        placement.setType(SpaceObjectType.CLASSROOM);
+        placement.setType(objectType);
         placement.setStatus(SpaceObjectStatus.EMPTY);
         placement.setLabel(classroom.getName());
         placement.setCode(classroom.getCode());
@@ -271,8 +273,8 @@ public class SlotLayoutService {
                 throw new IllegalArgumentException("Seçilen slot grid sınırları dışında.");
             }
         }
-        if (request.getType() != SpaceObjectType.CLASSROOM) {
-            throw new IllegalArgumentException("Slot Layout yalnızca sınıflar için kullanılabilir.");
+        if (!isTeachingSpaceType(request.getType())) {
+            throw new IllegalArgumentException("Slot Layout yalnızca sınıf, laboratuvar ve amfi için kullanılabilir.");
         }
         if (request.getCapacity() != null && request.getCapacity() < 0) {
             throw new IllegalArgumentException("Kapasite negatif olamaz.");
@@ -290,12 +292,13 @@ public class SlotLayoutService {
             return classroom;
         }
 
-        throw new IllegalArgumentException("Slot Layout yalnızca mevcut sınıflar için kullanılabilir.");
+        throw new IllegalArgumentException("Slot Layout yalnızca mevcut ders alanları için kullanılabilir.");
     }
 
     private List<SpaceObjectResponse> getObjects(UUID floorId) {
         return spaceObjectRepository.findAllByFloorId(floorId)
                 .stream()
+                .filter(object -> isTeachingSpaceType(object.getType()))
                 .map(spaceObjectMapper::toResponse)
                 .toList();
     }
@@ -320,6 +323,12 @@ public class SlotLayoutService {
         return row + ":" + column;
     }
 
+    private boolean isTeachingSpaceType(SpaceObjectType type) {
+        return type == SpaceObjectType.CLASSROOM
+                || type == SpaceObjectType.LABORATORY
+                || type == SpaceObjectType.AMPHITHEATER;
+    }
+
     private String normalize(String value) {
         if (value == null) return null;
         String trimmed = value.trim();
@@ -335,7 +344,9 @@ public class SlotLayoutService {
     private ClassroomType toClassroomType(SpaceObjectType type) {
         return switch (type) {
             case CLASSROOM -> ClassroomType.CLASSROOM;
-            default -> throw new IllegalArgumentException("Bu nesne türü derslik kaydına bağlanamaz.");
+            case LABORATORY -> ClassroomType.LABORATORY;
+            case AMPHITHEATER -> ClassroomType.AMPHITHEATER;
+            default -> throw new IllegalArgumentException("Bu nesne türü ders alanı kaydına bağlanamaz.");
         };
     }
 
@@ -349,7 +360,8 @@ public class SlotLayoutService {
     private SpaceObjectType toSpaceObjectType(ClassroomType type) {
         return switch (type) {
             case CLASSROOM -> SpaceObjectType.CLASSROOM;
-            default -> throw new IllegalArgumentException("Slot Layout yalnızca sınıflar için kullanılabilir.");
+            case LABORATORY -> SpaceObjectType.LABORATORY;
+            case AMPHITHEATER -> SpaceObjectType.AMPHITHEATER;
         };
     }
 

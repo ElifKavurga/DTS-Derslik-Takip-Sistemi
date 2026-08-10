@@ -194,6 +194,7 @@ export interface CreateSlotClassroomRequest {
   name: string;
   capacity: number;
   equipment?: string;
+  type?: ClassroomPlacementType;
 }
 
 // ─── Palette item (left panel metadata) ──────────────────────────────────────

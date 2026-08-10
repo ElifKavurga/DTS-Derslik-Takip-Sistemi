@@ -38,4 +38,9 @@ export const floorLayoutService = {
     const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout/classrooms`, payload);
     return response.data;
   },
+
+  createSlotTeachingSpace: async (floorId: string, payload: CreateSlotClassroomRequest): Promise<SlotLayoutResponse> => {
+    const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout/teaching-spaces`, payload);
+    return response.data;
+  },
 };

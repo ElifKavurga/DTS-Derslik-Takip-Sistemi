@@ -8,14 +8,14 @@ import {
   BookOpen,
   Check,
   ChevronLeft,
-  Move,
+  FlaskConical,
   Plus,
+  Presentation,
   Save,
   Search,
   Trash2,
 } from 'lucide-react';
 
-import { STATUS_DOT_CLASS } from '@/components/editor/spaceNodeConfig';
 import { getSlotLabel } from '@/components/editor/slotUtils';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -23,6 +23,7 @@ import { floorLayoutService } from '@/services/floorLayoutService';
 import { useHeaderStore } from '@/store/useHeaderStore';
 import {
   type ClassroomPlacement,
+  type ClassroomPlacementType,
   type CreateSlotClassroomRequest,
   type FloorDetailResponse,
   type SlotLayoutResponse,
@@ -70,6 +71,20 @@ const EQUIPMENT_OPTIONS: Array<{ key: keyof Omit<EquipmentState, 'hasComputer' |
   { key: 'hasSoundSystem', label: 'Ses Sistemi' },
 ];
 
+const TEACHING_SPACE_TYPES: ClassroomPlacementType[] = ['CLASSROOM', 'LABORATORY', 'AMPHITHEATER'];
+
+const TEACHING_SPACE_LABELS: Record<ClassroomPlacementType, string> = {
+  CLASSROOM: 'Sınıf',
+  LABORATORY: 'Laboratuvar',
+  AMPHITHEATER: 'Amfi',
+};
+
+const TEACHING_SPACE_PLACEHOLDERS: Record<ClassroomPlacementType, { code: string; name: string }> = {
+  CLASSROOM: { code: 'Örn. D101', name: 'Örn. Derslik 101' },
+  LABORATORY: { code: 'Örn. LAB01', name: 'Örn. Bilgisayar Laboratuvarı' },
+  AMPHITHEATER: { code: 'Örn. AMF01', name: 'Örn. Büyük Amfi' },
+};
+
 type ClassroomFormErrors = Partial<Record<'code' | 'name' | 'capacity' | 'computerCount' | 'general', string>>;
 
 function isNotFoundError(error: unknown): boolean {
@@ -97,7 +112,7 @@ function toRequest(object: SpaceObjectResponse): SpaceObjectRequest {
 }
 
 function isClassroomObject(object: SpaceObjectRequest): boolean {
-  return object.type === 'CLASSROOM' && Boolean(object.classroomId);
+  return TEACHING_SPACE_TYPES.includes(object.type as ClassroomPlacementType) && Boolean(object.classroomId);
 }
 
 function hasSlot(object: SpaceObjectRequest): boolean {
@@ -140,7 +155,7 @@ function buildClassroomObject(classroom: ClassroomPlacement, slotIndex: number):
   return {
     id: crypto.randomUUID(),
     classroomId: classroom.id,
-    type: 'CLASSROOM',
+    type: classroom.type,
     status: 'EMPTY',
     label: classroom.name,
     code: classroom.code,
@@ -178,6 +193,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   const [selectedClassroomId, setSelectedClassroomId] = useState<string | null>(null);
   const [classroomSearch, setClassroomSearch] = useState('');
   const [newClassroom, setNewClassroom] = useState<CreateSlotClassroomRequest>({
+    type: 'CLASSROOM',
     code: '',
     name: '',
     capacity: 30,
@@ -203,7 +219,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   });
 
   const eligibleClassrooms = useMemo(
-    () => classrooms.filter((classroom) => classroom.type === 'CLASSROOM'),
+    () => classrooms.filter((classroom) => TEACHING_SPACE_TYPES.includes(classroom.type)),
     [classrooms],
   );
 
@@ -249,7 +265,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
     const classroomObjects = slotLayout.objects
       .map(toRequest)
-      .filter((object) => object.type === 'CLASSROOM' && object.classroomId);
+      .filter(isClassroomObject);
 
     setObjects(compactPlacements(classroomObjects));
     setSelectedClassroomId(null);
@@ -274,10 +290,10 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   });
 
   const createClassroomMutation = useMutation({
-    mutationFn: (payload: CreateSlotClassroomRequest) => floorLayoutService.createSlotClassroom(floor.id, payload),
+    mutationFn: (payload: CreateSlotClassroomRequest) => floorLayoutService.createSlotTeachingSpace(floor.id, payload),
     onSuccess: (data) => {
       const createdObject = data.objects
-        .filter((object) => object.type === 'CLASSROOM' && object.classroomId)
+        .filter((object) => isClassroomObject(toRequest(object)))
         .sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''))
         .find((object) => object.code?.toLowerCase() === newClassroom.code.trim().toLowerCase());
 
@@ -291,7 +307,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
               code: createdObject.code ?? newClassroom.code.trim(),
               name: createdObject.label,
               capacity: createdObject.capacity ?? newClassroom.capacity,
-              type: 'CLASSROOM' as const,
+              type: newClassroom.type ?? 'CLASSROOM',
               equipment: buildEquipmentPayload(equipment),
             },
           ].sort((a, b) => a.code.localeCompare(b.code));
@@ -306,10 +322,10 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
       resetClassroomForm();
       setIsAddModalOpen(false);
       setIsDirty(false);
-      toast.success('Sınıf oluşturuldu ve slota yerleştirildi.');
+      toast.success('Ders alanı oluşturuldu ve slota yerleştirildi.');
     },
     onError: (error: AxiosError<{ message: string }>) => {
-      const message = error.response?.data?.message ?? 'Sınıf oluşturulamadı.';
+      const message = error.response?.data?.message ?? 'Ders alanı oluşturulamadı.';
       setFormErrors((prev) => ({
         ...prev,
         [message.toLowerCase().includes('kod') ? 'code' : 'general']: message,
@@ -324,7 +340,8 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
     return eligibleClassrooms.filter((classroom) =>
       classroom.code.toLowerCase().includes(query) ||
-      classroom.name.toLowerCase().includes(query)
+      classroom.name.toLowerCase().includes(query) ||
+      TEACHING_SPACE_LABELS[classroom.type].toLowerCase().includes(query)
     );
   }, [classroomSearch, eligibleClassrooms]);
 
@@ -342,7 +359,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   const selectedObject = selectedClassroomId ? objectByClassroomId.get(selectedClassroomId) ?? null : null;
 
   const resetClassroomForm = () => {
-    setNewClassroom({ code: '', name: '', capacity: 30 });
+    setNewClassroom({ type: 'CLASSROOM', code: '', name: '', capacity: 30 });
     setEquipment({ ...DEFAULT_EQUIPMENT });
     setFormErrors({});
   };
@@ -356,19 +373,20 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
     event.preventDefault();
     const code = newClassroom.code.trim();
     const name = newClassroom.name.trim();
+    const type = newClassroom.type ?? 'CLASSROOM';
     const nextErrors: ClassroomFormErrors = {};
 
     if (!code) {
-      nextErrors.code = 'Sınıf kodu zorunludur.';
+      nextErrors.code = 'Ders alanı kodu zorunludur.';
     }
     if (!name) {
-      nextErrors.name = 'Sınıf adı zorunludur.';
+      nextErrors.name = 'Ders alanı adı zorunludur.';
     }
     if (!Number.isInteger(Number(newClassroom.capacity)) || Number(newClassroom.capacity) <= 0) {
       nextErrors.capacity = 'Kapasite 1 veya daha büyük olmalıdır.';
     }
     if (eligibleClassrooms.some((classroom) => classroom.code.toLowerCase() === code.toLowerCase())) {
-      nextErrors.code = 'Bu sınıf kodu zaten kullanılıyor.';
+      nextErrors.code = 'Bu ders alanı kodu zaten kullanılıyor.';
     }
     if (
       equipment.hasComputer &&
@@ -386,6 +404,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
     createClassroomMutation.mutate({
       code,
       name,
+      type,
       capacity: Number(newClassroom.capacity),
       equipment: buildEquipmentPayload(equipment),
     });
@@ -394,7 +413,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   const placeClassroom = (classroomId: string) => {
     const classroom = classroomById.get(classroomId);
     if (!classroom) {
-      toast.error('Slot Layout yalnızca sınıflar için kullanılabilir.');
+      toast.error('Slot Layout yalnızca sınıf, laboratuvar ve amfi için kullanılabilir.');
       return;
     }
 
@@ -413,7 +432,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
         return compactPlacements(prev.map((object) => object.classroomId === classroomId
           ? {
               ...object,
-              type: 'CLASSROOM',
+              type: classroom.type,
               label: classroom.name,
               code: classroom.code,
               capacity: classroom.capacity,
@@ -437,12 +456,6 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
       : object)));
     setSelectedClassroomId(classroomId);
     setIsDirty(true);
-  };
-
-  const handleDropOnCanvas = (event: React.DragEvent<HTMLElement>) => {
-    event.preventDefault();
-    const classroomId = event.dataTransfer.getData('application/dts-classroom-id');
-    if (classroomId) placeClassroom(classroomId);
   };
 
   if (isSlotLoading && !slotLayout) {
@@ -494,7 +507,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
             icon={<Plus className="h-3.5 w-3.5" />}
             className="h-8 text-xs"
           >
-            Sınıf Ekle
+            Ders Alanı Ekle
           </SecondaryButton>
           <PrimaryButton
             type="button"
@@ -512,21 +525,21 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside className="flex w-72 shrink-0 flex-col border-r border-slate-200 bg-white">
           <div className="border-b border-slate-100 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sınıflar</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Ders Alanları</p>
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={classroomSearch}
                 onChange={(event) => setClassroomSearch(event.target.value)}
-                placeholder="Sınıf ara..."
+                placeholder="Ders alanı ara..."
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-xs font-medium text-slate-800 outline-none focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/20"
               />
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
-                <p className="text-[9px] font-semibold text-slate-400">Yerleşmiş</p>
-                <p className="text-sm font-bold text-slate-900">{placedObjects.length}</p>
+                <p className="text-[9px] font-semibold text-slate-400">Toplam alan</p>
+                <p className="text-sm font-bold text-slate-900">{eligibleClassrooms.length}</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                 <p className="text-[9px] font-semibold text-slate-400">Yerleşmemiş</p>
@@ -538,13 +551,13 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {eligibleClassrooms.length === 0 ? (
               <EmptyPanel
-                title="Bu katta henüz sınıf bulunmuyor."
-                description="Sınıfları önce tanımlayın."
+                title="Bu katta henüz ders alanı bulunmuyor."
+                description="Ders alanı ekleyerek başlayın."
               />
             ) : (
               <div className="space-y-4">
                 <ClassroomSection
-                  title="Yerleştirilmiş"
+                  title="Slotta"
                   classrooms={placedClassrooms}
                   objectByClassroomId={objectByClassroomId}
                   selectedClassroomId={selectedClassroomId}
@@ -564,10 +577,12 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
           <div className="border-t border-slate-100 p-3">
             {selectedClassroom ? (
               <div className="rounded-lg border border-[#88d0f2]/60 bg-[#eff8ff] p-3">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#006482]">Seçili Sınıf</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#006482]">Seçili Ders Alanı</p>
                 <p className="mt-2 truncate text-sm font-bold text-slate-900">{selectedClassroom.code}</p>
                 <p className="truncate text-xs text-slate-500">{selectedClassroom.name}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-600">{selectedClassroom.capacity} kişi</p>
+                <p className="mt-1 text-xs font-semibold text-slate-600">
+                  {TEACHING_SPACE_LABELS[selectedClassroom.type]} · {selectedClassroom.capacity} kişi
+                </p>
                 {selectedObject && hasSlot(selectedObject) ? (
                   <SecondaryButton
                     type="button"
@@ -590,7 +605,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
               </div>
             ) : (
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs font-semibold text-slate-500">Sınıf seçimi yok</p>
+                <p className="text-xs font-semibold text-slate-500">Ders alanı seçimi yok</p>
               </div>
             )}
           </div>
@@ -598,29 +613,19 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
         <main
           className="min-w-0 flex-1 overflow-auto p-4"
-          onDragOver={(event) => {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-          }}
-          onDrop={handleDropOnCanvas}
-          onClick={() => {
-            if (selectedClassroomId && !hasSlot(objectByClassroomId.get(selectedClassroomId) ?? {} as SpaceObjectRequest)) {
-              placeClassroom(selectedClassroomId);
-            }
-          }}
         >
           {eligibleClassrooms.length === 0 ? (
             <div className="flex min-h-full items-center justify-center">
               <EmptyPanel
-                title="Bu katta henüz sınıf bulunmuyor."
-                description="Sınıfları önce tanımlayın."
+                title="Bu katta henüz ders alanı bulunmuyor."
+                description="Ders alanı ekleyerek başlayın."
               />
             </div>
           ) : placedObjects.length === 0 ? (
             <div className="flex min-h-full items-center justify-center">
               <EmptyPanel
-                title="Henüz sınıf yerleşimi yapılmadı."
-                description="Bir sınıf seçerek ya da sürükleyerek ilk slotu oluşturabilirsiniz."
+                title="Henüz yerleşim bulunmuyor."
+                description="Sol panelden bir ders alanı seçip slot oluşturabilirsiniz."
               />
             </div>
           ) : (
@@ -632,12 +637,16 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                 const slot = getAutoSlotPosition(index);
                 const label = getSlotLabel(slot.row, slot.column);
                 const isSelected = object.classroomId === selectedClassroomId;
+                const Icon = classroom.type === 'LABORATORY'
+                  ? FlaskConical
+                  : classroom.type === 'AMPHITHEATER'
+                    ? Presentation
+                    : BookOpen;
 
                 return (
                   <button
                     key={object.id}
                     type="button"
-                    draggable
                     onClick={(event) => {
                       event.stopPropagation();
                       setSelectedClassroomId(classroom.id);
@@ -648,20 +657,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                         removeClassroomFromSlot(classroom.id);
                       }
                     }}
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData('application/dts-classroom-id', classroom.id);
-                      event.dataTransfer.effectAllowed = 'move';
-                    }}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = 'none';
-                    }}
-                    onDrop={(event) => {
-                      event.stopPropagation();
-                      event.preventDefault();
-                      toast.error(`Bu slot zaten ${classroom.code} sınıfı tarafından kullanılıyor.`);
-                    }}
-                    aria-label={`Slot ${label} - ${classroom.code} sınıfı - ${classroom.capacity} kişi`}
+                    aria-label={`Slot ${label} - ${classroom.code} - ${TEACHING_SPACE_LABELS[classroom.type]} - ${classroom.capacity} kişi`}
                     className={cn(
                       'group relative flex h-36 flex-col rounded-lg border bg-white p-4 text-left shadow-sm outline-none transition-all focus:ring-2 focus:ring-[#006482]/25',
                       isSelected ? 'border-[#006482] ring-2 ring-[#006482]/15' : 'border-slate-200 hover:border-[#88d0f2] hover:shadow-md',
@@ -670,21 +666,11 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                     <span className="absolute right-3 top-3 text-[10px] font-bold text-slate-300">{label}</span>
                     <div className="flex h-full flex-col items-center justify-center text-center">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482]">
-                        <BookOpen className="h-4 w-4" />
+                        <Icon className="h-4 w-4" />
                       </div>
                       <p className="mt-3 max-w-full truncate text-xl font-extrabold text-slate-900">{classroom.code}</p>
-                      <p className="mt-1 max-w-full truncate text-xs font-semibold text-slate-500">Sınıf</p>
+                      <p className="mt-1 max-w-full truncate text-xs font-semibold text-slate-500">{TEACHING_SPACE_LABELS[classroom.type]}</p>
                       <p className="mt-1 text-xs font-bold text-slate-600">{classroom.capacity} kişi</p>
-                    </div>
-                    <div className="mt-auto flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1 text-[10px] font-semibold text-slate-500">
-                        <span className={cn('h-2 w-2 shrink-0 rounded-full', STATUS_DOT_CLASS[object.status])} />
-                        <span className="truncate">Yerleşmiş</span>
-                      </span>
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-                        <Move className="h-3 w-3" />
-                        Taşı
-                      </span>
                     </div>
                     <span
                       role="button"
@@ -715,7 +701,8 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
       <div className="flex items-center justify-between border-t border-slate-100 bg-white px-4 py-1">
         <span className="text-[9px] text-slate-400">
-          {placedObjects.length} slot · {Math.max(eligibleClassrooms.length - placedObjects.length, 0)} yerleştirilmemiş sınıf
+          Toplam {eligibleClassrooms.length} ders alanı · {placedObjects.length} slot
+          {unassignedClassrooms.length > 0 ? ` · ${unassignedClassrooms.length} yerleştirilmemiş` : ''}
         </span>
         <span className={cn('text-[9px] font-semibold', isDirty ? 'text-amber-600' : 'text-slate-300')}>
           {isDirty ? 'Kaydedilmemiş değişiklik var' : 'Güncel'}
@@ -727,8 +714,8 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
           <div className="flex max-h-[92vh] w-full max-w-lg flex-col rounded-lg border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-5">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Sinif Ekle</p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">Yeni sinif bilgilerini girin</h2>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Ders Alanı Ekle</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-900">Yeni ders alanı bilgilerini girin</h2>
               </div>
               <button
                 type="button"
@@ -750,15 +737,39 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                   </div>
                 )}
 
+                <div className="space-y-2">
+                  <span className="dts-input-label">Ders Alanı Türü</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {TEACHING_SPACE_TYPES.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setNewClassroom((prev) => ({ ...prev, type }));
+                          setFormErrors({});
+                        }}
+                        className={cn(
+                          'rounded-lg border px-3 py-2 text-xs font-bold transition-colors',
+                          (newClassroom.type ?? 'CLASSROOM') === type
+                            ? 'border-[#006482] bg-[#eff8ff] text-[#006482]'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-[#88d0f2] hover:text-slate-800',
+                        )}
+                      >
+                        {TEACHING_SPACE_LABELS[type]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="dts-input-label">Sinif Kodu *</label>
+                  <label className="dts-input-label">Kod *</label>
                   <input
                     value={newClassroom.code}
                     onChange={(event) => {
                       setNewClassroom((prev) => ({ ...prev, code: event.target.value }));
                       setFormErrors((prev) => ({ ...prev, code: undefined, general: undefined }));
                     }}
-                    placeholder="Orn. D101"
+                    placeholder={TEACHING_SPACE_PLACEHOLDERS[newClassroom.type ?? 'CLASSROOM'].code}
                     className={cn('dts-input', formErrors.code && 'border-red-300 focus:border-red-400 focus:ring-red-100')}
                     autoComplete="off"
                   />
@@ -766,14 +777,14 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="dts-input-label">Sinif Adi *</label>
+                  <label className="dts-input-label">Ad *</label>
                   <input
                     value={newClassroom.name}
                     onChange={(event) => {
                       setNewClassroom((prev) => ({ ...prev, name: event.target.value }));
                       setFormErrors((prev) => ({ ...prev, name: undefined }));
                     }}
-                    placeholder="Orn. Derslik 101"
+                    placeholder={TEACHING_SPACE_PLACEHOLDERS[newClassroom.type ?? 'CLASSROOM'].name}
                     className={cn('dts-input', formErrors.name && 'border-red-300 focus:border-red-400 focus:ring-red-100')}
                     autoComplete="off"
                   />
@@ -796,7 +807,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <span className="dts-input-label">Donanimlar</span>
+                  <span className="dts-input-label">Donanımlar</span>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {EQUIPMENT_OPTIONS.map((option) => (
                       <EquipmentToggle
@@ -844,7 +855,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
                   {equipment.hasComputer && (
                     <div className="mt-3 space-y-1">
-                      <label className="dts-input-label">Bilgisayar Sayisi *</label>
+                      <label className="dts-input-label">Bilgisayar Sayısı *</label>
                       <input
                         type="number"
                         min={1}
@@ -872,10 +883,10 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                     setIsAddModalOpen(false);
                   }}
                 >
-                  Vazgec
+                  Vazgeç
                 </SecondaryButton>
                 <PrimaryButton type="submit" loading={createClassroomMutation.isPending}>
-                  Sinifi Olustur
+                  Ders Alanı Oluştur
                 </PrimaryButton>
               </div>
             </form>
@@ -980,17 +991,17 @@ const ClassroomListButton = ({ classroom, object, selected, onSelect }: Classroo
   const slotLabel = object && hasSlot(object)
     ? getSlotLabel(object.slotRow!, object.slotColumn!)
     : 'Yerleştirilmemiş';
+  const Icon = classroom.type === 'LABORATORY'
+    ? FlaskConical
+    : classroom.type === 'AMPHITHEATER'
+      ? Presentation
+      : BookOpen;
 
   return (
     <button
       type="button"
-      draggable
       onClick={onSelect}
-      onDragStart={(event) => {
-        event.dataTransfer.setData('application/dts-classroom-id', classroom.id);
-        event.dataTransfer.effectAllowed = 'move';
-      }}
-      aria-label={`${classroom.code} - Sınıf - ${classroom.capacity} kişi - ${slotLabel}`}
+      aria-label={`${classroom.code} - ${TEACHING_SPACE_LABELS[classroom.type]} - ${classroom.capacity} kişi - ${slotLabel}`}
       className={cn(
         'flex w-full items-center gap-2 rounded-lg border p-2 text-left outline-none transition-all focus:ring-2 focus:ring-[#006482]/20',
         selected
@@ -999,17 +1010,18 @@ const ClassroomListButton = ({ classroom, object, selected, onSelect }: Classroo
       )}
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-        <BookOpen className="h-4 w-4" />
+        <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-bold text-slate-900">{classroom.code}</p>
-          {selected && <span className="text-[10px] font-bold text-[#006482]">Seçili</span>}
         </div>
-        <p className="truncate text-[11px] font-medium text-slate-500">{classroom.name}</p>
+        <p className="truncate text-[11px] font-medium text-slate-500">
+          {TEACHING_SPACE_LABELS[classroom.type]} · {classroom.capacity} kişi
+        </p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-[10px] font-bold text-slate-600">{classroom.capacity} kişi</p>
+        <p className="max-w-24 truncate text-[10px] font-bold text-slate-600">{classroom.name}</p>
         <p className={cn(
           'text-[10px] font-bold',
           slotLabel === 'Yerleştirilmemiş' ? 'text-slate-300' : 'text-[#006482]',

@@ -73,6 +73,15 @@ public class FloorController {
                 .body(slotLayoutService.createClassroomAndPlace(floorId, request));
     }
 
+    @PostMapping("/floors/{floorId}/slot-layout/teaching-spaces")
+    public ResponseEntity<SlotLayoutResponse> createSlotTeachingSpace(
+            @PathVariable UUID floorId,
+            @Valid @RequestBody CreateSlotClassroomRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(slotLayoutService.createClassroomAndPlace(floorId, request));
+    }
+
     @GetMapping("/buildings/{buildingId}/floors")
     public ResponseEntity<FloorListResponse> getFloorsByBuildingId(@PathVariable UUID buildingId) {
         List<FloorResponse> floors = floorService.getFloorsByBuildingId(buildingId);
