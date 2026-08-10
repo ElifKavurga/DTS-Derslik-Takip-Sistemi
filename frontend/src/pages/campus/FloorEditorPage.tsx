@@ -44,6 +44,7 @@ import {
   type SpaceObjectType, type SpaceObjectStatus,
   type SpaceObjectRequest, type SaveFloorLayoutRequest,
   type BackgroundImageState, type EditorMode,
+  type ClassroomPlacement,
   PALETTE_ITEM_MAP,
 } from '@/types';
 
@@ -132,6 +133,17 @@ function isAcceptedBackgroundExtension(fileName: string): boolean {
   return !!ext && ACCEPTED_BACKGROUND_EXTENSIONS.has(ext);
 }
 
+function getNodeDimension(node: Node, key: 'width' | 'height', fallback: number): number {
+  const measured = (node as Node & { measured?: { width?: number; height?: number } }).measured;
+  const candidates = [
+    node[key],
+    measured?.[key],
+    typeof node.style?.[key] === 'number' ? node.style[key] : undefined,
+  ];
+  const value = candidates.find((candidate) => typeof candidate === 'number' && Number.isFinite(candidate) && candidate > 0);
+  return value ?? fallback;
+}
+
 const EditorInner = () => {
   const { id: floorId } = useParams<{ id: string }>();
   const navigate         = useNavigate();
@@ -171,22 +183,32 @@ const EditorInner = () => {
   const isViewMode = editorMode === 'view';
 
   const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
-    if (!bgState?.isLocked) {
-      applyNodesChange(changes);
-      return;
-    }
-
+    const lockedNodeIds = new Set(nodes
+      .filter((node) => node.id !== BG_NODE_ID && node.data['isLocked'] === true)
+      .map((node) => node.id)
+    );
     applyNodesChange(changes.filter((change) => {
       if (!('id' in change)) return true;
-      if (change.id !== BG_NODE_ID) return true;
-      return change.type !== 'position' && change.type !== 'dimensions';
+      if (change.id === BG_NODE_ID && bgState?.isLocked) {
+        return change.type !== 'position' && change.type !== 'dimensions';
+      }
+      if (lockedNodeIds.has(change.id)) {
+        return change.type !== 'position' && change.type !== 'dimensions';
+      }
+      return true;
     }));
-  }, [applyNodesChange, bgState?.isLocked]);
+  }, [applyNodesChange, bgState?.isLocked, nodes]);
 
   // ── Data loading ──────────────────────────────────────────────────────────
   const { data: floor, isLoading } = useQuery({
     queryKey: ['floorDetail', floorId],
     queryFn:  () => floorLayoutService.getFloorDetail(floorId!),
+    enabled:  !!floorId,
+  });
+
+  const { data: classrooms = [] } = useQuery<ClassroomPlacement[]>({
+    queryKey: ['floorClassrooms', floorId],
+    queryFn:  () => floorLayoutService.getClassroomsForPlacement(floorId!),
     enabled:  !!floorId,
   });
 
@@ -204,6 +226,8 @@ const EditorInner = () => {
         id:       obj.id,
         type:     'spaceNode',
         position: { x: obj.positionX, y: obj.positionY },
+        width:    obj.width,
+        height:   obj.height,
         style:    { width: obj.width, height: obj.height },
         draggable: metadata.isLocked !== true,
         hidden:    metadata.isHidden === true,
@@ -268,6 +292,7 @@ const EditorInner = () => {
     onSuccess: () => {
       toast.success('Kat planı kaydedildi.');
       queryClient.invalidateQueries({ queryKey: ['floorDetail', floorId] });
+      queryClient.invalidateQueries({ queryKey: ['floorClassrooms', floorId] });
     },
     onError: (err: AxiosError<{ message: string }>) =>
       toast.error(err.response?.data?.message ?? 'Kaydetme sırasında hata oluştu.'),
@@ -300,8 +325,8 @@ const EditorInner = () => {
           capacity:  d['capacity'] as number | undefined,
           positionX: n.position.x,
           positionY: n.position.y,
-          width:     typeof n.style?.width  === 'number' ? n.style.width  : 160,
-          height:    typeof n.style?.height === 'number' ? n.style.height : 100,
+          width:     getNodeDimension(n, 'width', 160),
+          height:    getNodeDimension(n, 'height', 100),
           rotation:  (d['rotation'] as number | undefined) ?? 0,
           metadataJson: buildSpaceMetadata(d),
         };
@@ -375,7 +400,7 @@ const EditorInner = () => {
     };
     reader.onerror = () => toast.error('Kat krokisi dosyası okunamadı.');
     reader.readAsDataURL(file);
-  }, [bgState, bgEditMode, setNodes]);
+  }, [bgState, setNodes]);
 
   const handleEmptyBgFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -451,9 +476,7 @@ const EditorInner = () => {
     if (isViewMode) return;
     const type = e.dataTransfer.getData('application/dts-space-type') as SpaceObjectType;
     if (!type) return;
-    const bounds = wrapperRef.current?.getBoundingClientRect();
-    if (!bounds) return;
-    const position = reactFlow.screenToFlowPosition({ x: e.clientX - bounds.left, y: e.clientY - bounds.top });
+    const position = reactFlow.screenToFlowPosition({ x: e.clientX, y: e.clientY });
     const palette  = PALETTE_ITEM_MAP[type];
     const drop     = { type, position, width: palette?.defaultWidth ?? 160, height: palette?.defaultHeight ?? 100 };
 
@@ -466,7 +489,7 @@ const EditorInner = () => {
 
   // ── Add node ──────────────────────────────────────────────────────────────
   const addNode = useCallback((
-    values: { label: string; code?: string; capacity?: number },
+    values: { classroomId?: string; label: string; code?: string; capacity?: number },
     drop:   typeof pendingDrop
   ) => {
     if (!drop) return;
@@ -474,8 +497,19 @@ const EditorInner = () => {
     const newNode: Node = {
       id, type: 'spaceNode',
       position: drop.position,
+      width:    drop.width,
+      height:   drop.height,
       style:    { width: drop.width, height: drop.height },
-      data: { type: drop.type, status: 'EMPTY', label: values.label, code: values.code, capacity: values.capacity },
+      data: {
+        isLocked: false,
+        isHidden: false,
+        classroomId: values.classroomId,
+        type: drop.type,
+        status: 'EMPTY',
+        label: values.label,
+        code: values.code,
+        capacity: values.capacity,
+      },
     };
     setNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(id);
@@ -505,9 +539,12 @@ const EditorInner = () => {
   const onNodeContextMenu: NodeMouseHandler = useCallback((e, node) => {
     e.preventDefault();
     if (node.id === BG_NODE_ID) return;
-    setSelectedNodeId(node.id);
+    if (!selectedNodeIds.includes(node.id)) {
+      setSelectedNodeId(node.id);
+      setSelectedNodeIds([node.id]);
+    }
     setCtxMenu({ x: e.clientX, y: e.clientY, nodeId: node.id });
-  }, []);
+  }, [selectedNodeIds]);
 
   const ctxNode = useMemo(
     () => nodes.find((n) => n.id === ctxMenu?.nodeId) ?? null,
@@ -520,9 +557,15 @@ const EditorInner = () => {
 
   const handleCtxDuplicate = useCallback(() => {
     if (!ctxNode) return;
+    if (ctxNode.data['classroomId']) {
+      toast.error('Classroom bağlantılı nesne çoğaltılamaz. Aynı derslik ikinci kez yerleştirilemez.');
+      return;
+    }
     const id = crypto.randomUUID();
     setNodes((prev) => [...prev, {
-      ...ctxNode, id,
+      ...ctxNode,
+      id,
+      selected: false,
       position: { x: ctxNode.position.x + DUPLICATE_OFFSET, y: ctxNode.position.y + DUPLICATE_OFFSET },
     }]);
     setSelectedNodeId(id);
@@ -531,10 +574,15 @@ const EditorInner = () => {
   const handleCtxDelete = useCallback((id: string) => {
     setNodes((prev) => prev.filter((n) => n.id !== id));
     if (selectedNodeId === id) setSelectedNodeId(null);
+    setSelectedNodeIds((prev) => prev.filter((nodeId) => nodeId !== id));
   }, [selectedNodeId, setNodes]);
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedNodeIds.length > 1) {
+      const ok = window.confirm(
+        `${selectedNodeIds.length} alanı kat planından kaldırmak istediğinize emin misiniz?\n\nFiziksel alan kayıtları silinmeyecek, yalnızca kat planındaki yerleşimleri kaldırılacak.`
+      );
+      if (!ok) return;
       setNodes((prev) => prev.filter((n) => !selectedNodeIds.includes(n.id) || n.id === BG_NODE_ID));
       setSelectedNodeIds([]);
       setSelectedNodeId(null);
@@ -549,6 +597,15 @@ const EditorInner = () => {
       if (n.id !== ctxMenu.nodeId) return n;
       const locked = !(n.data['isLocked'] as boolean);
       return { ...n, draggable: !locked, data: { ...n.data, isLocked: locked } };
+    }));
+  }, [ctxMenu, setNodes]);
+
+  const handleCtxToggleHide = useCallback(() => {
+    if (!ctxMenu?.nodeId) return;
+    setNodes((prev) => prev.map((n) => {
+      if (n.id !== ctxMenu.nodeId) return n;
+      const hidden = !(n.data['isHidden'] as boolean);
+      return { ...n, hidden, data: { ...n.data, isHidden: hidden } };
     }));
   }, [ctxMenu, setNodes]);
 
@@ -580,7 +637,35 @@ const EditorInner = () => {
 
   // ── Node data update (PropertiesPanel) ────────────────────────────────────
   const handleNodeDataUpdate = useCallback((id: string, newData: Record<string, unknown>) => {
-    setNodes((prev) => prev.map((n) => n.id === id ? { ...n, data: newData } : n));
+    setNodes((prev) => prev.map((n) => n.id === id ? {
+      ...n,
+      draggable: newData['isLocked'] !== true,
+      hidden: newData['isHidden'] === true,
+      data: newData,
+    } : n));
+  }, [setNodes]);
+
+  const handleNodeGeometryUpdate = useCallback((id: string, patch: {
+    position?: { x?: number; y?: number };
+    size?: { width?: number; height?: number };
+  }) => {
+    setNodes((prev) => prev.map((n) => {
+      if (n.id !== id || n.data['isLocked'] === true) return n;
+      return {
+        ...n,
+        width: Number.isFinite(patch.size?.width) ? Math.max(60, patch.size!.width!) : n.width,
+        height: Number.isFinite(patch.size?.height) ? Math.max(50, patch.size!.height!) : n.height,
+        position: {
+          x: Number.isFinite(patch.position?.x) ? patch.position!.x! : n.position.x,
+          y: Number.isFinite(patch.position?.y) ? patch.position!.y! : n.position.y,
+        },
+        style: {
+          ...n.style,
+          width: Number.isFinite(patch.size?.width) ? Math.max(60, patch.size!.width!) : n.style?.width,
+          height: Number.isFinite(patch.size?.height) ? Math.max(50, patch.size!.height!) : n.style?.height,
+        },
+      };
+    }));
   }, [setNodes]);
 
   // ── Layer panel helpers ───────────────────────────────────────────────────
@@ -592,9 +677,11 @@ const EditorInner = () => {
   }, [nodes, reactFlow]);
 
   const handleToggleHide = useCallback((id: string) => {
-    setNodes((prev) => prev.map((n) =>
-      n.id === id ? { ...n, data: { ...n.data, isHidden: !(n.data['isHidden'] as boolean) } } : n
-    ));
+    setNodes((prev) => prev.map((n) => {
+      if (n.id !== id) return n;
+      const hidden = !(n.data['isHidden'] as boolean);
+      return { ...n, hidden, data: { ...n.data, isHidden: hidden } };
+    }));
   }, [setNodes]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
@@ -615,9 +702,13 @@ const EditorInner = () => {
         }
         case 'v': {
           if (!clipboard) return;
+          if (clipboard.data['classroomId']) {
+            toast.error('Classroom bağlantılı nesne kopyalanamaz. Aynı derslik ikinci kez yerleştirilemez.');
+            return;
+          }
           const id = crypto.randomUUID();
           setNodes((prev) => [...prev, {
-            ...clipboard, id,
+            ...clipboard, id, selected: false,
             position: { x: clipboard.position.x + DUPLICATE_OFFSET, y: clipboard.position.y + DUPLICATE_OFFSET },
           }]);
           setSelectedNodeId(id);
@@ -627,9 +718,13 @@ const EditorInner = () => {
           e.preventDefault();
           const node = nodes.find((n) => n.id === selectedNodeId);
           if (!node) break;
+          if (node.data['classroomId']) {
+            toast.error('Classroom bağlantılı nesne çoğaltılamaz. Aynı derslik ikinci kez yerleştirilemez.');
+            break;
+          }
           const id = crypto.randomUUID();
           setNodes((prev) => [...prev, {
-            ...node, id,
+            ...node, id, selected: false,
             position: { x: node.position.x + DUPLICATE_OFFSET, y: node.position.y + DUPLICATE_OFFSET },
           }]);
           setSelectedNodeId(id);
@@ -651,6 +746,13 @@ const EditorInner = () => {
 
   // Visible (non-background) nodes for layer panel
   const spaceNodes = useMemo(() => nodes.filter((n) => n.id !== BG_NODE_ID), [nodes]);
+
+  const placedClassroomIds = useMemo(
+    () => spaceNodes
+      .map((n) => n.data['classroomId'])
+      .filter((id): id is string => typeof id === 'string' && id.length > 0),
+    [spaceNodes]
+  );
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (isLoading && !floor) {
@@ -896,8 +998,11 @@ const EditorInner = () => {
 
           {rightPanelTab === 'properties' ? (
             <PropertiesPanel
+              key={selectedNode?.id ?? selectedNodeIds.join(',')}
               selectedNode={selectedNode}
+              selectedCount={selectedNodeIds.length}
               onUpdate={handleNodeDataUpdate}
+              onGeometryUpdate={handleNodeGeometryUpdate}
             />
           ) : (
             <div className="p-3 overflow-y-auto flex-1 space-y-4">
@@ -958,6 +1063,8 @@ const EditorInner = () => {
       {pendingDrop && (
         <AddNodeModal
           pending={pendingDrop}
+          classrooms={classrooms}
+          placedClassroomIds={placedClassroomIds}
           onConfirm={(values) => addNode(values, pendingDrop)}
           onCancel={() => setPendingDrop(null)}
         />
@@ -969,13 +1076,19 @@ const EditorInner = () => {
           y={ctxMenu.y}
           nodeId={ctxMenu.nodeId}
           isLocked={(ctxNode.data['isLocked'] as boolean) ?? false}
+          isHidden={(ctxNode.data['isHidden'] as boolean) ?? false}
+          isClassroomLinked={typeof ctxNode.data['classroomId'] === 'string'}
+          selectedCount={selectedNodeIds.includes(ctxMenu.nodeId) ? Math.max(selectedNodeIds.length, 1) : 1}
           onEdit={() => { setSelectedNodeId(ctxMenu.nodeId); setRightPanelTab('properties'); }}
           onCopy={handleCtxCopy}
           onDuplicate={handleCtxDuplicate}
-          onDelete={() => handleCtxDelete(ctxMenu.nodeId)}
+          onDelete={() => selectedNodeIds.includes(ctxMenu.nodeId) && selectedNodeIds.length > 1
+            ? handleDeleteSelected()
+            : handleCtxDelete(ctxMenu.nodeId)}
           onBringFront={handleCtxBringFront}
           onSendBack={handleCtxSendBack}
           onToggleLock={handleCtxToggleLock}
+          onToggleHide={handleCtxToggleHide}
           onClose={() => setCtxMenu(null)}
         />
       )}

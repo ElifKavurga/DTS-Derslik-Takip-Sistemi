@@ -3,6 +3,7 @@ package com.dts.dersliktakip.controller;
 import com.dts.dersliktakip.dto.FloorDetailResponse;
 import com.dts.dersliktakip.dto.FloorListResponse;
 import com.dts.dersliktakip.dto.FloorResponse;
+import com.dts.dersliktakip.dto.ClassroomPlacementResponse;
 import com.dts.dersliktakip.dto.CreateFloorRequest;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
 import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
@@ -30,6 +31,11 @@ public class FloorController {
     @GetMapping("/floors/{floorId}")
     public ResponseEntity<FloorDetailResponse> getFloorDetail(@PathVariable UUID floorId) {
         return ResponseEntity.ok(floorLayoutService.getFloorDetail(floorId));
+    }
+
+    @GetMapping("/floors/{floorId}/classrooms")
+    public ResponseEntity<List<ClassroomPlacementResponse>> getClassroomsForPlacement(@PathVariable UUID floorId) {
+        return ResponseEntity.ok(floorLayoutService.getClassroomsForPlacement(floorId));
     }
 
     @PostMapping("/floors/{floorId}/layout")

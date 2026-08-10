@@ -1,7 +1,9 @@
 package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.FloorDetailResponse;
+import com.dts.dersliktakip.dto.ClassroomPlacementResponse;
 import com.dts.dersliktakip.dto.SaveFloorLayoutRequest;
+import com.dts.dersliktakip.dto.SpaceObjectRequest;
 import com.dts.dersliktakip.dto.SpaceObjectResponse;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.ClassroomType;
@@ -76,6 +78,24 @@ public class FloorLayoutService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<ClassroomPlacementResponse> getClassroomsForPlacement(UUID floorId) {
+        if (!floorRepository.existsById(floorId)) {
+            throw new ResourceNotFoundException("Kat bulunamadı.");
+        }
+
+        return classroomRepository.findAllByFloorIdOrderByCodeAsc(floorId)
+                .stream()
+                .map(classroom -> ClassroomPlacementResponse.builder()
+                        .id(classroom.getId())
+                        .name(classroom.getName())
+                        .code(classroom.getCode())
+                        .capacity(classroom.getCapacity())
+                        .type(classroom.getType())
+                        .build())
+                .toList();
+    }
+
     @Transactional
     public FloorDetailResponse saveLayout(UUID floorId, SaveFloorLayoutRequest request) {
         Floor floor = floorRepository.findById(floorId)
@@ -112,6 +132,7 @@ public class FloorLayoutService {
             Set<UUID> linkedClassroomIds = new HashSet<>();
             List<SpaceObject> objects = request.getObjects().stream()
                     .map(req -> {
+                        validateSpaceObject(req);
                         SpaceObject obj = spaceObjectMapper.toEntity(req);
                         obj.setFloor(floor);
                         Classroom classroom = resolveClassroom(floor, req);
@@ -135,6 +156,16 @@ public class FloorLayoutService {
         }
 
         return getFloorDetail(floorId);
+    }
+
+    private void validateSpaceObject(SpaceObjectRequest request) {
+        validateRequiredFinite(request.getPositionX(), "Nesne X konumu");
+        validateRequiredFinite(request.getPositionY(), "Nesne Y konumu");
+        validateOptionalPositiveDimension(request.getWidth(), "Nesne genişliği");
+        validateOptionalPositiveDimension(request.getHeight(), "Nesne yüksekliği");
+        if (request.getRotation() != null && !Double.isFinite(request.getRotation())) {
+            throw new IllegalArgumentException("Nesne dönüş değeri geçerli olmalıdır.");
+        }
     }
 
     private void validateBackground(SaveFloorLayoutRequest request) {
@@ -202,6 +233,12 @@ public class FloorLayoutService {
     private void validateOptionalPositiveDimension(Double value, String fieldName) {
         if (value != null && (!Double.isFinite(value) || value <= 0)) {
             throw new IllegalArgumentException(fieldName + " pozitif bir değer olmalıdır.");
+        }
+    }
+
+    private void validateRequiredFinite(Double value, String fieldName) {
+        if (value == null || !Double.isFinite(value)) {
+            throw new IllegalArgumentException(fieldName + " geçerli bir değer olmalıdır.");
         }
     }
 

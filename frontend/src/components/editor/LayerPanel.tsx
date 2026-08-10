@@ -35,7 +35,7 @@ export function LayerPanel({ nodes, selectedNodeId, onSelect, onFocus, onToggleH
           <div
             key={node.id}
             onClick={() => onSelect(node.id)}
-            className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors border-b border-slate-50 ${
+            className={`group flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors border-b border-slate-50 ${
               isSelected ? 'bg-[#eff8ff] border-l-2 border-l-[#006482]' : 'hover:bg-slate-50'
             }`}
           >

@@ -4,6 +4,7 @@ import com.dts.dersliktakip.entity.Classroom;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public interface ClassroomRepository extends JpaRepository<Classroom, UUID> {
@@ -16,4 +17,6 @@ public interface ClassroomRepository extends JpaRepository<Classroom, UUID> {
     long countByFloorId(UUID floorId);
 
     Optional<Classroom> findByFloorIdAndCodeIgnoreCase(UUID floorId, String code);
+
+    List<Classroom> findAllByFloorIdOrderByCodeAsc(UUID floorId);
 }

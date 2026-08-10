@@ -8,7 +8,9 @@ export type SpaceObjectType =
   | 'MALE_WC'
   | 'FEMALE_WC'
   | 'DISABLED_WC'
+  | 'SINK'
   | 'MOSQUE'
+  | 'OTHER'
   | 'REST_AREA'
   | 'LIBRARY'
   | 'STORAGE'
@@ -22,6 +24,15 @@ export type SpaceObjectType =
   | 'FIRST_AID';
 
 export type SpaceObjectStatus = 'EMPTY' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE';
+export type ClassroomPlacementType = 'CLASSROOM' | 'LABORATORY' | 'AMPHITHEATER';
+
+export interface ClassroomPlacement {
+  id: string;
+  name: string;
+  code: string;
+  capacity: number;
+  type: ClassroomPlacementType;
+}
 
 // ─── Equipment / extra fields stored per node ─────────────────────────────────
 export interface ClassroomEquipment {
@@ -179,6 +190,7 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   { type: 'MALE_WC',               label: 'Erkek WC',            iconName: 'PersonStanding', category: 'wc',             defaultWidth: 100, defaultHeight: 80, quickDrop: true },
   { type: 'FEMALE_WC',             label: 'Kadın WC',            iconName: 'PersonStanding', category: 'wc',             defaultWidth: 100, defaultHeight: 80, quickDrop: true },
   { type: 'DISABLED_WC',           label: 'Engelli WC',          iconName: 'Accessibility',  category: 'wc',             defaultWidth: 100, defaultHeight: 80, quickDrop: true },
+  { type: 'SINK',                  label: 'Lavabo',              iconName: 'Droplets',       category: 'wc',             defaultWidth: 80,  defaultHeight: 60,  quickDrop: true },
   { type: 'STORAGE',               label: 'Depo',                iconName: 'Package',        category: 'service',        defaultWidth: 120, defaultHeight: 100 },
   { type: 'TECHNICAL_ROOM',        label: 'Teknik Oda',          iconName: 'Wrench',         category: 'infrastructure', defaultWidth: 120, defaultHeight: 100 },
   { type: 'ELECTRICAL_ROOM',       label: 'Elektrik Odası',      iconName: 'Zap',            category: 'infrastructure', defaultWidth: 120, defaultHeight: 100 },
@@ -188,6 +200,7 @@ export const PALETTE_ITEMS: PaletteItem[] = [
   { type: 'EMERGENCY_EXIT',        label: 'Acil Çıkış',          iconName: 'DoorOpen',       category: 'infrastructure', defaultWidth: 80,  defaultHeight: 60,  quickDrop: true },
   { type: 'FIRE_CABINET',          label: 'Yangın Dolabı',       iconName: 'Flame',          category: 'infrastructure', defaultWidth: 60,  defaultHeight: 60,  quickDrop: true },
   { type: 'FIRST_AID',             label: 'İlk Yardım',          iconName: 'HeartPulse',     category: 'infrastructure', defaultWidth: 60,  defaultHeight: 60,  quickDrop: true },
+  { type: 'OTHER',                 label: 'Diger Alan',          iconName: 'Square',         category: 'service',        defaultWidth: 120, defaultHeight: 90 },
 ];
 
 export const PALETTE_ITEM_MAP: Record<SpaceObjectType, PaletteItem> = Object.fromEntries(

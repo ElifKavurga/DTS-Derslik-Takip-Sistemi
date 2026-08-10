@@ -10,7 +10,7 @@ import {
   BookOpen, FlaskConical, Presentation, UserRound, Briefcase,
   Library, Coffee, Moon, PersonStanding, Accessibility,
   Package, Wrench, Zap, Server, ArrowUpDown, MoveUp,
-  DoorOpen, Flame, HeartPulse, LucideIcon,
+  DoorOpen, Flame, HeartPulse, Droplets, Square, LucideIcon,
 } from 'lucide-react';
 import { SpaceObjectType } from '@/types';
 
@@ -27,6 +27,7 @@ export const SPACE_ICONS: Record<SpaceObjectType, LucideIcon> = {
   MALE_WC:               PersonStanding,
   FEMALE_WC:             PersonStanding,
   DISABLED_WC:           Accessibility,
+  SINK:                  Droplets,
   STORAGE:               Package,
   TECHNICAL_ROOM:        Wrench,
   ELECTRICAL_ROOM:       Zap,
@@ -36,6 +37,7 @@ export const SPACE_ICONS: Record<SpaceObjectType, LucideIcon> = {
   EMERGENCY_EXIT:        DoorOpen,
   FIRE_CABINET:          Flame,
   FIRST_AID:             HeartPulse,
+  OTHER:                 Square,
 };
 
 // ─── Property field definitions ───────────────────────────────────────────────
@@ -166,11 +168,13 @@ export const SPACE_PROPERTY_FIELDS: Record<SpaceObjectType, PropertyField[]> = {
   MALE_WC:               wcFields,
   FEMALE_WC:             wcFields,
   DISABLED_WC:           wcFields,
+  SINK:                  wcFields,
   ELEVATOR:              elevatorFields,
   STAIRS:                noFields,
   EMERGENCY_EXIT:        noFields,
   FIRE_CABINET:          noFields,
   FIRST_AID:             noFields,
+  OTHER:                 libraryFields,
 };
 
 // ─── Status color helpers ─────────────────────────────────────────────────────
