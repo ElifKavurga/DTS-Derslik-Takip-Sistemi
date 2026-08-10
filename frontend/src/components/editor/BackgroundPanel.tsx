@@ -25,7 +25,7 @@ export function BackgroundPanel({ bgState, onUpload, onRemove, onToggleLock, onO
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/png,image/jpeg,image/svg+xml"
+        accept="image/png,image/jpeg"
         onChange={handleFileChange}
         className="hidden"
       />
@@ -53,7 +53,7 @@ export function BackgroundPanel({ bgState, onUpload, onRemove, onToggleLock, onO
             </div>
             <input
               type="range"
-              min={0} max={100}
+              min={10} max={100}
               value={Math.round(bgState.opacity * 100)}
               onChange={(e) => onOpacityChange(Number(e.target.value) / 100)}
               className="w-full h-1.5 rounded-full accent-[#006482] cursor-pointer"
@@ -97,7 +97,7 @@ export function BackgroundPanel({ bgState, onUpload, onRemove, onToggleLock, onO
           <ImageIcon className="h-6 w-6 text-slate-300 group-hover:text-[#006482] transition" />
           <div>
             <p className="text-[10px] font-bold text-slate-500 group-hover:text-[#006482] transition">Kat Planı Yükle</p>
-            <p className="text-[9px] text-slate-400">PNG, JPG, SVG</p>
+            <p className="text-[9px] text-slate-400">PNG veya JPG/JPEG - Maks. 5 MB</p>
           </div>
         </button>
       )}

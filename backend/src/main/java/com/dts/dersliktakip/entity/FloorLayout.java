@@ -52,7 +52,7 @@ public class FloorLayout {
     private Double backgroundOpacity = 0.35;
 
     @Column(nullable = false, name = "background_locked")
-    private Boolean backgroundLocked = true;
+    private Boolean backgroundLocked = false;
 
     @Column(nullable = false, updatable = false, name = "created_at")
     private Instant createdAt;

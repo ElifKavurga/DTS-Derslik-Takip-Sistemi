@@ -15,6 +15,7 @@ import {
   SelectionMode,
   type Node,
   type Edge,
+  type NodeChange,
   type NodeTypes,
   type Viewport,
   type NodeMouseHandler,
@@ -55,6 +56,10 @@ const GRID_SIZE        = 20;
 const DEFAULT_OPACITY  = 0.35;
 const DUPLICATE_OFFSET = 20;
 const BG_NODE_ZINDEX   = -1000;
+const MAX_BACKGROUND_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_INITIAL_BACKGROUND_WIDTH = 1200;
+const ACCEPTED_BACKGROUND_TYPES = new Set(['image/png', 'image/jpeg']);
+const ACCEPTED_BACKGROUND_EXTENSIONS = new Set(['png', 'jpg', 'jpeg']);
 const SPACE_METADATA_KEYS = [
   'equipment',
   'occupantName',
@@ -88,6 +93,7 @@ function buildBgNode(bgState: BackgroundImageState, bgEditMode: boolean): Node {
     },
     draggable:   bgEditMode && !bgState.isLocked,
     selectable:  bgEditMode,
+    selected:    bgEditMode && !bgState.isLocked,
     focusable:   false,
     deletable:   false,
     data: {
@@ -121,6 +127,11 @@ function buildSpaceMetadata(data: Record<string, unknown>): string | undefined {
   return Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined;
 }
 
+function isAcceptedBackgroundExtension(fileName: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  return !!ext && ACCEPTED_BACKGROUND_EXTENSIONS.has(ext);
+}
+
 const EditorInner = () => {
   const { id: floorId } = useParams<{ id: string }>();
   const navigate         = useNavigate();
@@ -128,9 +139,10 @@ const EditorInner = () => {
   const reactFlow        = useReactFlow();
   const setMeta          = useHeaderStore((s) => s.setMeta);
   const wrapperRef       = useRef<HTMLDivElement>(null);
+  const emptyBgInputRef  = useRef<HTMLInputElement>(null);
 
   // ── State ─────────────────────────────────────────────────────────────────
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [nodes, setNodes, applyNodesChange] = useNodesState<Node>([]);
   const [edges, , onEdgesChange]          = useEdgesState<Edge>([]);
 
   const [bgState, setBgState]         = useState<BackgroundImageState | null>(null);
@@ -157,6 +169,19 @@ const EditorInner = () => {
   } | null>(null);
 
   const isViewMode = editorMode === 'view';
+
+  const onNodesChange = useCallback((changes: NodeChange<Node>[]) => {
+    if (!bgState?.isLocked) {
+      applyNodesChange(changes);
+      return;
+    }
+
+    applyNodesChange(changes.filter((change) => {
+      if (!('id' in change)) return true;
+      if (change.id !== BG_NODE_ID) return true;
+      return change.type !== 'position' && change.type !== 'dimensions';
+    }));
+  }, [applyNodesChange, bgState?.isLocked]);
 
   // ── Data loading ──────────────────────────────────────────────────────────
   const { data: floor, isLoading } = useQuery({
@@ -225,6 +250,7 @@ const EditorInner = () => {
               ...n,
               draggable: bgEditMode && !bgState.isLocked,
               selectable: bgEditMode,
+              selected: bgEditMode && !bgState.isLocked,
               style: {
                 ...n.style,
                 zIndex: bgEditMode ? 0 : BG_NODE_ZINDEX,
@@ -299,30 +325,63 @@ const EditorInner = () => {
 
   // ── Background management ──────────────────────────────────────────────────
   const handleBgUpload = useCallback((file: File) => {
+    if (file.size === 0) {
+      toast.error('Boş dosya yüklenemez.');
+      return;
+    }
+    if (file.size > MAX_BACKGROUND_IMAGE_BYTES) {
+      toast.error('Kat krokisi en fazla 5 MB olabilir.');
+      return;
+    }
+    if (!ACCEPTED_BACKGROUND_TYPES.has(file.type) || !isAcceptedBackgroundExtension(file.name)) {
+      toast.error('Kat krokisi için yalnızca PNG veya JPG/JPEG desteklenir.');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
       const [header, data] = result.split(',');
       const mimeType = header.replace('data:', '').replace(';base64', '');
+      if (!data || !ACCEPTED_BACKGROUND_TYPES.has(mimeType)) {
+        toast.error('Kat krokisi geçerli bir PNG/JPG görseli değil.');
+        return;
+      }
 
-      const newBg: BackgroundImageState = {
-        base64:   data,
-        type:     mimeType,
-        x:        bgState?.x      ?? 0,
-        y:        bgState?.y      ?? 0,
-        width:    bgState?.width  ?? 800,
-        height:   bgState?.height ?? 600,
-        opacity:  bgState?.opacity  ?? DEFAULT_OPACITY,
-        isLocked: bgState?.isLocked ?? true,
+      const image = new Image();
+      image.onload = () => {
+        const scale = image.naturalWidth > MAX_INITIAL_BACKGROUND_WIDTH
+          ? MAX_INITIAL_BACKGROUND_WIDTH / image.naturalWidth
+          : 1;
+        const newBg: BackgroundImageState = {
+          base64:   data,
+          type:     mimeType,
+          x:        bgState?.x ?? 0,
+          y:        bgState?.y ?? 0,
+          width:    Math.round(image.naturalWidth * scale),
+          height:   Math.round(image.naturalHeight * scale),
+          opacity:  bgState?.opacity  ?? DEFAULT_OPACITY,
+          isLocked: false,
+        };
+        setBgState(newBg);
+        setBgEditMode(true);
+        setNodes((prev) => {
+          const withoutOld = prev.filter((n) => n.id !== BG_NODE_ID);
+          return [buildBgNode(newBg, true), ...withoutOld];
+        });
       };
-      setBgState(newBg);
-      setNodes((prev) => {
-        const withoutOld = prev.filter((n) => n.id !== BG_NODE_ID);
-        return [buildBgNode(newBg, bgEditMode), ...withoutOld];
-      });
+      image.onerror = () => toast.error('Kat krokisi görseli okunamadı.');
+      image.src = result;
     };
+    reader.onerror = () => toast.error('Kat krokisi dosyası okunamadı.');
     reader.readAsDataURL(file);
   }, [bgState, bgEditMode, setNodes]);
+
+  const handleEmptyBgFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleBgUpload(file);
+    e.target.value = '';
+  }, [handleBgUpload]);
 
   const handleBgRemove = useCallback(() => {
     setBgState(null);
@@ -336,8 +395,13 @@ const EditorInner = () => {
       const next = { ...prev, isLocked: !prev.isLocked };
       setNodes((nds) => nds.map((n) =>
         n.id === BG_NODE_ID
-          ? { ...n, draggable: bgEditMode && !next.isLocked,
-              data: { ...n.data, isLocked: next.isLocked } }
+          ? {
+              ...n,
+              draggable: bgEditMode && !next.isLocked,
+              selectable: bgEditMode,
+              selected: bgEditMode && !next.isLocked,
+              data: { ...n.data, isLocked: next.isLocked },
+            }
           : n
       ));
       return next;
@@ -345,11 +409,12 @@ const EditorInner = () => {
   }, [bgEditMode, setNodes]);
 
   const handleBgOpacity = useCallback((opacity: number) => {
+    const nextOpacity = Math.min(1, Math.max(0.1, opacity));
     setBgState((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, opacity };
+      const next = { ...prev, opacity: nextOpacity };
       setNodes((nds) => nds.map((n) =>
-        n.id === BG_NODE_ID ? { ...n, data: { ...n.data, opacity } } : n
+        n.id === BG_NODE_ID ? { ...n, data: { ...n.data, opacity: nextOpacity } } : n
       ));
       return next;
     });
@@ -361,8 +426,14 @@ const EditorInner = () => {
       const next = !v;
       setNodes((nds) => nds.map((n) =>
         n.id === BG_NODE_ID
-          ? { ...n, draggable: next && !bgState.isLocked, selectable: next,
-              data: { ...n.data, bgEditMode: next } }
+          ? {
+              ...n,
+              draggable: next && !bgState.isLocked,
+              selectable: next,
+              selected: next && !bgState.isLocked,
+              style: { ...n.style, zIndex: next ? 0 : BG_NODE_ZINDEX },
+              data: { ...n.data, bgEditMode: next },
+            }
           : n
       ));
       return next;
@@ -712,6 +783,13 @@ const EditorInner = () => {
 
         {/* Center: Canvas */}
         <div ref={wrapperRef} className="flex-1 relative overflow-hidden">
+          <input
+            ref={emptyBgInputRef}
+            type="file"
+            accept="image/png,image/jpeg"
+            onChange={handleEmptyBgFileChange}
+            className="hidden"
+          />
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -745,6 +823,29 @@ const EditorInner = () => {
               style={{ borderRadius: 16, border: '1px solid #e2e8f0' }}
             />
           </ReactFlow>
+
+          {!bgState && !isViewMode && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+              <div className="pointer-events-auto flex w-full max-w-sm flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/90 p-6 text-center shadow-sm backdrop-blur">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#88d0f2]/40 bg-[#eff8ff] text-[#006482]">
+                  <ImageIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Kat krokisi yüklenmedi</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                    Bu katın şu anda bir kroki görseli bulunmuyor.
+                  </p>
+                </div>
+                <button
+                  onClick={() => emptyBgInputRef.current?.click()}
+                  className="rounded-xl bg-[#006482] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#00516a]"
+                >
+                  Kat Krokisi Yükle
+                </button>
+                <p className="text-[10px] font-medium text-slate-400">PNG veya JPG/JPEG, en fazla 5 MB</p>
+              </div>
+            </div>
+          )}
 
           {/* View-mode overlay badge */}
           {isViewMode && (

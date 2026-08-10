@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +29,11 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class FloorLayoutService {
+
+    private static final int MAX_BACKGROUND_IMAGE_BYTES = 5 * 1024 * 1024;
+    private static final double MIN_BACKGROUND_OPACITY = 0.1;
+    private static final double MAX_BACKGROUND_OPACITY = 1.0;
+    private static final Set<String> SUPPORTED_BACKGROUND_TYPES = Set.of("image/png", "image/jpeg");
 
     private final FloorRepository floorRepository;
     private final FloorLayoutRepository floorLayoutRepository;
@@ -62,7 +68,7 @@ public class FloorLayoutService {
                 .backgroundWidth(layout != null ? layout.getBackgroundWidth() : null)
                 .backgroundHeight(layout != null ? layout.getBackgroundHeight() : null)
                 .backgroundOpacity(layout != null ? layout.getBackgroundOpacity() : 0.35)
-                .backgroundLocked(layout != null ? layout.getBackgroundLocked() : true)
+                .backgroundLocked(layout != null ? layout.getBackgroundLocked() : false)
                 .viewportX(layout != null ? layout.getViewportX() : 0.0)
                 .viewportY(layout != null ? layout.getViewportY() : 0.0)
                 .viewportZoom(layout != null ? layout.getViewportZoom() : 1.0)
@@ -83,14 +89,16 @@ public class FloorLayoutService {
                     return newLayout;
                 });
 
-        layout.setBackgroundImageBase64(request.getBackgroundImageBase64());
-        layout.setBackgroundImageType(request.getBackgroundImageType());
+        validateBackground(request);
+
+        layout.setBackgroundImageBase64(normalize(request.getBackgroundImageBase64()));
+        layout.setBackgroundImageType(normalize(request.getBackgroundImageType()));
         layout.setBackgroundX(request.getBackgroundX() != null ? request.getBackgroundX() : 0.0);
         layout.setBackgroundY(request.getBackgroundY() != null ? request.getBackgroundY() : 0.0);
         layout.setBackgroundWidth(request.getBackgroundWidth());
         layout.setBackgroundHeight(request.getBackgroundHeight());
         layout.setBackgroundOpacity(request.getBackgroundOpacity() != null ? request.getBackgroundOpacity() : 0.35);
-        layout.setBackgroundLocked(request.getBackgroundLocked() != null ? request.getBackgroundLocked() : true);
+        layout.setBackgroundLocked(request.getBackgroundLocked() != null ? request.getBackgroundLocked() : false);
         layout.setViewportX(request.getViewportX() != null ? request.getViewportX() : 0.0);
         layout.setViewportY(request.getViewportY() != null ? request.getViewportY() : 0.0);
         layout.setViewportZoom(request.getViewportZoom() != null ? request.getViewportZoom() : 1.0);
@@ -127,6 +135,82 @@ public class FloorLayoutService {
         }
 
         return getFloorDetail(floorId);
+    }
+
+    private void validateBackground(SaveFloorLayoutRequest request) {
+        String imageBase64 = normalize(request.getBackgroundImageBase64());
+        String imageType = normalize(request.getBackgroundImageType());
+
+        if (imageBase64 == null && imageType == null) {
+            validateOptionalPositiveDimension(request.getBackgroundWidth(), "Kroki genişliği");
+            validateOptionalPositiveDimension(request.getBackgroundHeight(), "Kroki yüksekliği");
+            validateOpacity(request.getBackgroundOpacity());
+            return;
+        }
+
+        if (imageBase64 == null || imageType == null) {
+            throw new IllegalArgumentException("Kat krokisi görseli ve dosya türü birlikte gönderilmelidir.");
+        }
+
+        if (!SUPPORTED_BACKGROUND_TYPES.contains(imageType)) {
+            throw new IllegalArgumentException("Kat krokisi için yalnızca PNG veya JPG/JPEG desteklenir.");
+        }
+
+        byte[] imageBytes;
+        try {
+            imageBytes = Base64.getDecoder().decode(imageBase64);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Kat krokisi geçerli bir Base64 görsel değil.");
+        }
+
+        if (imageBytes.length == 0) {
+            throw new IllegalArgumentException("Kat krokisi boş olamaz.");
+        }
+        if (imageBytes.length > MAX_BACKGROUND_IMAGE_BYTES) {
+            throw new IllegalArgumentException("Kat krokisi en fazla 5 MB olabilir.");
+        }
+        if (!matchesImageSignature(imageType, imageBytes)) {
+            throw new IllegalArgumentException("Kat krokisi dosya türü ile içeriği uyumlu değil.");
+        }
+
+        validateOptionalPositiveDimension(request.getBackgroundWidth(), "Kroki genişliği");
+        validateOptionalPositiveDimension(request.getBackgroundHeight(), "Kroki yüksekliği");
+        validateOpacity(request.getBackgroundOpacity());
+    }
+
+    private boolean matchesImageSignature(String imageType, byte[] bytes) {
+        if ("image/png".equals(imageType)) {
+            return bytes.length >= 8
+                    && (bytes[0] & 0xFF) == 0x89
+                    && bytes[1] == 0x50
+                    && bytes[2] == 0x4E
+                    && bytes[3] == 0x47
+                    && bytes[4] == 0x0D
+                    && bytes[5] == 0x0A
+                    && bytes[6] == 0x1A
+                    && bytes[7] == 0x0A;
+        }
+        if ("image/jpeg".equals(imageType)) {
+            return bytes.length >= 3
+                    && (bytes[0] & 0xFF) == 0xFF
+                    && (bytes[1] & 0xFF) == 0xD8
+                    && (bytes[2] & 0xFF) == 0xFF;
+        }
+        return false;
+    }
+
+    private void validateOptionalPositiveDimension(Double value, String fieldName) {
+        if (value != null && (!Double.isFinite(value) || value <= 0)) {
+            throw new IllegalArgumentException(fieldName + " pozitif bir değer olmalıdır.");
+        }
+    }
+
+    private void validateOpacity(Double opacity) {
+        if (opacity != null && (!Double.isFinite(opacity)
+                || opacity < MIN_BACKGROUND_OPACITY
+                || opacity > MAX_BACKGROUND_OPACITY)) {
+            throw new IllegalArgumentException("Kroki saydamlığı 0.1 ile 1.0 arasında olmalıdır.");
+        }
     }
 
     private Classroom resolveClassroom(Floor floor, com.dts.dersliktakip.dto.SpaceObjectRequest request) {
