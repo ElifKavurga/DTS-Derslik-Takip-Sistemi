@@ -37,6 +37,7 @@ import { ContextMenu }         from '@/components/editor/ContextMenu';
 import { ObjectPalette }       from '@/components/editor/ObjectPalette';
 import { PropertiesPanel }     from '@/components/editor/PropertiesPanel';
 import { BackgroundPanel }     from '@/components/editor/BackgroundPanel';
+import { SlotLayoutEditor }    from '@/components/editor/SlotLayoutEditor';
 import { PrimaryButton }       from '@/components/ui/PrimaryButton';
 import { floorLayoutService }  from '@/services/floorLayoutService';
 import { useHeaderStore }      from '@/store/useHeaderStore';
@@ -1106,8 +1107,45 @@ const EditorInner = () => {
 };
 
 // ─── Exported page ────────────────────────────────────────────────────────────
-export const FloorEditorPage = () => (
+const FloorPlanEditorPage = () => (
   <ReactFlowProvider>
     <EditorInner />
   </ReactFlowProvider>
 );
+
+export const FloorEditorPage = () => {
+  const { id: floorId } = useParams<{ id: string }>();
+
+  const { data: floor, isLoading, isError } = useQuery({
+    queryKey: ['floorDetail', floorId],
+    queryFn:  () => floorLayoutService.getFloorDetail(floorId!),
+    enabled:  !!floorId,
+  });
+
+  if (isLoading && !floor) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 rounded-full border-4 border-[#006482] border-t-transparent animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">Kat editörü yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !floor) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="rounded-2xl border border-red-200 bg-white p-6 text-center shadow-sm">
+          <p className="text-sm font-semibold text-slate-800">Kat bilgisi yüklenemedi.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (floor.planMode === 'SLOT_LAYOUT') {
+    return <SlotLayoutEditor floor={floor} />;
+  }
+
+  return <FloorPlanEditorPage />;
+};
