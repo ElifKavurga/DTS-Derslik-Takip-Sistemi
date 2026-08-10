@@ -188,8 +188,8 @@ public class SlotLayoutService {
                 throw new IllegalArgumentException("Seçilen slot grid sınırları dışında.");
             }
         }
-        if (!isClassroomPlacementType(request.getType()) && request.getClassroomId() != null) {
-            throw new IllegalArgumentException("Bu nesne türü derslik kaydına bağlanamaz.");
+        if (request.getType() != SpaceObjectType.CLASSROOM) {
+            throw new IllegalArgumentException("Slot Layout yalnızca sınıflar için kullanılabilir.");
         }
         if (request.getCapacity() != null && request.getCapacity() < 0) {
             throw new IllegalArgumentException("Kapasite negatif olamaz.");
@@ -197,10 +197,6 @@ public class SlotLayoutService {
     }
 
     private Classroom resolveClassroom(Floor floor, SpaceObjectRequest request) {
-        if (!isClassroomPlacementType(request.getType())) {
-            return null;
-        }
-
         if (request.getClassroomId() != null) {
             Classroom classroom = classroomRepository.findById(request.getClassroomId())
                     .orElseThrow(() -> new ResourceNotFoundException("Derslik bulunamadı."));
@@ -211,31 +207,7 @@ public class SlotLayoutService {
             return classroom;
         }
 
-        String resolvedCode = normalize(request.getCode());
-        if (resolvedCode == null) {
-            resolvedCode = normalize(request.getLabel());
-        }
-        if (resolvedCode == null) {
-            throw new IllegalArgumentException("Derslik, laboratuvar veya amfi için kod ya da ad zorunludur.");
-        }
-        String classroomCode = resolvedCode;
-
-        return classroomRepository.findByFloorIdAndCodeIgnoreCase(floor.getId(), classroomCode)
-                .map(existing -> {
-                    validateTypeCompatibility(request.getType(), existing.getType());
-                    return existing;
-                })
-                .orElseGet(() -> createClassroom(floor, request, classroomCode));
-    }
-
-    private Classroom createClassroom(Floor floor, SpaceObjectRequest request, String code) {
-        Classroom classroom = new Classroom();
-        classroom.setFloor(floor);
-        classroom.setCode(code);
-        classroom.setName(normalize(request.getLabel()) != null ? normalize(request.getLabel()) : code);
-        classroom.setCapacity(request.getCapacity() != null ? request.getCapacity() : 0);
-        classroom.setType(toClassroomType(request.getType()));
-        return classroomRepository.save(classroom);
+        throw new IllegalArgumentException("Slot Layout yalnızca mevcut sınıflar için kullanılabilir.");
     }
 
     private List<SpaceObjectResponse> getObjects(UUID floorId) {
@@ -265,12 +237,6 @@ public class SlotLayoutService {
         return row + ":" + column;
     }
 
-    private boolean isClassroomPlacementType(SpaceObjectType type) {
-        return type == SpaceObjectType.CLASSROOM
-                || type == SpaceObjectType.LABORATORY
-                || type == SpaceObjectType.AMPHITHEATER;
-    }
-
     private void validateTypeCompatibility(SpaceObjectType objectType, ClassroomType classroomType) {
         if (toClassroomType(objectType) != classroomType) {
             throw new IllegalArgumentException("Derslik türü ile slot nesnesi türü uyumlu değil.");
@@ -280,8 +246,6 @@ public class SlotLayoutService {
     private ClassroomType toClassroomType(SpaceObjectType type) {
         return switch (type) {
             case CLASSROOM -> ClassroomType.CLASSROOM;
-            case LABORATORY -> ClassroomType.LABORATORY;
-            case AMPHITHEATER -> ClassroomType.AMPHITHEATER;
             default -> throw new IllegalArgumentException("Bu nesne türü derslik kaydına bağlanamaz.");
         };
     }
@@ -296,14 +260,8 @@ public class SlotLayoutService {
     private SpaceObjectType toSpaceObjectType(ClassroomType type) {
         return switch (type) {
             case CLASSROOM -> SpaceObjectType.CLASSROOM;
-            case LABORATORY -> SpaceObjectType.LABORATORY;
-            case AMPHITHEATER -> SpaceObjectType.AMPHITHEATER;
+            default -> throw new IllegalArgumentException("Slot Layout yalnızca sınıflar için kullanılabilir.");
         };
     }
 
-    private String normalize(String value) {
-        if (value == null) return null;
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 }

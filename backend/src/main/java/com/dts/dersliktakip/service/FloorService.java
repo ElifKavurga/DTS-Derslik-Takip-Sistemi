@@ -5,6 +5,7 @@ import com.dts.dersliktakip.dto.FloorResponse;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Floor;
+import com.dts.dersliktakip.entity.PlanMode;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.mapper.FloorMapper;
 import com.dts.dersliktakip.repository.BuildingRepository;
@@ -49,6 +50,7 @@ public class FloorService {
 
         Floor floor = floorMapper.toEntity(request);
         floor.setBuilding(building);
+        floor.setPlanMode(request.getPlanMode() != null ? request.getPlanMode() : PlanMode.FLOOR_PLAN);
         Floor savedFloor = floorRepository.save(floor);
         return enrichResponse(floorMapper.toResponse(savedFloor));
     }
@@ -65,6 +67,9 @@ public class FloorService {
         }
 
         floorMapper.updateEntityFromRequest(request, floor);
+        if (request.getPlanMode() != null) {
+            floor.setPlanMode(request.getPlanMode());
+        }
         Floor updatedFloor = floorRepository.save(floor);
         return enrichResponse(floorMapper.toResponse(updatedFloor));
     }

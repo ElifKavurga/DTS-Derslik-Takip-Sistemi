@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Layers, MapPinned, ChevronLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, Layers, MapPinned, ChevronLeft, Grid3X3 } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -22,6 +22,7 @@ import { buildingService } from '@/services/buildingService';
 import { floorService } from '@/services/floorService';
 import { useHeaderStore } from '@/store/useHeaderStore';
 import { FloorResponse, CreateFloorRequest, UpdateFloorRequest } from '@/types';
+import type { PlanMode } from '@/types';
 
 // Zod validation schema
 const floorSchema = z.object({
@@ -32,6 +33,7 @@ const floorSchema = z.object({
   level: z
     .number({ invalid_type_error: 'Kat numarası zorunludur.' })
     .int('Kat numarası tam sayı olmalıdır.'),
+  planMode: z.enum(['FLOOR_PLAN', 'SLOT_LAYOUT']),
 });
 
 type FloorFormValues = z.infer<typeof floorSchema>;
@@ -98,20 +100,21 @@ export const BuildingDetailPage = () => {
     defaultValues: {
       name: '',
       level: 0,
+      planMode: 'FLOOR_PLAN',
     },
   });
 
   // Open modal for Create
   const handleOpenCreate = () => {
     setEditingFloor(null);
-    reset({ name: '', level: 0 });
+    reset({ name: '', level: 0, planMode: 'FLOOR_PLAN' });
     setIsModalOpen(true);
   };
 
   // Open modal for Edit
   const handleOpenEdit = (floor: FloorResponse) => {
     setEditingFloor(floor);
-    reset({ name: floor.name, level: floor.level });
+    reset({ name: floor.name, level: floor.level, planMode: floor.planMode });
     setIsModalOpen(true);
   };
 
@@ -268,6 +271,10 @@ export const BuildingDetailPage = () => {
         ) : (
           <RichList>
             {filteredFloors.map((floor) => {
+              const isSlotLayout = floor.planMode === 'SLOT_LAYOUT';
+              const modeLabel = isSlotLayout ? 'Slot Yerleşimi' : 'Kat Krokisi';
+              const editLabel = isSlotLayout ? 'Slot Yerleşimini Düzenle' : 'Kat Planını Düzenle';
+              const ModeIcon = isSlotLayout ? Grid3X3 : Layers;
               const actions = [
                 {
                   label: 'Düzenle',
@@ -292,13 +299,18 @@ export const BuildingDetailPage = () => {
                     {/* Floor Name & Level */}
                     <div className="flex items-center gap-3.5">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 border border-slate-100 group-hover:bg-[#eff8ff] group-hover:text-[#006482] transition duration-200">
-                        <Layers className="h-5.5 w-5.5" />
+                        <ModeIcon className="h-5.5 w-5.5" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-slate-900 leading-tight group-hover:text-[#006482] transition-colors duration-150">
                           {floor.name}
                         </h4>
-                        <p className="text-[10px] text-slate-400 mt-1">Kat Numarası: {floor.level}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <p className="text-[10px] text-slate-400">Kat Numarası: {floor.level}</p>
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-bold text-slate-500">
+                            {modeLabel}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -311,6 +323,17 @@ export const BuildingDetailPage = () => {
                           <span className="text-xs font-extrabold text-slate-700 mt-0.5 leading-none">{floor.totalClassrooms}</span>
                         </div>
                       </div>
+                      <SecondaryButton
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/super-admin/katlar/${floor.id}`);
+                        }}
+                        icon={isSlotLayout ? <Grid3X3 className="h-3.5 w-3.5" /> : <Layers className="h-3.5 w-3.5" />}
+                        className="text-xs"
+                      >
+                        {editLabel}
+                      </SecondaryButton>
                     </div>
                   </div>
                 </RichListItem>
@@ -353,6 +376,40 @@ export const BuildingDetailPage = () => {
               className={`dts-input ${errors.level ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : ''}`}
             />
             {errors.level && <p className="text-[11px] font-medium text-red-500 mt-1">{errors.level.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <span className="dts-input-label">Kat Yerleşimi</span>
+            <div className="grid gap-2">
+              {([
+                {
+                  value: 'FLOOR_PLAN' as PlanMode,
+                  title: 'Kat krokisi kullanacağım',
+                  description: 'Katın mevcut plan görselini yükleyerek fiziksel alanları gerçek plan üzerinde konumlandırabilirsiniz.',
+                },
+                {
+                  value: 'SLOT_LAYOUT' as PlanMode,
+                  title: 'Kroki henüz mevcut değil',
+                  description: 'Kat planı olmadan sınıfları basit slot düzeninde yönetebilirsiniz.',
+                },
+              ]).map((option) => (
+                <label
+                  key={option.value}
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 transition hover:border-[#88d0f2] hover:bg-slate-50"
+                >
+                  <input
+                    type="radio"
+                    value={option.value}
+                    {...register('planMode')}
+                    className="mt-1 accent-[#006482]"
+                  />
+                  <span>
+                    <span className="block text-sm font-bold text-slate-800">{option.title}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-slate-500">{option.description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-2">

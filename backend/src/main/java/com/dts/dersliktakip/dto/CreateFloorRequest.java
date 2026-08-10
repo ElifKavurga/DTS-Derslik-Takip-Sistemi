@@ -1,5 +1,7 @@
 package com.dts.dersliktakip.dto;
 
+import com.dts.dersliktakip.entity.PlanMode;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -20,4 +22,6 @@ public class CreateFloorRequest {
 
     @NotNull(message = "Kat numarası zorunludur.")
     private Integer level;
+
+    private PlanMode planMode;
 }

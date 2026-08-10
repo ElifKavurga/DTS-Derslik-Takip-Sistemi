@@ -63,6 +63,7 @@ class SlotLayoutServiceTest {
 
     private Floor floor;
     private Classroom classroom;
+    private Classroom secondClassroom;
     private Classroom laboratory;
 
     @BeforeEach
@@ -87,6 +88,7 @@ class SlotLayoutServiceTest {
         floor = floorRepository.save(floor);
 
         classroom = createClassroom("D101", ClassroomType.CLASSROOM);
+        secondClassroom = createClassroom("D102", ClassroomType.CLASSROOM);
         laboratory = createClassroom("LAB01", ClassroomType.LABORATORY);
     }
 
@@ -173,7 +175,7 @@ class SlotLayoutServiceTest {
                 .columns(4)
                 .objects(List.of(
                         slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), 0, 0),
-                        slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0)
+                        slotObject(SpaceObjectType.CLASSROOM, secondClassroom.getId(), 0, 0)
                 ))
                 .build();
 
@@ -199,8 +201,8 @@ class SlotLayoutServiceTest {
     }
 
     @Test
-    void saveSlotLayoutAllowsNullSlotPlacement() {
-        SpaceObjectRequest object = slotObject(SpaceObjectType.MALE_WC, null, null, null);
+    void saveSlotLayoutAllowsUnassignedClassroomPlacement() {
+        SpaceObjectRequest object = slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), null, null);
         SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
                 .rows(3)
                 .columns(4)
@@ -216,6 +218,20 @@ class SlotLayoutServiceTest {
                     assertThat(spaceObject.getSlotRow()).isNull();
                     assertThat(spaceObject.getSlotColumn()).isNull();
                 });
+    }
+
+    @Test
+    void saveSlotLayoutRejectsNonClassroomObjects() {
+        SpaceObjectRequest object = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0);
+        SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
+                .rows(3)
+                .columns(4)
+                .objects(List.of(object))
+                .build();
+
+        assertThatThrownBy(() -> slotLayoutService.saveSlotLayout(floor.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("yalnızca sınıflar");
     }
 
     @Test

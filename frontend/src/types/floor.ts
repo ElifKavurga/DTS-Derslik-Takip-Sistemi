@@ -18,9 +18,11 @@ export interface FloorListResponse {
 export interface CreateFloorRequest {
   name: string;
   level: number;
+  planMode?: PlanMode;
 }
 
 export interface UpdateFloorRequest {
   name: string;
   level: number;
+  planMode?: PlanMode;
 }
