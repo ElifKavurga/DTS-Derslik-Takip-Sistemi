@@ -204,6 +204,22 @@ class SlotLayoutServiceTest {
     }
 
     @Test
+    void saveSlotLayoutRejectsDuplicateLaboratoryPlacement() {
+        SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
+                .rows(3)
+                .columns(4)
+                .objects(List.of(
+                        slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0),
+                        slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 1)
+                ))
+                .build();
+
+        assertThatThrownBy(() -> slotLayoutService.saveSlotLayout(floor.getId(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("zaten bu katta yerleştirilmiş");
+    }
+
+    @Test
     void saveSlotLayoutAllowsUnassignedClassroomPlacement() {
         SpaceObjectRequest object = slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), null, null);
         SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
@@ -241,6 +257,74 @@ class SlotLayoutServiceTest {
         assertThat(response.getObjects())
                 .extracting("type")
                 .containsExactlyInAnyOrder(SpaceObjectType.CLASSROOM, SpaceObjectType.LABORATORY, SpaceObjectType.AMPHITHEATER);
+    }
+
+    @Test
+    void saveSlotLayoutReloadKeepsMixedTeachingSpacePlacements() {
+        SaveSlotLayoutRequest request = SaveSlotLayoutRequest.builder()
+                .rows(3)
+                .columns(4)
+                .objects(List.of(
+                        slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), 0, 0),
+                        slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 1),
+                        slotObject(SpaceObjectType.AMPHITHEATER, amphitheater.getId(), 0, 2)
+                ))
+                .build();
+
+        slotLayoutService.saveSlotLayout(floor.getId(), request);
+        SlotLayoutResponse reloaded = slotLayoutService.getSlotLayout(floor.getId());
+
+        assertThat(reloaded.getObjects()).hasSize(3);
+        assertThat(reloaded.getObjects())
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(classroom.getId());
+                    assertThat(object.getSlotRow()).isZero();
+                    assertThat(object.getSlotColumn()).isZero();
+                })
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(laboratory.getId());
+                    assertThat(object.getSlotRow()).isZero();
+                    assertThat(object.getSlotColumn()).isEqualTo(1);
+                })
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(amphitheater.getId());
+                    assertThat(object.getSlotRow()).isZero();
+                    assertThat(object.getSlotColumn()).isEqualTo(2);
+                });
+    }
+
+    @Test
+    void saveSlotLayoutRemovePlacementKeepsPhysicalTeachingSpaceRecord() {
+        SpaceObjectRequest object = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0);
+        slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(object))
+                        .build()
+        );
+
+        object.setSlotRow(null);
+        object.setSlotColumn(null);
+        SlotLayoutResponse response = slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(object))
+                        .build()
+        );
+
+        assertThat(classroomRepository.findById(laboratory.getId())).isPresent();
+        assertThat(response.getObjects())
+                .hasSize(1)
+                .first()
+                .satisfies(spaceObject -> {
+                    assertThat(spaceObject.getClassroomId()).isEqualTo(laboratory.getId());
+                    assertThat(spaceObject.getSlotRow()).isNull();
+                    assertThat(spaceObject.getSlotColumn()).isNull();
+                });
     }
 
     @Test
