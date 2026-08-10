@@ -9,9 +9,11 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface SpaceObjectMapper {
 
+    @Mapping(target = "classroomId", source = "classroom.id")
     SpaceObjectResponse toResponse(SpaceObject entity);
 
     @Mapping(target = "floor", ignore = true)
+    @Mapping(target = "classroom", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "status", defaultExpression = "java(com.dts.dersliktakip.entity.SpaceObjectStatus.EMPTY)")

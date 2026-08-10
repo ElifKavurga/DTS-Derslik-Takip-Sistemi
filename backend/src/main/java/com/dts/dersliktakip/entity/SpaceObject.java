@@ -20,6 +20,10 @@ public class SpaceObject {
     @JoinColumn(name = "floor_id", nullable = false)
     private Floor floor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classroom_id")
+    private Classroom classroom;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private SpaceObjectType type;
@@ -50,6 +54,9 @@ public class SpaceObject {
 
     @Column(nullable = false)
     private Double rotation = 0.0;
+
+    @Column(columnDefinition = "TEXT", name = "metadata_json")
+    private String metadataJson;
 
     @Column(nullable = false, updatable = false, name = "created_at")
     private Instant createdAt;

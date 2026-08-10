@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface SpaceObjectRepository extends JpaRepository<SpaceObject, UUID> {
     List<SpaceObject> findAllByFloorId(UUID floorId);
     void deleteAllByFloorId(UUID floorId);
+    boolean existsByFloorIdAndClassroomId(UUID floorId, UUID classroomId);
 }

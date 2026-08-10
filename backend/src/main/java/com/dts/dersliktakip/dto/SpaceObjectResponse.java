@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SpaceObjectResponse {
     private UUID id;
+    private UUID classroomId;
     private SpaceObjectType type;
     private SpaceObjectStatus status;
     private String label;
@@ -25,4 +26,5 @@ public class SpaceObjectResponse {
     private Double width;
     private Double height;
     private Double rotation;
+    private String metadataJson;
 }

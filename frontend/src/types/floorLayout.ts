@@ -53,6 +53,7 @@ export interface AmphitheaterEquipment {
 
 // ─── Node data (stored in React Flow node.data) ───────────────────────────────
 export interface SpaceObjectData extends Record<string, unknown> {
+  classroomId?: string;
   type: SpaceObjectType;
   status: SpaceObjectStatus;
   label: string;
@@ -69,6 +70,7 @@ export interface SpaceObjectData extends Record<string, unknown> {
   isHidden?: boolean;
   // Future: reservation hooks
   reservationId?: string;
+  metadataJson?: string;
 }
 
 // ─── Background image state ───────────────────────────────────────────────────
@@ -86,6 +88,7 @@ export interface BackgroundImageState {
 // ─── API Response / Request shapes ───────────────────────────────────────────
 export interface SpaceObjectResponse {
   id: string;
+  classroomId?: string;
   type: SpaceObjectType;
   status: SpaceObjectStatus;
   label: string;
@@ -96,6 +99,7 @@ export interface SpaceObjectResponse {
   width: number;
   height: number;
   rotation: number;
+  metadataJson?: string;
 }
 
 export interface FloorDetailResponse {
@@ -122,6 +126,7 @@ export interface FloorDetailResponse {
 
 export interface SpaceObjectRequest {
   id: string;
+  classroomId?: string;
   type: SpaceObjectType;
   status: SpaceObjectStatus;
   label: string;
@@ -132,6 +137,7 @@ export interface SpaceObjectRequest {
   width: number;
   height: number;
   rotation: number;
+  metadataJson?: string;
 }
 
 export interface SaveFloorLayoutRequest {

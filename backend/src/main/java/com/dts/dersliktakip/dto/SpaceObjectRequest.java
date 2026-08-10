@@ -19,6 +19,8 @@ public class SpaceObjectRequest {
     @NotNull(message = "Nesne ID zorunludur.")
     private UUID id;
 
+    private UUID classroomId;
+
     @NotNull(message = "Nesne türü zorunludur.")
     private SpaceObjectType type;
 
@@ -36,4 +38,5 @@ public class SpaceObjectRequest {
     private Double width;
     private Double height;
     private Double rotation;
+    private String metadataJson;
 }

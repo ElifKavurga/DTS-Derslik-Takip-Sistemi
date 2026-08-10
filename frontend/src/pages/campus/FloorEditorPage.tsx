@@ -55,6 +55,16 @@ const GRID_SIZE        = 20;
 const DEFAULT_OPACITY  = 0.35;
 const DUPLICATE_OFFSET = 20;
 const BG_NODE_ZINDEX   = -1000;
+const SPACE_METADATA_KEYS = [
+  'equipment',
+  'occupantName',
+  'occupantTitle',
+  'description',
+  'elevatorNo',
+  'isLocked',
+  'isHidden',
+  'reservationId',
+] as const;
 
 // ─── Keyboard hint items ──────────────────────────────────────────────────────
 const SHORTCUTS = [
@@ -91,6 +101,26 @@ function buildBgNode(bgState: BackgroundImageState, bgEditMode: boolean): Node {
 }
 
 // ─── Inner editor ─────────────────────────────────────────────────────────────
+function parseSpaceMetadata(metadataJson?: string): Record<string, unknown> {
+  if (!metadataJson) return {};
+  try {
+    const parsed = JSON.parse(metadataJson);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildSpaceMetadata(data: Record<string, unknown>): string | undefined {
+  const metadata = SPACE_METADATA_KEYS.reduce<Record<string, unknown>>((acc, key) => {
+    if (data[key] !== undefined) acc[key] = data[key];
+    return acc;
+  }, {});
+  return Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined;
+}
+
 const EditorInner = () => {
   const { id: floorId } = useParams<{ id: string }>();
   const navigate         = useNavigate();
@@ -143,16 +173,24 @@ const EditorInner = () => {
     ]);
 
     // Restore space object nodes
-    const hydrated: Node[] = floor.objects.map((obj) => ({
-      id:       obj.id,
-      type:     'spaceNode',
-      position: { x: obj.positionX, y: obj.positionY },
-      style:    { width: obj.width, height: obj.height },
-      data: {
-        type: obj.type, status: obj.status,
-        label: obj.label, code: obj.code, capacity: obj.capacity,
-      },
-    }));
+    const hydrated: Node[] = floor.objects.map((obj) => {
+      const metadata = parseSpaceMetadata(obj.metadataJson);
+      return {
+        id:       obj.id,
+        type:     'spaceNode',
+        position: { x: obj.positionX, y: obj.positionY },
+        style:    { width: obj.width, height: obj.height },
+        draggable: metadata.isLocked !== true,
+        hidden:    metadata.isHidden === true,
+        data: {
+          ...metadata,
+          classroomId: obj.classroomId,
+          type: obj.type, status: obj.status,
+          label: obj.label, code: obj.code, capacity: obj.capacity,
+          rotation: obj.rotation,
+        },
+      };
+    });
 
     // Restore background
     if (floor.backgroundImageBase64) {
@@ -228,6 +266,7 @@ const EditorInner = () => {
         const d = n.data as Record<string, unknown>;
         return {
           id:        n.id,
+          classroomId: d['classroomId'] as string | undefined,
           type:      (d['type']   as SpaceObjectType)   ?? 'CLASSROOM',
           status:    (d['status'] as SpaceObjectStatus) ?? 'EMPTY',
           label:     (d['label']  as string)            ?? '',
@@ -237,7 +276,8 @@ const EditorInner = () => {
           positionY: n.position.y,
           width:     typeof n.style?.width  === 'number' ? n.style.width  : 160,
           height:    typeof n.style?.height === 'number' ? n.style.height : 100,
-          rotation:  0,
+          rotation:  (d['rotation'] as number | undefined) ?? 0,
+          metadataJson: buildSpaceMetadata(d),
         };
       });
 
