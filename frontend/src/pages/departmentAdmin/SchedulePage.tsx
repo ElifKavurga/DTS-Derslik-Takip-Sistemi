@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Settings, Trash2, User, XCircle } from 'lucide-react';
@@ -60,6 +60,12 @@ const dayLabel = (day: string) => scheduleDays.find((item) => item.value === day
 
 const formatSlot = (slot: string) => slot.replace('-', ' - ');
 
+type ScheduleGroupMeta = {
+  firstScheduleId: string;
+  slotCount: number;
+  timeRange: string;
+};
+
 export const SchedulePage = () => {
   const queryClient = useQueryClient();
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
@@ -101,11 +107,29 @@ export const SchedulePage = () => {
     [timeConfiguration],
   );
 
-  const selectedSlotIndex = timeSlots.findIndex((slot) => slot === form.timeSlot);
-  const maxSlotCount = selectedSlotIndex >= 0 ? Math.max(1, timeSlots.length - selectedSlotIndex) : 1;
+  const selectedSlot = useMemo(
+    () => timeConfiguration?.slots.find((slot) => slot.value === form.timeSlot) ?? null,
+    [form.timeSlot, timeConfiguration],
+  );
+  const selectedSlotIndex = selectedSlot?.index ?? -1;
+  const maxSlotCount = selectedSlotIndex >= 0 ? Math.max(1, timeSlots.length - selectedSlotIndex) : 0;
+  const slotCountOptions = useMemo(
+    () => Array.from({ length: Math.min(maxSlotCount, 12) }, (_, index) => ({
+      label: `${index + 1} ders saati`,
+      value: String(index + 1),
+    })),
+    [maxSlotCount],
+  );
   const selectedSlots = selectedSlotIndex >= 0
     ? timeSlots.slice(selectedSlotIndex, selectedSlotIndex + Math.min(form.slotCount, maxSlotCount))
     : [];
+
+  useEffect(() => {
+    if (!form.timeSlot) return;
+    if (maxSlotCount > 0 && form.slotCount > maxSlotCount) {
+      updateForm({ slotCount: maxSlotCount });
+    }
+  }, [form.timeSlot, form.slotCount, maxSlotCount]);
 
   const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot && form.slotCount);
 
@@ -139,6 +163,31 @@ export const SchedulePage = () => {
     });
     return map;
   }, [schedules]);
+
+  const scheduleGroupMetaById = useMemo(() => {
+    const groups = new Map<string, WeeklyScheduleResponse[]>();
+    schedules.forEach((schedule) => {
+      const groupKey = schedule.scheduleGroupId ?? schedule.id;
+      groups.set(groupKey, [...(groups.get(groupKey) ?? []), schedule]);
+    });
+
+    const metaById = new Map<string, ScheduleGroupMeta>();
+    groups.forEach((groupSchedules) => {
+      const sortedSchedules = [...groupSchedules].sort((a, b) => timeSlots.indexOf(a.timeSlot) - timeSlots.indexOf(b.timeSlot));
+      const firstSchedule = sortedSchedules[0];
+      const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
+      if (!firstSchedule || !lastSchedule) return;
+      const startTime = firstSchedule.timeSlot.split('-')[0]?.trim() ?? firstSchedule.timeSlot;
+      const endTime = lastSchedule.timeSlot.split('-')[1]?.trim() ?? lastSchedule.timeSlot;
+      const meta = {
+        firstScheduleId: firstSchedule.id,
+        slotCount: sortedSchedules.length,
+        timeRange: `${startTime} - ${endTime}`,
+      };
+      sortedSchedules.forEach((schedule) => metaById.set(schedule.id, meta));
+    });
+    return metaById;
+  }, [schedules, timeSlots]);
 
   const courseOptions = useMemo(
     () => courses
@@ -380,6 +429,7 @@ export const SchedulePage = () => {
                 </div>
                 {scheduleDays.map((day) => {
                   const cellSchedules = schedulesByCell.get(`${day.value}:${slot}`) ?? [];
+                  const visibleSchedules = cellSchedules.filter((schedule) => scheduleGroupMetaById.get(schedule.id)?.firstScheduleId === schedule.id);
                   const hasConflict = cellSchedules.some((schedule, index) =>
                     cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
                   );
@@ -387,10 +437,11 @@ export const SchedulePage = () => {
                   return (
                     <div key={`${day.value}-${slot}`} className="min-h-28 border-b border-r border-slate-100 p-2">
                       <div className="space-y-2">
-                        {cellSchedules.map((schedule) => (
+                        {visibleSchedules.map((schedule) => (
                           <ScheduleCard
                             key={schedule.id}
                             schedule={schedule}
+                            groupMeta={scheduleGroupMetaById.get(schedule.id)}
                             hasConflict={hasConflict}
                             onEdit={() => openEdit(schedule)}
                             onDelete={() => setDeletingSchedule(schedule)}
@@ -438,7 +489,7 @@ export const SchedulePage = () => {
               <AppSelect
                 value={form.timeSlot}
                 onChange={(timeSlot) => updateForm({ timeSlot, slotCount: 1 })}
-                options={timeSlots.map((slot) => ({ label: formatSlot(slot), value: slot }))}
+                options={(timeConfiguration?.slots ?? []).map((slot) => ({ label: slot.startTime, value: slot.value }))}
                 placeholder="Saat seçiniz"
               />
             </div>
@@ -450,11 +501,9 @@ export const SchedulePage = () => {
               <AppSelect
                 value={String(form.slotCount)}
                 onChange={(slotCount) => updateForm({ slotCount: Number(slotCount) })}
-                options={Array.from({ length: Math.min(maxSlotCount, 12) }, (_, index) => ({
-                  label: `${index + 1} ders saati`,
-                  value: String(index + 1),
-                }))}
+                options={slotCountOptions}
                 placeholder="Saat"
+                disabled={!form.timeSlot || slotCountOptions.length === 0}
               />
             </div>
             <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-2">
@@ -801,11 +850,13 @@ const StatusBadge = ({ status }: { status: CourseScheduleStatusItemResponse['sta
 
 const ScheduleCard = ({
   schedule,
+  groupMeta,
   hasConflict,
   onEdit,
   onDelete,
 }: {
   schedule: WeeklyScheduleResponse;
+  groupMeta?: ScheduleGroupMeta;
   hasConflict: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -828,7 +879,7 @@ const ScheduleCard = ({
     <div className="mt-2 space-y-1 text-[10px] font-semibold text-slate-500">
       <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> <span className="truncate">{schedule.academicianName}</span></p>
       <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> <span className="truncate">{schedule.classroomCode} · {schedule.classroomName}</span></p>
-      <p className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {formatSlot(schedule.timeSlot)}</p>
+      <p className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {groupMeta && groupMeta.slotCount > 1 ? `${groupMeta.slotCount} ders saati · ${groupMeta.timeRange}` : formatSlot(schedule.timeSlot)}</p>
       {hasConflict && <p className="flex items-center gap-1.5 font-bold text-red-600"><XCircle className="h-3 w-3" /> Çakışma</p>}
     </div>
   </article>

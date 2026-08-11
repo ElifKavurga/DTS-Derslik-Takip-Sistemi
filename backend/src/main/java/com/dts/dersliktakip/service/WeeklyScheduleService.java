@@ -480,7 +480,7 @@ public class WeeklyScheduleService {
             Boolean capacitySufficient
     ) {
         if (classroomConflict.isPresent()) {
-            return "Bu sınıf seçilen zaman dilimlerinden birinde kullanımda: " + classroomConflict.get().getTimeSlot();
+            return classroom.getCode() + " seçilen ders süresinin tamamında uygun değil. Çakışan saat: " + classroomConflict.get().getTimeSlot();
         }
         if (academicianConflict.isPresent()) {
             return "Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + academicianConflict.get().getTimeSlot();

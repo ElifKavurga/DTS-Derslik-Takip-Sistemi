@@ -16,6 +16,7 @@ import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.WeeklySchedule;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
+import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,9 @@ class WeeklyScheduleServiceTest {
     private ClassroomRepository classroomRepository;
 
     @Mock
+    private DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
+
+    @Mock
     private AccessScopeService accessScopeService;
 
     @InjectMocks
@@ -58,7 +62,7 @@ class WeeklyScheduleServiceTest {
         Department scopedDepartment = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
         Department otherDepartment = department(UUID.randomUUID(), scopedDepartment.getFaculty());
         Course foreignCourse = course(UUID.randomUUID(), otherDepartment);
-        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(foreignCourse.getId(), UUID.randomUUID(), "MONDAY", "10:00-11:00");
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(foreignCourse.getId(), UUID.randomUUID(), "MONDAY", "10:05-10:50", 1);
 
         when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(scopedDepartment);
         when(courseRepository.findById(foreignCourse.getId())).thenReturn(Optional.of(foreignCourse));
@@ -67,7 +71,7 @@ class WeeklyScheduleServiceTest {
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessage("Bu ders için program oluşturma yetkiniz yok.");
         verify(classroomRepository, never()).findById(request.classroomId());
-        verify(weeklyScheduleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -83,20 +87,21 @@ class WeeklyScheduleServiceTest {
         conflict.setCourse(conflictingCourse);
         conflict.setClassroom(classroom);
         conflict.setDayOfWeek("MONDAY");
-        conflict.setTimeSlot("10:00-11:00");
-        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:00-11:00");
+        conflict.setTimeSlot("10:05-10:50");
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
 
         when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(scopedDepartment);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
-        when(weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:00-11:00"))
-                .thenReturn(Optional.of(conflict));
+        when(departmentScheduleConfigRepository.findByDepartmentId(scopedDepartment.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("D101 sınıfı Pazartesi 10:00-11:00 zamanında kullanımdadır.")
+                .hasMessageContaining("D101 sınıfı Pazartesi 10:05-10:50 zamanında kullanımdadır.")
                 .hasMessageContaining(conflictingCourse.getCode());
-        verify(weeklyScheduleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -108,21 +113,22 @@ class WeeklyScheduleServiceTest {
         Course conflictingCourse = course(UUID.randomUUID(), department);
         conflictingCourse.setAcademician(course.getAcademician());
         Classroom classroom = classroom(UUID.randomUUID(), faculty);
-        WeeklySchedule conflict = schedule(conflictingCourse, classroom, "MONDAY", "10:00-11:00");
-        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:00-11:00");
+        WeeklySchedule conflict = schedule(conflictingCourse, classroom, "MONDAY", "10:05-10:50");
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
 
         when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
-        when(weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:00-11:00"))
-                .thenReturn(Optional.empty());
-        when(weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:00-11:00"))
-                .thenReturn(Optional.of(conflict));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.");
-        verify(weeklyScheduleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+                .hasMessage("Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: 10:05-10:50");
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 
     @Test
