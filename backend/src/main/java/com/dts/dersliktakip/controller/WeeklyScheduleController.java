@@ -56,11 +56,12 @@ public class WeeklyScheduleController {
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
     public ResponseEntity<List<AvailableClassroomResponse>> getAvailableClassrooms(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) UUID courseId,
             @RequestParam String dayOfWeek,
             @RequestParam String timeSlot,
             @RequestParam(required = false) UUID excludeScheduleId
     ) {
-        return ResponseEntity.ok(weeklyScheduleService.getAvailableClassrooms(principal.getUser(), dayOfWeek, timeSlot, excludeScheduleId));
+        return ResponseEntity.ok(weeklyScheduleService.getAvailableClassrooms(principal.getUser(), courseId, dayOfWeek, timeSlot, excludeScheduleId));
     }
 
     @PostMapping

@@ -116,13 +116,14 @@ public class WeeklyScheduleService {
     }
 
     @Transactional(readOnly = true)
-    public List<AvailableClassroomResponse> getAvailableClassrooms(User currentUser, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
+    public List<AvailableClassroomResponse> getAvailableClassrooms(User currentUser, UUID courseId, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
         String normalizedDay = normalizeDay(dayOfWeek);
         String normalizedTimeSlot = normalizeTimeSlot(timeSlot);
+        Course course = courseId != null ? resolveCourse(courseId, department) : null;
 
         return classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).stream()
-                .map(classroom -> toAvailableClassroomResponse(classroom, normalizedDay, normalizedTimeSlot, excludeScheduleId))
+                .map(classroom -> toAvailableClassroomResponse(classroom, course, normalizedDay, normalizedTimeSlot, excludeScheduleId))
                 .toList();
     }
 
@@ -135,6 +136,8 @@ public class WeeklyScheduleService {
         String timeSlot = normalizeTimeSlot(request.timeSlot());
 
         assertNoConflict(classroom, dayOfWeek, timeSlot, null);
+        assertNoAcademicianConflict(course, dayOfWeek, timeSlot, null);
+        assertCapacitySufficient(course, classroom);
 
         WeeklySchedule schedule = new WeeklySchedule();
         schedule.setCourse(course);
@@ -162,6 +165,8 @@ public class WeeklyScheduleService {
         String timeSlot = normalizeTimeSlot(request.timeSlot());
 
         assertNoConflict(classroom, dayOfWeek, timeSlot, id);
+        assertNoAcademicianConflict(course, dayOfWeek, timeSlot, id);
+        assertCapacitySufficient(course, classroom);
 
         schedule.setCourse(course);
         schedule.setClassroom(classroom);
@@ -238,19 +243,83 @@ public class WeeklyScheduleService {
         }
     }
 
-    private AvailableClassroomResponse toAvailableClassroomResponse(Classroom classroom, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
+    private void assertNoAcademicianConflict(Course course, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
         Optional<WeeklySchedule> conflict = excludeScheduleId == null
+                ? weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot)
+                : weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlotAndIdNot(course.getAcademician().getId(), dayOfWeek, timeSlot, excludeScheduleId);
+
+        if (conflict.isPresent()) {
+            throw new IllegalArgumentException("Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.");
+        }
+    }
+
+    private void assertCapacitySufficient(Course course, Classroom classroom) {
+        Optional<Integer> studentCount = resolveStudentCount(course);
+        if (studentCount.isPresent() && classroom.getCapacity() < studentCount.get()) {
+            throw new IllegalArgumentException(classroom.getCode() + " sınıfının kapasitesi yetersiz. Ders öğrenci sayısı: " + studentCount.get());
+        }
+    }
+
+    private AvailableClassroomResponse toAvailableClassroomResponse(Classroom classroom, Course course, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
+        Optional<WeeklySchedule> classroomConflict = excludeScheduleId == null
                 ? weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot)
                 : weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlotAndIdNot(classroom.getId(), dayOfWeek, timeSlot, excludeScheduleId);
+        Optional<WeeklySchedule> academicianConflict = Optional.empty();
+        Optional<Integer> studentCount = Optional.empty();
+        Boolean capacitySufficient = null;
+
+        if (course != null) {
+            academicianConflict = excludeScheduleId == null
+                    ? weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot)
+                    : weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlotAndIdNot(course.getAcademician().getId(), dayOfWeek, timeSlot, excludeScheduleId);
+            studentCount = resolveStudentCount(course);
+            capacitySufficient = studentCount.map(count -> classroom.getCapacity() >= count).orElse(null);
+        }
+
+        boolean timeSlotAvailable = classroomConflict.isEmpty();
+        boolean capacityOk = capacitySufficient == null || capacitySufficient;
+        boolean lecturerOk = academicianConflict.isEmpty();
+        boolean selectable = timeSlotAvailable && capacityOk && lecturerOk;
+
         return new AvailableClassroomResponse(
                 classroom.getId(),
                 classroom.getCode(),
                 classroom.getName(),
                 classroom.getCapacity(),
                 classroom.getType(),
-                conflict.isEmpty(),
-                conflict.map(value -> "Bu sınıf seçilen zaman diliminde kullanımda.").orElse(null)
+                selectable,
+                resolveAvailabilityMessage(classroom, classroomConflict, academicianConflict, studentCount, capacitySufficient),
+                timeSlotAvailable,
+                capacitySufficient,
+                studentCount.orElse(null),
+                selectable
         );
+    }
+
+    private String resolveAvailabilityMessage(
+            Classroom classroom,
+            Optional<WeeklySchedule> classroomConflict,
+            Optional<WeeklySchedule> academicianConflict,
+            Optional<Integer> studentCount,
+            Boolean capacitySufficient
+    ) {
+        if (classroomConflict.isPresent()) {
+            return "Bu sınıf seçilen zaman diliminde kullanımda.";
+        }
+        if (academicianConflict.isPresent()) {
+            return "Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.";
+        }
+        if (Boolean.FALSE.equals(capacitySufficient)) {
+            return classroom.getCode() + " sınıfı " + classroom.getCapacity() + " kişilik. Ders öğrenci sayısı: " + studentCount.orElse(0);
+        }
+        if (studentCount.isEmpty()) {
+            return "Ders öğrenci sayısı mevcut veri modelinde bulunmadığı için kapasite doğrulanamadı.";
+        }
+        return null;
+    }
+
+    private Optional<Integer> resolveStudentCount(Course course) {
+        return Optional.empty();
     }
 
     private WeeklyScheduleResponse toResponse(WeeklySchedule schedule) {

@@ -38,6 +38,10 @@ export type AvailableClassroomResponse = {
   type: string;
   available: boolean;
   conflictMessage?: string | null;
+  timeSlotAvailable?: boolean | null;
+  capacitySufficient?: boolean | null;
+  studentCount?: number | null;
+  selectable: boolean;
 };
 
 export type CourseScheduleStatus =

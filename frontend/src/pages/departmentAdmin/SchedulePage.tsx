@@ -52,6 +52,7 @@ export const SchedulePage = () => {
   const queryClient = useQueryClient();
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [form, setForm] = useState<ScheduleFormState>(initialForm);
@@ -76,25 +77,26 @@ export const SchedulePage = () => {
     [courses, form.courseId],
   );
 
-  const canQueryClassrooms = Boolean(form.dayOfWeek && form.timeSlot);
+  const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot);
 
   const { data: classrooms = [], isFetching: isClassroomsLoading } = useQuery({
-    queryKey: ['availableClassrooms', form.dayOfWeek, form.timeSlot, editingSchedule?.id],
+    queryKey: ['availableClassrooms', form.courseId, form.dayOfWeek, form.timeSlot, editingSchedule?.id],
     queryFn: () => scheduleService.getAvailableClassrooms({
       dayOfWeek: form.dayOfWeek,
       timeSlot: form.timeSlot,
+      courseId: form.courseId,
       excludeScheduleId: editingSchedule?.id,
     }),
     enabled: canQueryClassrooms,
   });
 
   const availableClassrooms = useMemo(
-    () => classrooms.filter((classroom) => classroom.available),
+    () => classrooms.filter((classroom) => classroom.selectable),
     [classrooms],
   );
 
   const busyClassrooms = useMemo(
-    () => classrooms.filter((classroom) => !classroom.available),
+    () => classrooms.filter((classroom) => !classroom.selectable),
     [classrooms],
   );
 
@@ -113,14 +115,6 @@ export const SchedulePage = () => {
       .filter((course) => !selectedSemester || course.semester === selectedSemester)
       .map((course) => ({ label: `${course.code} - ${course.name}`, value: course.id })),
     [courses, selectedSemester],
-  );
-
-  const classroomOptions = useMemo(
-    () => availableClassrooms.map((classroom) => ({
-      label: `${classroom.code} - ${classroom.name} · ${classroom.capacity} kişi · ${classroomTypeLabels[classroom.type] ?? classroom.type}`,
-      value: classroom.id,
-    })),
-    [availableClassrooms],
   );
 
   const incompleteCourses = useMemo(
@@ -160,6 +154,9 @@ export const SchedulePage = () => {
     setForm((current) => {
       const next = { ...current, ...patch };
       if ('dayOfWeek' in patch || 'timeSlot' in patch) {
+        next.classroomId = '';
+      }
+      if ('courseId' in patch) {
         next.classroomId = '';
       }
       return next;
@@ -254,7 +251,6 @@ export const SchedulePage = () => {
               className="min-w-[150px]"
             />
           </div>
-          <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
         </div>
       </div>
 
@@ -264,9 +260,17 @@ export const SchedulePage = () => {
           isLoading={isStatusLoading}
           incompleteCourses={incompleteCourses}
           notScheduledCourses={notScheduledCourses}
-          onOpenCourse={(courseId) => openCreate(courseId)}
+          onShowDetails={() => setIsStatusModalOpen(true)}
         />
       )}
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
+          <p className="mt-0.5 text-xs font-medium text-slate-400">Oluşturulmuş ders programı kayıtları takvimde gösterilir.</p>
+        </div>
+        <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+      </div>
 
       {isLoading ? (
         <div className="grid gap-2">
@@ -280,7 +284,7 @@ export const SchedulePage = () => {
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">Henüz haftalık ders programı oluşturulmadı.</h3>
-          <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
+          <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white">
@@ -340,6 +344,7 @@ export const SchedulePage = () => {
           </div>
 
           <ReadonlyLecturer course={selectedCourse} />
+          <CourseSummary course={selectedCourse} />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -362,30 +367,14 @@ export const SchedulePage = () => {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="dts-input-label">Sınıf</label>
-            <AppSelect
-              value={form.classroomId}
-              onChange={(classroomId) => updateForm({ classroomId })}
-              options={classroomOptions}
-              searchable
-              disabled={!canQueryClassrooms || isClassroomsLoading}
-              placeholder={isClassroomsLoading ? 'Sınıflar kontrol ediliyor...' : 'Sınıf seçiniz'}
-              emptyText={canQueryClassrooms ? 'Uygun sınıf bulunamadı' : 'Önce gün ve saat seçiniz'}
-            />
-            {busyClassrooms.length > 0 && (
-              <div className="mt-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Dolu sınıflar</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {busyClassrooms.map((classroom) => (
-                    <span key={classroom.id} className="rounded-full border border-amber-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                      {classroom.code}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <ClassroomPicker
+            selectedClassroomId={form.classroomId}
+            availableClassrooms={availableClassrooms}
+            unavailableClassrooms={busyClassrooms}
+            loading={isClassroomsLoading}
+            canQuery={canQueryClassrooms}
+            onSelect={(classroomId) => updateForm({ classroomId })}
+          />
 
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <SecondaryButton type="button" onClick={closeModal}>İptal</SecondaryButton>
@@ -404,6 +393,27 @@ export const SchedulePage = () => {
         cancelText="Vazgeç"
         confirmLoading={deleteMutation.isPending}
       />
+
+      {scheduleStatus && (
+        <FormModal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Program Durumu">
+          <div className="space-y-3">
+            {incompleteCourses.length === 0 && notScheduledCourses.length === 0 ? (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
+                Seçili dönemde programı eksik ders bulunmuyor.
+              </div>
+            ) : (
+              <>
+                {incompleteCourses.length > 0 && (
+                  <CourseStatusPanel title="Programı Tamamlanmayan Dersler" courses={incompleteCourses} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
+                )}
+                {notScheduledCourses.length > 0 && (
+                  <CourseStatusPanel title="Henüz Programa Eklenmeyen Dersler" courses={notScheduledCourses} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
+                )}
+              </>
+            )}
+          </div>
+        </FormModal>
+      )}
     </div>
   );
 };
@@ -417,80 +427,155 @@ const ReadonlyLecturer = ({ course }: { course: CourseResponse | null }) => (
   </div>
 );
 
+const CourseSummary = ({ course }: { course: CourseResponse | null }) => {
+  if (!course) return null;
+  const weeklyHours = course.theoreticalHours + course.practicalHours;
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-2xl border border-slate-200/70 bg-white p-3 text-[11px] font-semibold text-slate-500">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ders</p>
+        <p className="mt-1 truncate text-slate-800">{course.code} · {course.name}</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sınıf / Saat</p>
+        <p className="mt-1 text-slate-800">{course.grade}. Sınıf · {weeklyHours} saat/hafta</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Öğrenci</p>
+        <p className="mt-1 text-slate-500">Veri yok</p>
+      </div>
+    </div>
+  );
+};
+
+const ClassroomPicker = ({
+  selectedClassroomId,
+  availableClassrooms,
+  unavailableClassrooms,
+  loading,
+  canQuery,
+  onSelect,
+}: {
+  selectedClassroomId: string;
+  availableClassrooms: AvailableClassroomResponse[];
+  unavailableClassrooms: AvailableClassroomResponse[];
+  loading: boolean;
+  canQuery: boolean;
+  onSelect: (classroomId: string) => void;
+}) => {
+  const selectedClassroom = [...availableClassrooms, ...unavailableClassrooms].find((classroom) => classroom.id === selectedClassroomId);
+  return (
+    <div className="space-y-2">
+      <label className="dts-input-label">Sınıf</label>
+      {!canQuery ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-400">
+          Önce ders, gün ve saat seçiniz.
+        </div>
+      ) : loading ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-400">
+          Sınıflar kontrol ediliyor...
+        </div>
+      ) : (
+        <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white p-3">
+          <ClassroomGroup title="Uygun Sınıflar" classrooms={availableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} />
+          <ClassroomGroup title="Uygun Olmayan Sınıflar" classrooms={unavailableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} disabled />
+        </div>
+      )}
+      {selectedClassroom && (
+        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs font-semibold text-emerald-700">
+          {selectedClassroom.code} seçildi · Kapasite: {selectedClassroom.capacity} kişi · Zaman dilimi uygun
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ClassroomGroup = ({
+  title,
+  classrooms,
+  selectedClassroomId,
+  disabled = false,
+  onSelect,
+}: {
+  title: string;
+  classrooms: AvailableClassroomResponse[];
+  selectedClassroomId: string;
+  disabled?: boolean;
+  onSelect: (classroomId: string) => void;
+}) => (
+  <div className="space-y-2">
+    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{title}</p>
+    {classrooms.length === 0 ? (
+      <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-400">Kayıt yok</p>
+    ) : classrooms.map((classroom) => {
+      const selected = selectedClassroomId === classroom.id;
+      return (
+        <button
+          key={classroom.id}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSelect(classroom.id)}
+          className={cn(
+            'flex w-full items-start justify-between gap-3 rounded-xl border px-3 py-2 text-left transition',
+            selected ? 'border-[#006482]/30 bg-[#eff8ff]' : 'border-slate-200 bg-white',
+            disabled ? 'cursor-not-allowed opacity-75' : 'hover:border-[#006482]/30 hover:bg-[#eff8ff]',
+          )}
+        >
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-slate-800">{classroom.code} · {classroom.name}</span>
+            <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">
+              {classroom.capacity} kişi · {classroomTypeLabels[classroom.type] ?? classroom.type}
+            </span>
+            <span className={cn('mt-1 block text-[11px] font-semibold', disabled ? 'text-amber-700' : 'text-emerald-700')}>
+              {classroom.conflictMessage ?? (classroom.capacitySufficient === null || classroom.capacitySufficient === undefined ? 'Kapasite için öğrenci sayısı verisi yok; zaman dilimi uygun.' : 'Kapasite ve zaman dilimi uygun.')}
+            </span>
+          </span>
+          <span className={cn('mt-0.5 h-4 w-4 shrink-0 rounded-full border', selected ? 'border-[#006482] bg-[#006482]' : 'border-slate-300')} />
+        </button>
+      );
+    })}
+  </div>
+);
+
 const ScheduleStatusOverview = ({
   status,
   isLoading,
   incompleteCourses,
   notScheduledCourses,
-  onOpenCourse,
+  onShowDetails,
 }: {
   status: ScheduleCompletionResponse;
   isLoading: boolean;
   incompleteCourses: CourseScheduleStatusItemResponse[];
   notScheduledCourses: CourseScheduleStatusItemResponse[];
-  onOpenCourse: (courseId: string) => void;
+  onShowDetails: () => void;
 }) => {
   const hasWarnings = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
-  const cards = [
-    { label: 'Tamamlanan', value: status.completedCourses },
-    { label: 'Eksik', value: status.incompleteCourses },
-    { label: 'Programlanmadı', value: status.notScheduledCourses },
-    { label: 'Fazla Saat', value: status.overScheduledCourses },
-  ];
 
   return (
-    <section className="space-y-3">
-      <div className={cn('rounded-2xl border px-4 py-3', hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70')}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            {hasWarnings ? <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
-            <div>
-              <p className={cn('text-sm font-bold', hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
-                {hasWarnings ? 'Ders programı tamamlanmadı' : 'Ders programı tamamlandı'}
-              </p>
-              <p className="mt-0.5 text-xs font-medium text-slate-500">
-                {hasWarnings
-                  ? `${status.incompleteCourses} ders eksik, ${status.notScheduledCourses} ders henüz programa eklenmedi, ${status.overScheduledCourses} ders fazla saat içeriyor.`
-                  : 'Seçili dönemdeki tüm dersler gereken haftalık saate ulaştı.'}
-              </p>
-            </div>
+    <section className={cn('rounded-2xl border px-4 py-3', hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70')}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          {hasWarnings ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />}
+          <div className="min-w-0">
+            <p className={cn('text-sm font-bold', hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
+              {hasWarnings ? 'Ders programı tamamlanmadı' : 'Ders programı tamamlandı'}
+            </p>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">
+              {isLoading ? 'Program durumu hesaplanıyor...' : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat`}
+            </p>
           </div>
-          <div className="min-w-32">
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-28">
             <div className="h-2 overflow-hidden rounded-full bg-white/80">
               <div className="h-full rounded-full bg-[#006482]" style={{ width: `${status.completionPercentage}%` }} />
             </div>
             <p className="mt-1 text-right text-[11px] font-bold text-slate-500">{status.completionPercentage}%</p>
           </div>
+          <SecondaryButton type="button" onClick={onShowDetails}>Detayları Gör</SecondaryButton>
         </div>
       </div>
-
-      <div className="grid gap-3 sm:grid-cols-4">
-        {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-slate-200/70 bg-white px-4 py-3">
-            <p className="text-2xl font-extrabold tracking-tight text-slate-900">{isLoading ? '-' : card.value}</p>
-            <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{card.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {(incompleteCourses.length > 0 || notScheduledCourses.length > 0) && (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {incompleteCourses.length > 0 && (
-            <CourseStatusPanel
-              title="Programı Tamamlanmayan Dersler"
-              courses={incompleteCourses}
-              onOpenCourse={onOpenCourse}
-            />
-          )}
-          {notScheduledCourses.length > 0 && (
-            <CourseStatusPanel
-              title="Henüz Programa Eklenmeyen Dersler"
-              courses={notScheduledCourses}
-              onOpenCourse={onOpenCourse}
-            />
-          )}
-        </div>
-      )}
     </section>
   );
 };

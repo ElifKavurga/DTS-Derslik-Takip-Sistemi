@@ -100,6 +100,32 @@ class WeeklyScheduleServiceTest {
     }
 
     @Test
+    void createScheduleRejectsAcademicianConflict() {
+        User currentUser = new User();
+        Faculty faculty = faculty(UUID.randomUUID());
+        Department department = department(UUID.randomUUID(), faculty);
+        Course course = course(UUID.randomUUID(), department);
+        Course conflictingCourse = course(UUID.randomUUID(), department);
+        conflictingCourse.setAcademician(course.getAcademician());
+        Classroom classroom = classroom(UUID.randomUUID(), faculty);
+        WeeklySchedule conflict = schedule(conflictingCourse, classroom, "MONDAY", "10:00-11:00");
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:00-11:00");
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:00-11:00"))
+                .thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:00-11:00"))
+                .thenReturn(Optional.of(conflict));
+
+        assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.");
+        verify(weeklyScheduleRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void getScheduleCompletionReturnsAllCourseStatusesForSelectedSemester() {
         User currentUser = new User();
         Faculty faculty = faculty(UUID.randomUUID());

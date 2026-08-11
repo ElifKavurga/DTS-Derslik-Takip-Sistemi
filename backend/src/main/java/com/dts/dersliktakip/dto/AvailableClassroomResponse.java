@@ -11,6 +11,10 @@ public record AvailableClassroomResponse(
         Integer capacity,
         ClassroomType type,
         boolean available,
-        String conflictMessage
+        String conflictMessage,
+        Boolean timeSlotAvailable,
+        Boolean capacitySufficient,
+        Integer studentCount,
+        boolean selectable
 ) {
 }

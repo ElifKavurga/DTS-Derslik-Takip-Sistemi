@@ -23,7 +23,7 @@ export const scheduleService = {
     return response.data;
   },
 
-  getAvailableClassrooms: async (params: { dayOfWeek: string; timeSlot: string; excludeScheduleId?: string }) => {
+  getAvailableClassrooms: async (params: { courseId?: string; dayOfWeek: string; timeSlot: string; excludeScheduleId?: string }) => {
     const response = await apiClient.get<AvailableClassroomResponse[]>('/schedules/available-classrooms', { params });
     return response.data;
   },
