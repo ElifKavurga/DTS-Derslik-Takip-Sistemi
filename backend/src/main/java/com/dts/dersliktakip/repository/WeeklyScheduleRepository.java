@@ -1,0 +1,44 @@
+package com.dts.dersliktakip.repository;
+
+import com.dts.dersliktakip.entity.Semester;
+import com.dts.dersliktakip.entity.WeeklySchedule;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface WeeklyScheduleRepository extends JpaRepository<WeeklySchedule, UUID> {
+
+    @EntityGraph(attributePaths = {
+            "course",
+            "course.department",
+            "course.academician",
+            "classroom",
+            "classroom.floor",
+            "classroom.floor.building",
+            "classroom.floor.building.faculty"
+    })
+    List<WeeklySchedule> findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(UUID departmentId);
+
+    @EntityGraph(attributePaths = {
+            "course",
+            "course.department",
+            "course.academician",
+            "classroom",
+            "classroom.floor",
+            "classroom.floor.building",
+            "classroom.floor.building.faculty"
+    })
+    List<WeeklySchedule> findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(UUID departmentId, Semester semester);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "classroom"})
+    Optional<WeeklySchedule> findWithDetailsById(UUID id);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "classroom"})
+    Optional<WeeklySchedule> findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(UUID classroomId, String dayOfWeek, String timeSlot);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "classroom"})
+    Optional<WeeklySchedule> findFirstByClassroom_IdAndDayOfWeekAndTimeSlotAndIdNot(UUID classroomId, String dayOfWeek, String timeSlot, UUID id);
+}

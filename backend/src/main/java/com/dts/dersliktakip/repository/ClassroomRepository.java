@@ -19,4 +19,6 @@ public interface ClassroomRepository extends JpaRepository<Classroom, UUID> {
     Optional<Classroom> findByFloorIdAndCodeIgnoreCase(UUID floorId, String code);
 
     List<Classroom> findAllByFloorIdOrderByCodeAsc(UUID floorId);
+
+    List<Classroom> findAllByFloorBuildingFacultyIdOrderByCodeAsc(UUID facultyId);
 }

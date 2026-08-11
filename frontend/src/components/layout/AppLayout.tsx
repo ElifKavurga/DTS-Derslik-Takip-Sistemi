@@ -32,6 +32,10 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Dersler',
     breadcrumbs: ['Ana Ekran', 'Dersler'],
   },
+  schedule: {
+    title: 'Ders Programı',
+    breadcrumbs: ['Ana Ekran', 'Ders Programı'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
@@ -50,6 +54,9 @@ const resolvePageMeta = (pathname: string) => {
   }
   if (pathname.includes('/super-admin/dersler') || pathname.includes('/department-admin/dersler')) {
     return pageMeta.courses;
+  }
+  if (pathname.includes('/department-admin/ders-programi')) {
+    return pageMeta.schedule;
   }
 
   return pageMeta.dashboard;

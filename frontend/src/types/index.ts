@@ -93,3 +93,4 @@ export * from './building';
 export * from './floor';
 export * from './floorLayout';
 export * from './course';
+export * from './schedule';

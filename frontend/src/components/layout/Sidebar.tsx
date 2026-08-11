@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   GraduationCap,
@@ -82,6 +83,12 @@ export const Sidebar = ({
       path: role === 'DEPARTMENT_ADMIN' ? '/department-admin/dersler' : '/super-admin/dersler',
       icon: BookOpen,
       roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN'],
+    },
+    {
+      label: 'Ders Programı',
+      path: '/department-admin/ders-programi',
+      icon: CalendarDays,
+      roles: ['DEPARTMENT_ADMIN'],
     },
   ];
   const navigation = navigationItems.filter((item) => canShowItem(item, role));
