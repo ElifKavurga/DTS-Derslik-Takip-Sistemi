@@ -32,6 +32,22 @@ export type AuthResponse = {
   user: AuthUser;
 };
 
+export type UserResponse = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string;
+  roles?: Role[];
+  role: Role;
+  phone?: string | null;
+  active: boolean;
+  title?: string | null;
+  faculty?: string | null;
+  department?: string | null;
+  office?: string | null;
+};
+
 export type ResetPasswordResponse = {
   message: string;
 };

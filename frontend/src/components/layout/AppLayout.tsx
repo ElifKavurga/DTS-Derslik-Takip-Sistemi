@@ -24,6 +24,10 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Bölüm Yönetimi',
     breadcrumbs: ['Ana Ekran', 'Bölüm Yönetimi'],
   },
+  academicians: {
+    title: 'Akademisyenler',
+    breadcrumbs: ['Ana Ekran', 'Akademisyenler'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
@@ -35,6 +39,10 @@ const resolvePageMeta = (pathname: string) => {
   }
   if (pathname.includes('/super-admin/bolumler') && !pathname.match(/^\/super-admin\/bolumler\/[a-f0-9-]+$/i)) {
     return pageMeta.departments;
+  }
+
+  if (pathname.includes('/department-admin/academisyenler')) {
+    return pageMeta.academicians;
   }
 
   return pageMeta.dashboard;

@@ -14,6 +14,7 @@ import { UsersPage } from '@/pages/admin/UsersPage';
 import { CoursesPage } from '@/pages/admin/CoursesPage';
 import { DepartmentsPage } from '@/pages/admin/DepartmentsPage';
 import { DepartmentDetailPage } from '@/pages/admin/DepartmentDetailPage';
+import { AcademiciansPage } from '@/pages/departmentAdmin/AcademiciansPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -105,6 +106,10 @@ export const router = createBrowserRouter([
               {
                 path: '/department-admin/dashboard',
                 element: <DashboardPage />,
+              },
+              {
+                path: '/department-admin/academisyenler',
+                element: <AcademiciansPage />,
               },
               {
                 path: '/department-admin/dersler',

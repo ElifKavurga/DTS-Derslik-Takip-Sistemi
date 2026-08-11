@@ -72,6 +72,12 @@ export const Sidebar = ({
       roles: ['SUPER_ADMIN'],
     },
     {
+      label: 'Akademisyenler',
+      path: '/department-admin/academisyenler',
+      icon: GraduationCap,
+      roles: ['DEPARTMENT_ADMIN'],
+    },
+    {
       label: 'Dersler',
       path: '/super-admin/dersler',
       icon: BookOpen,
