@@ -3,6 +3,8 @@ package com.dts.dersliktakip.controller;
 import com.dts.dersliktakip.dto.AvailableClassroomResponse;
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
+import com.dts.dersliktakip.dto.ScheduleTimeConfigurationRequest;
+import com.dts.dersliktakip.dto.ScheduleTimeConfigurationResponse;
 import com.dts.dersliktakip.dto.UpdateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Semester;
@@ -59,14 +61,32 @@ public class WeeklyScheduleController {
             @RequestParam(required = false) UUID courseId,
             @RequestParam String dayOfWeek,
             @RequestParam String timeSlot,
+            @RequestParam(defaultValue = "1") Integer slotCount,
             @RequestParam(required = false) UUID excludeScheduleId
     ) {
-        return ResponseEntity.ok(weeklyScheduleService.getAvailableClassrooms(principal.getUser(), courseId, dayOfWeek, timeSlot, excludeScheduleId));
+        return ResponseEntity.ok(weeklyScheduleService.getAvailableClassrooms(principal.getUser(), courseId, dayOfWeek, timeSlot, slotCount, excludeScheduleId));
+    }
+
+    @GetMapping("/time-configuration")
+    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    public ResponseEntity<ScheduleTimeConfigurationResponse> getTimeConfiguration(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(weeklyScheduleService.getTimeConfiguration(principal.getUser()));
+    }
+
+    @PutMapping("/time-configuration")
+    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    public ResponseEntity<ScheduleTimeConfigurationResponse> updateTimeConfiguration(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ScheduleTimeConfigurationRequest request
+    ) {
+        return ResponseEntity.ok(weeklyScheduleService.updateTimeConfiguration(principal.getUser(), request));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
-    public ResponseEntity<WeeklyScheduleResponse> createSchedule(
+    public ResponseEntity<List<WeeklyScheduleResponse>> createSchedule(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateWeeklyScheduleRequest request
     ) {
@@ -75,7 +95,7 @@ public class WeeklyScheduleController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
-    public ResponseEntity<WeeklyScheduleResponse> updateSchedule(
+    public ResponseEntity<List<WeeklyScheduleResponse>> updateSchedule(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateWeeklyScheduleRequest request

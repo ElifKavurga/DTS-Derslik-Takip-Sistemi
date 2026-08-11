@@ -19,6 +19,7 @@ export type WeeklyScheduleResponse = {
   dayOfWeek: ScheduleDay;
   timeSlot: string;
   semester: Semester;
+  scheduleGroupId?: string | null;
 };
 
 export type CreateWeeklyScheduleRequest = {
@@ -26,9 +27,34 @@ export type CreateWeeklyScheduleRequest = {
   classroomId: string;
   dayOfWeek: ScheduleDay;
   timeSlot: string;
+  slotCount: number;
 };
 
 export type UpdateWeeklyScheduleRequest = CreateWeeklyScheduleRequest;
+
+export type ScheduleTimeSlotResponse = {
+  value: string;
+  startTime: string;
+  endTime: string;
+  index: number;
+};
+
+export type ScheduleTimeConfigurationRequest = {
+  startTime: string;
+  endTime: string;
+  lessonDurationMinutes: number;
+  breakDurationMinutes: number;
+  lunchBreakEnabled: boolean;
+  lunchBreakStart: string;
+  lunchBreakEnd: string;
+};
+
+export type ScheduleTimeConfigurationResponse = ScheduleTimeConfigurationRequest & {
+  departmentId: string;
+  departmentName: string;
+  slots: ScheduleTimeSlotResponse[];
+  affectedScheduleCount: number;
+};
 
 export type AvailableClassroomResponse = {
   id: string;
@@ -81,17 +107,6 @@ export const scheduleDays: { value: ScheduleDay; label: string; shortLabel: stri
   { value: 'WEDNESDAY', label: 'Çarşamba', shortLabel: 'Çarş' },
   { value: 'THURSDAY', label: 'Perşembe', shortLabel: 'Perş' },
   { value: 'FRIDAY', label: 'Cuma', shortLabel: 'Cuma' },
-];
-
-export const scheduleTimeSlots = [
-  '08:00-09:00',
-  '09:00-10:00',
-  '10:00-11:00',
-  '11:00-12:00',
-  '13:00-14:00',
-  '14:00-15:00',
-  '15:00-16:00',
-  '16:00-17:00',
 ];
 
 export const classroomTypeLabels: Record<string, string> = {

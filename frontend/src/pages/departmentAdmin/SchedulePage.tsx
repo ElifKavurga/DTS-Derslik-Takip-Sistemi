@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Trash2, User, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Settings, Trash2, User, XCircle } from 'lucide-react';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormModal } from '@/components/ui/FormModal';
@@ -15,11 +15,11 @@ import {
   CourseResponse,
   ScheduleDay,
   ScheduleCompletionResponse,
+  ScheduleTimeConfigurationRequest,
   Semester,
   WeeklyScheduleResponse,
   classroomTypeLabels,
   scheduleDays,
-  scheduleTimeSlots,
 } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -34,6 +34,7 @@ type ScheduleFormState = {
   courseId: string;
   dayOfWeek: ScheduleDay | '';
   timeSlot: string;
+  slotCount: number;
   classroomId: string;
 };
 
@@ -41,7 +42,18 @@ const initialForm: ScheduleFormState = {
   courseId: '',
   dayOfWeek: '',
   timeSlot: '',
+  slotCount: 1,
   classroomId: '',
+};
+
+const initialTimeConfig: ScheduleTimeConfigurationRequest = {
+  startTime: '08:15',
+  endTime: '17:00',
+  lessonDurationMinutes: 45,
+  breakDurationMinutes: 10,
+  lunchBreakEnabled: true,
+  lunchBreakStart: '12:40',
+  lunchBreakEnd: '13:30',
 };
 
 const dayLabel = (day: string) => scheduleDays.find((item) => item.value === day)?.label ?? day;
@@ -53,9 +65,11 @@ export const SchedulePage = () => {
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isTimeConfigModalOpen, setIsTimeConfigModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [form, setForm] = useState<ScheduleFormState>(initialForm);
+  const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
 
   const { data: schedules = [], isLoading, error } = useQuery({
     queryKey: ['weeklySchedules', selectedSemester],
@@ -65,6 +79,11 @@ export const SchedulePage = () => {
   const { data: scheduleStatus, isLoading: isStatusLoading } = useQuery({
     queryKey: ['scheduleStatus', selectedSemester],
     queryFn: () => scheduleService.getStatus(selectedSemester || undefined),
+  });
+
+  const { data: timeConfiguration } = useQuery({
+    queryKey: ['scheduleTimeConfiguration'],
+    queryFn: scheduleService.getTimeConfiguration,
   });
 
   const { data: courses = [] } = useQuery({
@@ -77,13 +96,25 @@ export const SchedulePage = () => {
     [courses, form.courseId],
   );
 
-  const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot);
+  const timeSlots = useMemo(
+    () => timeConfiguration?.slots.map((slot) => slot.value) ?? [],
+    [timeConfiguration],
+  );
+
+  const selectedSlotIndex = timeSlots.findIndex((slot) => slot === form.timeSlot);
+  const maxSlotCount = selectedSlotIndex >= 0 ? Math.max(1, timeSlots.length - selectedSlotIndex) : 1;
+  const selectedSlots = selectedSlotIndex >= 0
+    ? timeSlots.slice(selectedSlotIndex, selectedSlotIndex + Math.min(form.slotCount, maxSlotCount))
+    : [];
+
+  const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot && form.slotCount);
 
   const { data: classrooms = [], isFetching: isClassroomsLoading } = useQuery({
-    queryKey: ['availableClassrooms', form.courseId, form.dayOfWeek, form.timeSlot, editingSchedule?.id],
+    queryKey: ['availableClassrooms', form.courseId, form.dayOfWeek, form.timeSlot, form.slotCount, editingSchedule?.id],
     queryFn: () => scheduleService.getAvailableClassrooms({
       dayOfWeek: form.dayOfWeek,
       timeSlot: form.timeSlot,
+      slotCount: form.slotCount,
       courseId: form.courseId,
       excludeScheduleId: editingSchedule?.id,
     }),
@@ -134,14 +165,34 @@ export const SchedulePage = () => {
   };
 
   const openEdit = (schedule: WeeklyScheduleResponse) => {
+    const groupedSchedules = schedule.scheduleGroupId
+      ? schedules
+        .filter((item) => item.scheduleGroupId === schedule.scheduleGroupId)
+        .sort((a, b) => timeSlots.indexOf(a.timeSlot) - timeSlots.indexOf(b.timeSlot))
+      : [schedule];
+    const firstSchedule = groupedSchedules[0] ?? schedule;
     setEditingSchedule(schedule);
     setForm({
-      courseId: schedule.courseId,
-      dayOfWeek: schedule.dayOfWeek,
-      timeSlot: schedule.timeSlot,
-      classroomId: schedule.classroomId,
+      courseId: firstSchedule.courseId,
+      dayOfWeek: firstSchedule.dayOfWeek,
+      timeSlot: firstSchedule.timeSlot,
+      slotCount: groupedSchedules.length,
+      classroomId: firstSchedule.classroomId,
     });
     setIsModalOpen(true);
+  };
+
+  const openTimeConfig = () => {
+    setTimeConfigForm(timeConfiguration ? {
+      startTime: timeConfiguration.startTime,
+      endTime: timeConfiguration.endTime,
+      lessonDurationMinutes: timeConfiguration.lessonDurationMinutes,
+      breakDurationMinutes: timeConfiguration.breakDurationMinutes,
+      lunchBreakEnabled: timeConfiguration.lunchBreakEnabled,
+      lunchBreakStart: timeConfiguration.lunchBreakStart,
+      lunchBreakEnd: timeConfiguration.lunchBreakEnd,
+    } : initialTimeConfig);
+    setIsTimeConfigModalOpen(true);
   };
 
   const closeModal = () => {
@@ -153,7 +204,7 @@ export const SchedulePage = () => {
   const updateForm = (patch: Partial<ScheduleFormState>) => {
     setForm((current) => {
       const next = { ...current, ...patch };
-      if ('dayOfWeek' in patch || 'timeSlot' in patch) {
+      if ('dayOfWeek' in patch || 'timeSlot' in patch || 'slotCount' in patch) {
         next.classroomId = '';
       }
       if ('courseId' in patch) {
@@ -165,11 +216,11 @@ export const SchedulePage = () => {
 
   const createMutation = useMutation({
     mutationFn: scheduleService.create,
-    onSuccess: async (schedule) => {
+    onSuccess: async (createdSchedules) => {
       toast.success('Ders programı eklendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
       queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
-      await notifyCourseStatus(schedule.courseId);
+      await notifyCourseStatus(createdSchedules[0]?.courseId ?? form.courseId);
       closeModal();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı eklenemedi.'),
@@ -181,12 +232,13 @@ export const SchedulePage = () => {
       classroomId: payload.classroomId,
       dayOfWeek: payload.dayOfWeek as ScheduleDay,
       timeSlot: payload.timeSlot,
+      slotCount: payload.slotCount,
     }),
-    onSuccess: async (schedule) => {
+    onSuccess: async (updatedSchedules) => {
       toast.success('Ders programı güncellendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
       queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
-      await notifyCourseStatus(schedule.courseId);
+      await notifyCourseStatus(updatedSchedules[0]?.courseId ?? form.courseId);
       closeModal();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı güncellenemedi.'),
@@ -203,9 +255,23 @@ export const SchedulePage = () => {
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı kaldırılamadı.'),
   });
 
+  const updateTimeConfigMutation = useMutation({
+    mutationFn: scheduleService.updateTimeConfiguration,
+    onSuccess: (config) => {
+      toast.success('Ders saatleri gÃ¼ncellendi.');
+      if (config.affectedScheduleCount > 0) {
+        toast.error(`${config.affectedScheduleCount} mevcut program kaydÄ± yeni saat aralÄ±klarÄ±nÄ±n dÄ±ÅŸÄ±nda kaldÄ±.`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['scheduleTimeConfiguration'] });
+      queryClient.invalidateQueries({ queryKey: ['availableClassrooms'] });
+      setIsTimeConfigModalOpen(false);
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders saatleri gÃ¼ncellenemedi.'),
+  });
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!form.courseId || !form.dayOfWeek || !form.timeSlot || !form.classroomId) {
+    if (!form.courseId || !form.dayOfWeek || !form.timeSlot || !form.slotCount || !form.classroomId) {
       toast.error('Ders, gün, saat ve sınıf seçimi zorunludur.');
       return;
     }
@@ -215,10 +281,16 @@ export const SchedulePage = () => {
       classroomId: form.classroomId,
       dayOfWeek: form.dayOfWeek,
       timeSlot: form.timeSlot,
+      slotCount: form.slotCount,
     };
 
     if (editingSchedule) updateMutation.mutate({ id: editingSchedule.id, payload });
     else createMutation.mutate(payload);
+  };
+
+  const submitTimeConfig = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    updateTimeConfigMutation.mutate(timeConfigForm);
   };
 
   const notifyCourseStatus = async (courseId: string) => {
@@ -241,6 +313,7 @@ export const SchedulePage = () => {
           <p className="mt-0.5 text-[13px] text-slate-400">Bölüm derslerini haftalık takvime manuel yerleştirin.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
           <div className="flex w-full min-w-[180px] items-center gap-2 sm:w-44">
             <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
             <AppSelect
@@ -280,6 +353,10 @@ export const SchedulePage = () => {
         <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-8 text-center">
           <p className="text-sm font-bold text-red-700">Haftalık ders programı yüklenirken bir hata oluştu.</p>
         </div>
+      ) : timeSlots.length === 0 ? (
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
+          <p className="text-sm font-bold text-amber-800">Ders saatleri oluÅŸturulamadÄ±. Saat ayarlarÄ±nÄ± kontrol edin.</p>
+        </div>
       ) : schedules.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
@@ -296,7 +373,7 @@ export const SchedulePage = () => {
               </div>
             ))}
 
-            {scheduleTimeSlots.map((slot) => (
+            {timeSlots.map((slot) => (
               <Fragment key={slot}>
                 <div key={`${slot}-label`} className="border-b border-r border-slate-100 px-3 py-4 text-xs font-bold text-slate-500">
                   {formatSlot(slot)}
@@ -360,10 +437,37 @@ export const SchedulePage = () => {
               <label className="dts-input-label">Saat</label>
               <AppSelect
                 value={form.timeSlot}
-                onChange={(timeSlot) => updateForm({ timeSlot })}
-                options={scheduleTimeSlots.map((slot) => ({ label: formatSlot(slot), value: slot }))}
+                onChange={(timeSlot) => updateForm({ timeSlot, slotCount: 1 })}
+                options={timeSlots.map((slot) => ({ label: formatSlot(slot), value: slot }))}
                 placeholder="Saat seçiniz"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
+            <div className="space-y-1">
+              <label className="dts-input-label">Ders Saati</label>
+              <AppSelect
+                value={String(form.slotCount)}
+                onChange={(slotCount) => updateForm({ slotCount: Number(slotCount) })}
+                options={Array.from({ length: Math.min(maxSlotCount, 12) }, (_, index) => ({
+                  label: `${index + 1} ders saati`,
+                  value: String(index + 1),
+                }))}
+                placeholder="Saat"
+              />
+            </div>
+            <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Oluşacak Bloklar</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {selectedSlots.length === 0 ? (
+                  <span className="text-xs font-semibold text-slate-400">Başlangıç saati seçiniz</span>
+                ) : selectedSlots.map((slot) => (
+                  <span key={slot} className="rounded-full border border-[#006482]/15 bg-white px-2 py-1 text-[11px] font-bold text-slate-600">
+                    {formatSlot(slot)}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -394,6 +498,39 @@ export const SchedulePage = () => {
         confirmLoading={deleteMutation.isPending}
       />
 
+      <FormModal isOpen={isTimeConfigModalOpen} onClose={() => setIsTimeConfigModalOpen(false)} title="Ders Saatleri">
+        <form onSubmit={submitTimeConfig} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <TimeInput label="Başlangıç" value={timeConfigForm.startTime} onChange={(startTime) => setTimeConfigForm((current) => ({ ...current, startTime }))} />
+            <TimeInput label="Bitiş" value={timeConfigForm.endTime} onChange={(endTime) => setTimeConfigForm((current) => ({ ...current, endTime }))} />
+            <NumberInput label="Ders Süresi" value={timeConfigForm.lessonDurationMinutes} onChange={(lessonDurationMinutes) => setTimeConfigForm((current) => ({ ...current, lessonDurationMinutes }))} />
+            <NumberInput label="Ara Süresi" value={timeConfigForm.breakDurationMinutes} onChange={(breakDurationMinutes) => setTimeConfigForm((current) => ({ ...current, breakDurationMinutes }))} />
+          </div>
+          <label className="flex items-center gap-2 rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600">
+            <input
+              type="checkbox"
+              checked={timeConfigForm.lunchBreakEnabled}
+              onChange={(event) => setTimeConfigForm((current) => ({ ...current, lunchBreakEnabled: event.target.checked }))}
+              className="h-4 w-4 rounded border-slate-300 text-[#006482] focus:ring-[#006482]"
+            />
+            Öğle arası kullan
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <TimeInput label="Öğle Başlangıç" value={timeConfigForm.lunchBreakStart} onChange={(lunchBreakStart) => setTimeConfigForm((current) => ({ ...current, lunchBreakStart }))} />
+            <TimeInput label="Öğle Bitiş" value={timeConfigForm.lunchBreakEnd} onChange={(lunchBreakEnd) => setTimeConfigForm((current) => ({ ...current, lunchBreakEnd }))} />
+          </div>
+          {timeConfiguration && timeConfiguration.affectedScheduleCount > 0 && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+              {timeConfiguration.affectedScheduleCount} mevcut program kaydı geçerli saat bloklarının dışında. Ayarlar değişirse kayıtlar silinmez veya taşınmaz.
+            </div>
+          )}
+          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <SecondaryButton type="button" onClick={() => setIsTimeConfigModalOpen(false)}>İptal</SecondaryButton>
+            <PrimaryButton type="submit" loading={updateTimeConfigMutation.isPending}>Kaydet</PrimaryButton>
+          </div>
+        </form>
+      </FormModal>
+
       {scheduleStatus && (
         <FormModal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Program Durumu">
           <div className="space-y-3">
@@ -417,6 +554,34 @@ export const SchedulePage = () => {
     </div>
   );
 };
+
+const TimeInput = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
+  <div className="space-y-1">
+    <label className="dts-input-label">{label}</label>
+    <input
+      type="time"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="dts-input"
+      required
+    />
+  </div>
+);
+
+const NumberInput = ({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) => (
+  <div className="space-y-1">
+    <label className="dts-input-label">{label} (dk)</label>
+    <input
+      type="number"
+      min={0}
+      max={240}
+      value={value}
+      onChange={(event) => onChange(Number(event.target.value))}
+      className="dts-input"
+      required
+    />
+  </div>
+);
 
 const ReadonlyLecturer = ({ course }: { course: CourseResponse | null }) => (
   <div className="rounded-2xl border border-slate-200/70 bg-slate-50 px-3 py-2.5">

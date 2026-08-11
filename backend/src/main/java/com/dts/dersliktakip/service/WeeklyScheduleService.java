@@ -4,17 +4,22 @@ import com.dts.dersliktakip.dto.AvailableClassroomResponse;
 import com.dts.dersliktakip.dto.CourseScheduleStatusItemResponse;
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
+import com.dts.dersliktakip.dto.ScheduleTimeConfigurationRequest;
+import com.dts.dersliktakip.dto.ScheduleTimeConfigurationResponse;
+import com.dts.dersliktakip.dto.ScheduleTimeSlotResponse;
 import com.dts.dersliktakip.dto.UpdateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.Department;
+import com.dts.dersliktakip.entity.DepartmentScheduleConfig;
 import com.dts.dersliktakip.entity.Semester;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.WeeklySchedule;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
+import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,8 +27,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,6 +44,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WeeklyScheduleService {
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final Set<String> DAYS = Set.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY");
     private static final Map<String, String> DAY_LABELS = Map.of(
             "MONDAY", "Pazartesi",
@@ -43,20 +53,11 @@ public class WeeklyScheduleService {
             "THURSDAY", "Perşembe",
             "FRIDAY", "Cuma"
     );
-    private static final Set<String> TIME_SLOTS = Set.of(
-            "08:00-09:00",
-            "09:00-10:00",
-            "10:00-11:00",
-            "11:00-12:00",
-            "13:00-14:00",
-            "14:00-15:00",
-            "15:00-16:00",
-            "16:00-17:00"
-    );
 
     private final WeeklyScheduleRepository weeklyScheduleRepository;
     private final CourseRepository courseRepository;
     private final ClassroomRepository classroomRepository;
+    private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
     private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
@@ -84,7 +85,7 @@ public class WeeklyScheduleService {
                         Collectors.collectingAndThen(
                                 Collectors.toMap(
                                         schedule -> schedule.getCourse().getId() + ":" + schedule.getDayOfWeek() + ":" + schedule.getTimeSlot() + ":" + schedule.getClassroom().getId(),
-                                        schedule -> durationHours(schedule.getTimeSlot()),
+                                        schedule -> 1,
                                         Integer::max
                                 ),
                                 values -> values.values().stream().mapToInt(Integer::intValue).sum()
@@ -116,44 +117,65 @@ public class WeeklyScheduleService {
     }
 
     @Transactional(readOnly = true)
-    public List<AvailableClassroomResponse> getAvailableClassrooms(User currentUser, UUID courseId, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
+    public ScheduleTimeConfigurationResponse getTimeConfiguration(User currentUser) {
+        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        DepartmentScheduleConfig config = resolveConfig(department);
+        return toTimeConfigurationResponse(department, config);
+    }
+
+    @Transactional
+    public ScheduleTimeConfigurationResponse updateTimeConfiguration(User currentUser, ScheduleTimeConfigurationRequest request) {
+        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        validateConfiguration(request);
+        DepartmentScheduleConfig config = departmentScheduleConfigRepository.findByDepartmentId(department.getId())
+                .orElseGet(() -> {
+                    DepartmentScheduleConfig created = new DepartmentScheduleConfig();
+                    created.setDepartment(department);
+                    return created;
+                });
+        applyConfiguration(config, request);
+        departmentScheduleConfigRepository.save(config);
+        return toTimeConfigurationResponse(department, config);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AvailableClassroomResponse> getAvailableClassrooms(User currentUser, UUID courseId, String dayOfWeek, String timeSlot, Integer slotCount, UUID excludeScheduleId) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
         String normalizedDay = normalizeDay(dayOfWeek);
-        String normalizedTimeSlot = normalizeTimeSlot(timeSlot);
+        List<String> selectedSlots = resolveSelectedSlots(department, timeSlot, normalizeSlotCount(slotCount));
         Course course = courseId != null ? resolveCourse(courseId, department) : null;
+        Set<UUID> excludedIds = resolveExcludedScheduleIds(excludeScheduleId, department);
 
         return classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).stream()
-                .map(classroom -> toAvailableClassroomResponse(classroom, course, normalizedDay, normalizedTimeSlot, excludeScheduleId))
+                .map(classroom -> toAvailableClassroomResponse(classroom, course, normalizedDay, selectedSlots, excludedIds))
                 .toList();
     }
 
     @Transactional
-    public WeeklyScheduleResponse createSchedule(CreateWeeklyScheduleRequest request, User currentUser) {
+    public List<WeeklyScheduleResponse> createSchedule(CreateWeeklyScheduleRequest request, User currentUser) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
         Course course = resolveCourse(request.courseId(), department);
         Classroom classroom = resolveClassroom(request.classroomId(), department);
         String dayOfWeek = normalizeDay(request.dayOfWeek());
-        String timeSlot = normalizeTimeSlot(request.timeSlot());
+        List<String> selectedSlots = resolveSelectedSlots(department, request.timeSlot(), normalizeSlotCount(request.slotCount()));
 
-        assertNoConflict(classroom, dayOfWeek, timeSlot, null);
-        assertNoAcademicianConflict(course, dayOfWeek, timeSlot, null);
+        assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, Set.of());
         assertCapacitySufficient(course, classroom);
 
-        WeeklySchedule schedule = new WeeklySchedule();
-        schedule.setCourse(course);
-        schedule.setClassroom(classroom);
-        schedule.setDayOfWeek(dayOfWeek);
-        schedule.setTimeSlot(timeSlot);
+        UUID groupId = UUID.randomUUID();
+        List<WeeklySchedule> schedules = selectedSlots.stream()
+                .map(slot -> newSchedule(course, classroom, dayOfWeek, slot, groupId))
+                .toList();
 
         try {
-            return toResponse(weeklyScheduleRepository.save(schedule));
+            return weeklyScheduleRepository.saveAll(schedules).stream().map(this::toResponse).toList();
         } catch (DataIntegrityViolationException exception) {
-            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, timeSlot));
+            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0)));
         }
     }
 
     @Transactional
-    public WeeklyScheduleResponse updateSchedule(UUID id, UpdateWeeklyScheduleRequest request, User currentUser) {
+    public List<WeeklyScheduleResponse> updateSchedule(UUID id, UpdateWeeklyScheduleRequest request, User currentUser) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
         WeeklySchedule schedule = weeklyScheduleRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Ders programı bulunamadı"));
@@ -162,21 +184,24 @@ public class WeeklyScheduleService {
         Course course = resolveCourse(request.courseId(), department);
         Classroom classroom = resolveClassroom(request.classroomId(), department);
         String dayOfWeek = normalizeDay(request.dayOfWeek());
-        String timeSlot = normalizeTimeSlot(request.timeSlot());
+        List<String> selectedSlots = resolveSelectedSlots(department, request.timeSlot(), normalizeSlotCount(request.slotCount()));
+        List<WeeklySchedule> existingGroup = resolveScheduleGroup(schedule);
+        Set<UUID> excludedIds = existingGroup.stream().map(WeeklySchedule::getId).collect(Collectors.toSet());
 
-        assertNoConflict(classroom, dayOfWeek, timeSlot, id);
-        assertNoAcademicianConflict(course, dayOfWeek, timeSlot, id);
+        assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, excludedIds);
         assertCapacitySufficient(course, classroom);
 
-        schedule.setCourse(course);
-        schedule.setClassroom(classroom);
-        schedule.setDayOfWeek(dayOfWeek);
-        schedule.setTimeSlot(timeSlot);
+        UUID groupId = Optional.ofNullable(schedule.getScheduleGroupId()).orElse(UUID.randomUUID());
+        weeklyScheduleRepository.deleteAll(existingGroup);
+        weeklyScheduleRepository.flush();
+        List<WeeklySchedule> schedules = selectedSlots.stream()
+                .map(slot -> newSchedule(course, classroom, dayOfWeek, slot, groupId))
+                .toList();
 
         try {
-            return toResponse(weeklyScheduleRepository.save(schedule));
+            return weeklyScheduleRepository.saveAll(schedules).stream().map(this::toResponse).toList();
         } catch (DataIntegrityViolationException exception) {
-            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, timeSlot));
+            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0)));
         }
     }
 
@@ -186,7 +211,7 @@ public class WeeklyScheduleService {
         WeeklySchedule schedule = weeklyScheduleRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Ders programı bulunamadı"));
         assertScheduleAccess(schedule, department);
-        weeklyScheduleRepository.delete(schedule);
+        weeklyScheduleRepository.deleteAll(resolveScheduleGroup(schedule));
     }
 
     public List<String> getDays() {
@@ -194,7 +219,131 @@ public class WeeklyScheduleService {
     }
 
     public List<String> getTimeSlots() {
-        return List.copyOf(TIME_SLOTS);
+        return generateSlots(defaultConfig(null)).stream().map(ScheduleTimeSlotResponse::value).toList();
+    }
+
+    private DepartmentScheduleConfig resolveConfig(Department department) {
+        return departmentScheduleConfigRepository.findByDepartmentId(department.getId())
+                .orElseGet(() -> defaultConfig(department));
+    }
+
+    private DepartmentScheduleConfig defaultConfig(Department department) {
+        DepartmentScheduleConfig config = new DepartmentScheduleConfig();
+        config.setDepartment(department);
+        config.setStartTime("08:15");
+        config.setEndTime("17:00");
+        config.setLessonDurationMinutes(45);
+        config.setBreakDurationMinutes(10);
+        config.setLunchBreakEnabled(true);
+        config.setLunchBreakStart("12:40");
+        config.setLunchBreakEnd("13:30");
+        return config;
+    }
+
+    private void applyConfiguration(DepartmentScheduleConfig config, ScheduleTimeConfigurationRequest request) {
+        config.setStartTime(normalizeTime(request.startTime()));
+        config.setEndTime(normalizeTime(request.endTime()));
+        config.setLessonDurationMinutes(request.lessonDurationMinutes());
+        config.setBreakDurationMinutes(request.breakDurationMinutes());
+        config.setLunchBreakEnabled(request.lunchBreakEnabled());
+        config.setLunchBreakStart(normalizeTime(request.lunchBreakStart()));
+        config.setLunchBreakEnd(normalizeTime(request.lunchBreakEnd()));
+    }
+
+    private void validateConfiguration(ScheduleTimeConfigurationRequest request) {
+        LocalTime start = parseTime(request.startTime());
+        LocalTime end = parseTime(request.endTime());
+        if (!start.isBefore(end)) {
+            throw new IllegalArgumentException("Program başlangıç saati bitiş saatinden önce olmalıdır.");
+        }
+        if (request.lunchBreakEnabled()) {
+            LocalTime lunchStart = parseTime(request.lunchBreakStart());
+            LocalTime lunchEnd = parseTime(request.lunchBreakEnd());
+            if (!lunchStart.isBefore(lunchEnd) || lunchStart.isBefore(start) || lunchEnd.isAfter(end)) {
+                throw new IllegalArgumentException("Öğle arası program saatleri içinde ve geçerli olmalıdır.");
+            }
+        } else {
+            parseTime(request.lunchBreakStart());
+            parseTime(request.lunchBreakEnd());
+        }
+        DepartmentScheduleConfig config = defaultConfig(null);
+        applyConfiguration(config, request);
+        generateSlots(config);
+    }
+
+    private ScheduleTimeConfigurationResponse toTimeConfigurationResponse(Department department, DepartmentScheduleConfig config) {
+        List<ScheduleTimeSlotResponse> slots = generateSlots(config);
+        Set<String> generatedSlotValues = slots.stream().map(ScheduleTimeSlotResponse::value).collect(Collectors.toSet());
+        int affectedScheduleCount = weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId()).stream()
+                .filter(schedule -> !generatedSlotValues.contains(schedule.getTimeSlot()))
+                .toList()
+                .size();
+        return new ScheduleTimeConfigurationResponse(
+                department.getId(),
+                department.getName(),
+                config.getStartTime(),
+                config.getEndTime(),
+                config.getLessonDurationMinutes(),
+                config.getBreakDurationMinutes(),
+                Boolean.TRUE.equals(config.getLunchBreakEnabled()),
+                config.getLunchBreakStart(),
+                config.getLunchBreakEnd(),
+                slots,
+                affectedScheduleCount
+        );
+    }
+
+    private List<ScheduleTimeSlotResponse> generateSlots(DepartmentScheduleConfig config) {
+        LocalTime start = parseTime(config.getStartTime());
+        LocalTime end = parseTime(config.getEndTime());
+        LocalTime lunchStart = parseTime(config.getLunchBreakStart());
+        LocalTime lunchEnd = parseTime(config.getLunchBreakEnd());
+        int lessonMinutes = config.getLessonDurationMinutes();
+        int breakMinutes = config.getBreakDurationMinutes();
+        boolean lunchEnabled = Boolean.TRUE.equals(config.getLunchBreakEnabled());
+
+        List<ScheduleTimeSlotResponse> slots = new ArrayList<>();
+        LocalTime cursor = start;
+        while (!cursor.plusMinutes(lessonMinutes).isAfter(end)) {
+            LocalTime slotEnd = cursor.plusMinutes(lessonMinutes);
+            if (lunchEnabled && overlaps(cursor, slotEnd, lunchStart, lunchEnd)) {
+                cursor = lunchEnd;
+                continue;
+            }
+            String slotStartText = cursor.format(TIME_FORMATTER);
+            String slotEndText = slotEnd.format(TIME_FORMATTER);
+            slots.add(new ScheduleTimeSlotResponse(slotStartText + "-" + slotEndText, slotStartText, slotEndText, slots.size()));
+            cursor = slotEnd.plusMinutes(breakMinutes);
+        }
+        if (slots.isEmpty()) {
+            throw new IllegalArgumentException("Seçilen saat ayarlarıyla ders bloğu oluşturulamıyor.");
+        }
+        return slots;
+    }
+
+    private boolean overlaps(LocalTime start, LocalTime end, LocalTime blockedStart, LocalTime blockedEnd) {
+        return start.isBefore(blockedEnd) && end.isAfter(blockedStart);
+    }
+
+    private List<String> resolveSelectedSlots(Department department, String timeSlot, int slotCount) {
+        List<String> slots = generateSlots(resolveConfig(department)).stream().map(ScheduleTimeSlotResponse::value).toList();
+        String normalizedTimeSlot = normalizeTimeSlotFormat(timeSlot);
+        int startIndex = slots.indexOf(normalizedTimeSlot);
+        if (startIndex < 0) {
+            throw new IllegalArgumentException("Geçersiz zaman bloğu seçimi.");
+        }
+        if (startIndex + slotCount > slots.size()) {
+            throw new IllegalArgumentException("Seçilen ders saati program bitişini aşıyor.");
+        }
+        return slots.subList(startIndex, startIndex + slotCount);
+    }
+
+    private int normalizeSlotCount(Integer slotCount) {
+        int normalized = slotCount == null ? 1 : slotCount;
+        if (normalized < 1 || normalized > 12) {
+            throw new IllegalArgumentException("Ders saati 1 ile 12 arasında olmalıdır.");
+        }
+        return normalized;
     }
 
     private Course resolveCourse(UUID courseId, Department department) {
@@ -226,31 +375,54 @@ public class WeeklyScheduleService {
         }
     }
 
-    private void assertNoConflict(Classroom classroom, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
-        Optional<WeeklySchedule> conflict = excludeScheduleId == null
-                ? weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot)
-                : weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlotAndIdNot(classroom.getId(), dayOfWeek, timeSlot, excludeScheduleId);
+    private List<WeeklySchedule> resolveScheduleGroup(WeeklySchedule schedule) {
+        if (schedule.getScheduleGroupId() == null) {
+            return List.of(schedule);
+        }
+        return weeklyScheduleRepository.findAllByScheduleGroupId(schedule.getScheduleGroupId()).stream()
+                .sorted(Comparator.comparing(WeeklySchedule::getTimeSlot))
+                .toList();
+    }
 
-        if (conflict.isPresent()) {
-            WeeklySchedule schedule = conflict.get();
-            Course course = schedule.getCourse();
-            Department department = course != null ? course.getDepartment() : null;
-            String detail = course != null
-                    ? " Çakışan ders: " + course.getCode() + " - " + course.getName()
-                    : "";
-            String departmentDetail = department != null ? " (" + department.getName() + ")" : "";
-            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, timeSlot) + detail + departmentDetail);
+    private Set<UUID> resolveExcludedScheduleIds(UUID excludeScheduleId, Department department) {
+        if (excludeScheduleId == null) {
+            return Set.of();
+        }
+        WeeklySchedule schedule = weeklyScheduleRepository.findWithDetailsById(excludeScheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("Ders programı bulunamadı"));
+        assertScheduleAccess(schedule, department);
+        return resolveScheduleGroup(schedule).stream().map(WeeklySchedule::getId).collect(Collectors.toSet());
+    }
+
+    private void assertSlotsAvailable(Course course, Classroom classroom, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+        for (String slot : selectedSlots) {
+            Optional<WeeklySchedule> classroomConflict = findClassroomConflict(classroom, dayOfWeek, slot, excludedIds);
+            if (classroomConflict.isPresent()) {
+                WeeklySchedule conflict = classroomConflict.get();
+                Course conflictCourse = conflict.getCourse();
+                Department conflictDepartment = conflictCourse != null ? conflictCourse.getDepartment() : null;
+                String detail = conflictCourse != null
+                        ? " Çakışan ders: " + conflictCourse.getCode() + " - " + conflictCourse.getName()
+                        : "";
+                String departmentDetail = conflictDepartment != null ? " (" + conflictDepartment.getName() + ")" : "";
+                throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, slot) + detail + departmentDetail);
+            }
+            if (findAcademicianConflict(course, dayOfWeek, slot, excludedIds).isPresent()) {
+                throw new IllegalArgumentException("Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + slot);
+            }
         }
     }
 
-    private void assertNoAcademicianConflict(Course course, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
-        Optional<WeeklySchedule> conflict = excludeScheduleId == null
-                ? weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot)
-                : weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlotAndIdNot(course.getAcademician().getId(), dayOfWeek, timeSlot, excludeScheduleId);
+    private Optional<WeeklySchedule> findClassroomConflict(Classroom classroom, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
+        return weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot).stream()
+                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .findFirst();
+    }
 
-        if (conflict.isPresent()) {
-            throw new IllegalArgumentException("Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.");
-        }
+    private Optional<WeeklySchedule> findAcademicianConflict(Course course, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
+        return weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot).stream()
+                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .findFirst();
     }
 
     private void assertCapacitySufficient(Course course, Classroom classroom) {
@@ -260,18 +432,22 @@ public class WeeklyScheduleService {
         }
     }
 
-    private AvailableClassroomResponse toAvailableClassroomResponse(Classroom classroom, Course course, String dayOfWeek, String timeSlot, UUID excludeScheduleId) {
-        Optional<WeeklySchedule> classroomConflict = excludeScheduleId == null
-                ? weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot)
-                : weeklyScheduleRepository.findFirstByClassroom_IdAndDayOfWeekAndTimeSlotAndIdNot(classroom.getId(), dayOfWeek, timeSlot, excludeScheduleId);
+    private AvailableClassroomResponse toAvailableClassroomResponse(Classroom classroom, Course course, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+        Optional<WeeklySchedule> classroomConflict = selectedSlots.stream()
+                .map(slot -> findClassroomConflict(classroom, dayOfWeek, slot, excludedIds))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
         Optional<WeeklySchedule> academicianConflict = Optional.empty();
         Optional<Integer> studentCount = Optional.empty();
         Boolean capacitySufficient = null;
 
         if (course != null) {
-            academicianConflict = excludeScheduleId == null
-                    ? weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot)
-                    : weeklyScheduleRepository.findFirstByCourse_Academician_IdAndDayOfWeekAndTimeSlotAndIdNot(course.getAcademician().getId(), dayOfWeek, timeSlot, excludeScheduleId);
+            academicianConflict = selectedSlots.stream()
+                    .map(slot -> findAcademicianConflict(course, dayOfWeek, slot, excludedIds))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .findFirst();
             studentCount = resolveStudentCount(course);
             capacitySufficient = studentCount.map(count -> classroom.getCapacity() >= count).orElse(null);
         }
@@ -304,10 +480,10 @@ public class WeeklyScheduleService {
             Boolean capacitySufficient
     ) {
         if (classroomConflict.isPresent()) {
-            return "Bu sınıf seçilen zaman diliminde kullanımda.";
+            return "Bu sınıf seçilen zaman dilimlerinden birinde kullanımda: " + classroomConflict.get().getTimeSlot();
         }
         if (academicianConflict.isPresent()) {
-            return "Bu akademisyen seçilen zaman diliminde başka bir derste görevlidir.";
+            return "Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + academicianConflict.get().getTimeSlot();
         }
         if (Boolean.FALSE.equals(capacitySufficient)) {
             return classroom.getCode() + " sınıfı " + classroom.getCapacity() + " kişilik. Ders öğrenci sayısı: " + studentCount.orElse(0);
@@ -320,6 +496,16 @@ public class WeeklyScheduleService {
 
     private Optional<Integer> resolveStudentCount(Course course) {
         return Optional.empty();
+    }
+
+    private WeeklySchedule newSchedule(Course course, Classroom classroom, String dayOfWeek, String timeSlot, UUID groupId) {
+        WeeklySchedule schedule = new WeeklySchedule();
+        schedule.setCourse(course);
+        schedule.setClassroom(classroom);
+        schedule.setDayOfWeek(dayOfWeek);
+        schedule.setTimeSlot(timeSlot);
+        schedule.setScheduleGroupId(groupId);
+        return schedule;
     }
 
     private WeeklyScheduleResponse toResponse(WeeklySchedule schedule) {
@@ -344,7 +530,8 @@ public class WeeklyScheduleService {
                 department.getName(),
                 schedule.getDayOfWeek(),
                 schedule.getTimeSlot(),
-                course.getSemester()
+                course.getSemester(),
+                schedule.getScheduleGroupId()
         );
     }
 
@@ -378,22 +565,6 @@ public class WeeklyScheduleService {
         return "COMPLETE";
     }
 
-    private int durationHours(String timeSlot) {
-        String[] parts = timeSlot.split("-");
-        if (parts.length != 2) {
-            return 1;
-        }
-        try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-            LocalTime start = LocalTime.parse(parts[0].trim(), formatter);
-            LocalTime end = LocalTime.parse(parts[1].trim(), formatter);
-            long minutes = java.time.Duration.between(start, end).toMinutes();
-            return Math.max(1, (int) Math.ceil(minutes / 60.0));
-        } catch (RuntimeException exception) {
-            return 1;
-        }
-    }
-
     private String normalizeDay(String dayOfWeek) {
         String normalized = dayOfWeek.trim().toUpperCase();
         if (!DAYS.contains(normalized)) {
@@ -402,12 +573,29 @@ public class WeeklyScheduleService {
         return normalized;
     }
 
-    private String normalizeTimeSlot(String timeSlot) {
-        String normalized = timeSlot.trim();
-        if (!TIME_SLOTS.contains(normalized)) {
+    private String normalizeTime(String time) {
+        return parseTime(time).format(TIME_FORMATTER);
+    }
+
+    private LocalTime parseTime(String time) {
+        try {
+            return LocalTime.parse(time.trim(), TIME_FORMATTER);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException("Saat bilgisi HH:mm formatında olmalıdır.");
+        }
+    }
+
+    private String normalizeTimeSlotFormat(String timeSlot) {
+        String[] parts = timeSlot.trim().split("-");
+        if (parts.length != 2) {
             throw new IllegalArgumentException("Geçersiz zaman bloğu seçimi.");
         }
-        return normalized;
+        LocalTime start = parseTime(parts[0]);
+        LocalTime end = parseTime(parts[1]);
+        if (!start.isBefore(end) || Duration.between(start, end).toMinutes() <= 0) {
+            throw new IllegalArgumentException("Geçersiz zaman bloğu seçimi.");
+        }
+        return start.format(TIME_FORMATTER) + "-" + end.format(TIME_FORMATTER);
     }
 
     private String conflictMessage(Classroom classroom, String dayOfWeek, String timeSlot) {

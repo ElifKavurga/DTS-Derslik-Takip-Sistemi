@@ -3,6 +3,8 @@ import {
   AvailableClassroomResponse,
   CreateWeeklyScheduleRequest,
   ScheduleCompletionResponse,
+  ScheduleTimeConfigurationRequest,
+  ScheduleTimeConfigurationResponse,
   Semester,
   UpdateWeeklyScheduleRequest,
   WeeklyScheduleResponse,
@@ -23,18 +25,28 @@ export const scheduleService = {
     return response.data;
   },
 
-  getAvailableClassrooms: async (params: { courseId?: string; dayOfWeek: string; timeSlot: string; excludeScheduleId?: string }) => {
+  getTimeConfiguration: async () => {
+    const response = await apiClient.get<ScheduleTimeConfigurationResponse>('/schedules/time-configuration');
+    return response.data;
+  },
+
+  updateTimeConfiguration: async (payload: ScheduleTimeConfigurationRequest) => {
+    const response = await apiClient.put<ScheduleTimeConfigurationResponse>('/schedules/time-configuration', payload);
+    return response.data;
+  },
+
+  getAvailableClassrooms: async (params: { courseId?: string; dayOfWeek: string; timeSlot: string; slotCount: number; excludeScheduleId?: string }) => {
     const response = await apiClient.get<AvailableClassroomResponse[]>('/schedules/available-classrooms', { params });
     return response.data;
   },
 
   create: async (payload: CreateWeeklyScheduleRequest) => {
-    const response = await apiClient.post<WeeklyScheduleResponse>('/schedules', payload);
+    const response = await apiClient.post<WeeklyScheduleResponse[]>('/schedules', payload);
     return response.data;
   },
 
   update: async (id: string, payload: UpdateWeeklyScheduleRequest) => {
-    const response = await apiClient.put<WeeklyScheduleResponse>(`/schedules/${id}`, payload);
+    const response = await apiClient.put<WeeklyScheduleResponse[]>(`/schedules/${id}`, payload);
     return response.data;
   },
 

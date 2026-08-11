@@ -10,6 +10,7 @@ public record UpdateWeeklyScheduleRequest(
         @NotNull UUID courseId,
         @NotNull UUID classroomId,
         @NotBlank @Size(max = 20) String dayOfWeek,
-        @NotBlank @Size(max = 20) String timeSlot
+        @NotBlank @Size(max = 20) String timeSlot,
+        Integer slotCount
 ) {
 }
