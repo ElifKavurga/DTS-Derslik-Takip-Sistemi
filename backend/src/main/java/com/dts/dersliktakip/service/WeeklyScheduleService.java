@@ -1,7 +1,9 @@
 package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.AvailableClassroomResponse;
+import com.dts.dersliktakip.dto.CourseScheduleStatusItemResponse;
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
+import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
 import com.dts.dersliktakip.dto.UpdateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Academician;
@@ -20,11 +22,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +66,53 @@ public class WeeklyScheduleService {
                 ? weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId())
                 : weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), semester);
         return schedules.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ScheduleCompletionResponse getScheduleCompletion(User currentUser, Semester semester) {
+        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        List<Course> courses = semester == null
+                ? courseRepository.findAllByDepartmentId(department.getId())
+                : courseRepository.findAllByDepartmentIdAndSemester(department.getId(), semester);
+        List<WeeklySchedule> schedules = semester == null
+                ? weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId())
+                : weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), semester);
+
+        Map<UUID, Integer> scheduledHoursByCourseId = schedules.stream()
+                .collect(Collectors.groupingBy(
+                        schedule -> schedule.getCourse().getId(),
+                        Collectors.collectingAndThen(
+                                Collectors.toMap(
+                                        schedule -> schedule.getCourse().getId() + ":" + schedule.getDayOfWeek() + ":" + schedule.getTimeSlot() + ":" + schedule.getClassroom().getId(),
+                                        schedule -> durationHours(schedule.getTimeSlot()),
+                                        Integer::max
+                                ),
+                                values -> values.values().stream().mapToInt(Integer::intValue).sum()
+                        )
+                ));
+
+        List<CourseScheduleStatusItemResponse> items = courses.stream()
+                .map(course -> toStatusItem(course, scheduledHoursByCourseId.getOrDefault(course.getId(), 0)))
+                .toList();
+
+        Map<String, Long> counts = items.stream()
+                .collect(Collectors.groupingBy(CourseScheduleStatusItemResponse::status, Collectors.counting()));
+        int totalCourses = items.size();
+        int completedCourses = counts.getOrDefault("COMPLETE", 0L).intValue();
+        int completionPercentage = totalCourses == 0 ? 100 : Math.round((completedCourses * 100f) / totalCourses);
+
+        return new ScheduleCompletionResponse(
+                department.getId(),
+                department.getName(),
+                semester,
+                totalCourses,
+                completedCourses,
+                counts.getOrDefault("INCOMPLETE", 0L).intValue(),
+                counts.getOrDefault("NOT_SCHEDULED", 0L).intValue(),
+                counts.getOrDefault("OVER_SCHEDULED", 0L).intValue(),
+                completionPercentage,
+                items
+        );
     }
 
     @Transactional(readOnly = true)
@@ -225,6 +277,52 @@ public class WeeklyScheduleService {
                 schedule.getTimeSlot(),
                 course.getSemester()
         );
+    }
+
+    private CourseScheduleStatusItemResponse toStatusItem(Course course, int scheduledHours) {
+        int requiredHours = course.getTheoreticalHours() + course.getPracticalHours();
+        int remainingHours = requiredHours - scheduledHours;
+        String status = resolveStatus(requiredHours, scheduledHours);
+        return new CourseScheduleStatusItemResponse(
+                course.getId(),
+                course.getCode(),
+                course.getName(),
+                formatAcademicianName(course.getAcademician()),
+                course.getGrade(),
+                requiredHours,
+                scheduledHours,
+                remainingHours,
+                status
+        );
+    }
+
+    private String resolveStatus(int requiredHours, int scheduledHours) {
+        if (scheduledHours == 0) {
+            return "NOT_SCHEDULED";
+        }
+        if (scheduledHours < requiredHours) {
+            return "INCOMPLETE";
+        }
+        if (scheduledHours > requiredHours) {
+            return "OVER_SCHEDULED";
+        }
+        return "COMPLETE";
+    }
+
+    private int durationHours(String timeSlot) {
+        String[] parts = timeSlot.split("-");
+        if (parts.length != 2) {
+            return 1;
+        }
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+            LocalTime start = LocalTime.parse(parts[0].trim(), formatter);
+            LocalTime end = LocalTime.parse(parts[1].trim(), formatter);
+            long minutes = java.time.Duration.between(start, end).toMinutes();
+            return Math.max(1, (int) Math.ceil(minutes / 60.0));
+        } catch (RuntimeException exception) {
+            return 1;
+        }
     }
 
     private String normalizeDay(String dayOfWeek) {

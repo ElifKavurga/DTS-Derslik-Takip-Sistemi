@@ -2,6 +2,7 @@ import { apiClient } from './axios';
 import {
   AvailableClassroomResponse,
   CreateWeeklyScheduleRequest,
+  ScheduleCompletionResponse,
   Semester,
   UpdateWeeklyScheduleRequest,
   WeeklyScheduleResponse,
@@ -10,6 +11,13 @@ import {
 export const scheduleService = {
   getAll: async (semester?: Semester) => {
     const response = await apiClient.get<WeeklyScheduleResponse[]>('/schedules', {
+      params: semester ? { semester } : undefined,
+    });
+    return response.data;
+  },
+
+  getStatus: async (semester?: Semester) => {
+    const response = await apiClient.get<ScheduleCompletionResponse>('/schedules/status', {
       params: semester ? { semester } : undefined,
     });
     return response.data;

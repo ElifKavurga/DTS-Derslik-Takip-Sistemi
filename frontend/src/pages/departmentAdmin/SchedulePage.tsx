@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { CalendarDays, Clock, Edit2, MapPin, Plus, Trash2, User, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Trash2, User, XCircle } from 'lucide-react';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormModal } from '@/components/ui/FormModal';
@@ -11,8 +11,10 @@ import { courseService } from '@/services/courseService';
 import { scheduleService } from '@/services/scheduleService';
 import {
   AvailableClassroomResponse,
+  CourseScheduleStatusItemResponse,
   CourseResponse,
   ScheduleDay,
+  ScheduleCompletionResponse,
   Semester,
   WeeklyScheduleResponse,
   classroomTypeLabels,
@@ -57,6 +59,11 @@ export const SchedulePage = () => {
   const { data: schedules = [], isLoading, error } = useQuery({
     queryKey: ['weeklySchedules', selectedSemester],
     queryFn: () => scheduleService.getAll(selectedSemester || undefined),
+  });
+
+  const { data: scheduleStatus, isLoading: isStatusLoading } = useQuery({
+    queryKey: ['scheduleStatus', selectedSemester],
+    queryFn: () => scheduleService.getStatus(selectedSemester || undefined),
   });
 
   const { data: courses = [] } = useQuery({
@@ -116,9 +123,19 @@ export const SchedulePage = () => {
     [availableClassrooms],
   );
 
-  const openCreate = () => {
+  const incompleteCourses = useMemo(
+    () => scheduleStatus?.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED') ?? [],
+    [scheduleStatus],
+  );
+
+  const notScheduledCourses = useMemo(
+    () => scheduleStatus?.courses.filter((course) => course.status === 'NOT_SCHEDULED') ?? [],
+    [scheduleStatus],
+  );
+
+  const openCreate = (courseId = '') => {
     setEditingSchedule(null);
-    setForm(initialForm);
+    setForm({ ...initialForm, courseId });
     setIsModalOpen(true);
   };
 
@@ -151,9 +168,11 @@ export const SchedulePage = () => {
 
   const createMutation = useMutation({
     mutationFn: scheduleService.create,
-    onSuccess: () => {
+    onSuccess: async (schedule) => {
       toast.success('Ders programı eklendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
+      await notifyCourseStatus(schedule.courseId);
       closeModal();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı eklenemedi.'),
@@ -166,9 +185,11 @@ export const SchedulePage = () => {
       dayOfWeek: payload.dayOfWeek as ScheduleDay,
       timeSlot: payload.timeSlot,
     }),
-    onSuccess: () => {
+    onSuccess: async (schedule) => {
       toast.success('Ders programı güncellendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
+      await notifyCourseStatus(schedule.courseId);
       closeModal();
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı güncellenemedi.'),
@@ -179,6 +200,7 @@ export const SchedulePage = () => {
     onSuccess: () => {
       toast.success('Ders programı kaldırıldı.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
+      queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
       setDeletingSchedule(null);
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı kaldırılamadı.'),
@@ -202,6 +224,18 @@ export const SchedulePage = () => {
     else createMutation.mutate(payload);
   };
 
+  const notifyCourseStatus = async (courseId: string) => {
+    const status = await scheduleService.getStatus(selectedSemester || undefined);
+    const course = status.courses.find((item) => item.courseId === courseId);
+    if (!course) return;
+    if (course.status === 'INCOMPLETE') {
+      toast.error(`${course.courseCode} için ${course.remainingHours} saat eksik.`);
+    }
+    if (course.status === 'OVER_SCHEDULED') {
+      toast.error(`${course.courseCode} için haftalık ders saati ${Math.abs(course.remainingHours)} saat aşılmıştır.`);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -220,9 +254,19 @@ export const SchedulePage = () => {
               className="min-w-[150px]"
             />
           </div>
-          <PrimaryButton onClick={openCreate} icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
+          <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
         </div>
       </div>
+
+      {scheduleStatus && (
+        <ScheduleStatusOverview
+          status={scheduleStatus}
+          isLoading={isStatusLoading}
+          incompleteCourses={incompleteCourses}
+          notScheduledCourses={notScheduledCourses}
+          onOpenCourse={(courseId) => openCreate(courseId)}
+        />
+      )}
 
       {isLoading ? (
         <div className="grid gap-2">
@@ -236,7 +280,7 @@ export const SchedulePage = () => {
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">Henüz haftalık ders programı oluşturulmadı.</h3>
-          <PrimaryButton onClick={openCreate} className="mt-5" icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
+          <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Ders Programı Ekle</PrimaryButton>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white">
@@ -372,6 +416,138 @@ const ReadonlyLecturer = ({ course }: { course: CourseResponse | null }) => (
     </p>
   </div>
 );
+
+const ScheduleStatusOverview = ({
+  status,
+  isLoading,
+  incompleteCourses,
+  notScheduledCourses,
+  onOpenCourse,
+}: {
+  status: ScheduleCompletionResponse;
+  isLoading: boolean;
+  incompleteCourses: CourseScheduleStatusItemResponse[];
+  notScheduledCourses: CourseScheduleStatusItemResponse[];
+  onOpenCourse: (courseId: string) => void;
+}) => {
+  const hasWarnings = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
+  const cards = [
+    { label: 'Tamamlanan', value: status.completedCourses },
+    { label: 'Eksik', value: status.incompleteCourses },
+    { label: 'Programlanmadı', value: status.notScheduledCourses },
+    { label: 'Fazla Saat', value: status.overScheduledCourses },
+  ];
+
+  return (
+    <section className="space-y-3">
+      <div className={cn('rounded-2xl border px-4 py-3', hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70')}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            {hasWarnings ? <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />}
+            <div>
+              <p className={cn('text-sm font-bold', hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
+                {hasWarnings ? 'Ders programı tamamlanmadı' : 'Ders programı tamamlandı'}
+              </p>
+              <p className="mt-0.5 text-xs font-medium text-slate-500">
+                {hasWarnings
+                  ? `${status.incompleteCourses} ders eksik, ${status.notScheduledCourses} ders henüz programa eklenmedi, ${status.overScheduledCourses} ders fazla saat içeriyor.`
+                  : 'Seçili dönemdeki tüm dersler gereken haftalık saate ulaştı.'}
+              </p>
+            </div>
+          </div>
+          <div className="min-w-32">
+            <div className="h-2 overflow-hidden rounded-full bg-white/80">
+              <div className="h-full rounded-full bg-[#006482]" style={{ width: `${status.completionPercentage}%` }} />
+            </div>
+            <p className="mt-1 text-right text-[11px] font-bold text-slate-500">{status.completionPercentage}%</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-4">
+        {cards.map((card) => (
+          <div key={card.label} className="rounded-2xl border border-slate-200/70 bg-white px-4 py-3">
+            <p className="text-2xl font-extrabold tracking-tight text-slate-900">{isLoading ? '-' : card.value}</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{card.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {(incompleteCourses.length > 0 || notScheduledCourses.length > 0) && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {incompleteCourses.length > 0 && (
+            <CourseStatusPanel
+              title="Programı Tamamlanmayan Dersler"
+              courses={incompleteCourses}
+              onOpenCourse={onOpenCourse}
+            />
+          )}
+          {notScheduledCourses.length > 0 && (
+            <CourseStatusPanel
+              title="Henüz Programa Eklenmeyen Dersler"
+              courses={notScheduledCourses}
+              onOpenCourse={onOpenCourse}
+            />
+          )}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const CourseStatusPanel = ({
+  title,
+  courses,
+  onOpenCourse,
+}: {
+  title: string;
+  courses: CourseScheduleStatusItemResponse[];
+  onOpenCourse: (courseId: string) => void;
+}) => (
+  <div className="rounded-2xl border border-slate-200/70 bg-white p-4">
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">{title}</h2>
+      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{courses.length}</span>
+    </div>
+    <div className="space-y-2">
+      {courses.map((course) => (
+        <div key={course.courseId} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-slate-900">{course.courseCode} - {course.courseName}</p>
+              <p className="mt-0.5 truncate text-[11px] font-semibold text-slate-400">{course.academicianName} · {course.grade}. Sınıf</p>
+            </div>
+            <StatusBadge status={course.status} />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] font-semibold text-slate-500">
+            <span>Gereken: <b className="text-slate-800">{course.requiredHours}</b></span>
+            <span>Planlanan: <b className="text-slate-800">{course.scheduledHours}</b></span>
+            <span>{course.remainingHours < 0 ? 'Fazla' : 'Eksik'}: <b className="text-slate-800">{Math.abs(course.remainingHours)}</b></span>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <SecondaryButton type="button" onClick={() => onOpenCourse(course.courseId)}>Programa Git</SecondaryButton>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }: { status: CourseScheduleStatusItemResponse['status'] }) => {
+  const meta = {
+    COMPLETE: { label: 'Tamamlandı', cls: 'border-emerald-100 bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+    INCOMPLETE: { label: 'Eksik', cls: 'border-amber-100 bg-amber-50 text-amber-700', icon: AlertTriangle },
+    NOT_SCHEDULED: { label: 'Programlanmadı', cls: 'border-slate-200 bg-white text-slate-500', icon: Circle },
+    OVER_SCHEDULED: { label: 'Fazla Saat', cls: 'border-rose-100 bg-rose-50 text-rose-700', icon: AlertTriangle },
+  }[status];
+  const Icon = meta.icon;
+  return (
+    <span className={cn('inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold', meta.cls)}>
+      <Icon className="h-3 w-3" />
+      {meta.label}
+    </span>
+  );
+};
 
 const ScheduleCard = ({
   schedule,

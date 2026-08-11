@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.repository;
 
 import com.dts.dersliktakip.entity.Course;
+import com.dts.dersliktakip.entity.Semester;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,9 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByDepartmentId(UUID departmentId);
+
+    @EntityGraph(attributePaths = {"faculty", "department", "academician"})
+    List<Course> findAllByDepartmentIdAndSemester(UUID departmentId, Semester semester);
 
     long countByDepartment_Id(UUID departmentId);
 

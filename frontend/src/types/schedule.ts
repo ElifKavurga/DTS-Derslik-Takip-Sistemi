@@ -40,6 +40,37 @@ export type AvailableClassroomResponse = {
   conflictMessage?: string | null;
 };
 
+export type CourseScheduleStatus =
+  | 'NOT_SCHEDULED'
+  | 'INCOMPLETE'
+  | 'COMPLETE'
+  | 'OVER_SCHEDULED';
+
+export type CourseScheduleStatusItemResponse = {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  academicianName: string;
+  grade: number;
+  requiredHours: number;
+  scheduledHours: number;
+  remainingHours: number;
+  status: CourseScheduleStatus;
+};
+
+export type ScheduleCompletionResponse = {
+  departmentId: string;
+  departmentName: string;
+  semester?: Semester | null;
+  totalCourses: number;
+  completedCourses: number;
+  incompleteCourses: number;
+  notScheduledCourses: number;
+  overScheduledCourses: number;
+  completionPercentage: number;
+  courses: CourseScheduleStatusItemResponse[];
+};
+
 export const scheduleDays: { value: ScheduleDay; label: string; shortLabel: string }[] = [
   { value: 'MONDAY', label: 'Pazartesi', shortLabel: 'Pzt' },
   { value: 'TUESDAY', label: 'Salı', shortLabel: 'Salı' },

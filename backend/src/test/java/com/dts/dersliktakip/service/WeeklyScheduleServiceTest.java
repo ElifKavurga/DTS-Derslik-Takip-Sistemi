@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
+import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
@@ -23,9 +24,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -96,6 +99,70 @@ class WeeklyScheduleServiceTest {
         verify(weeklyScheduleRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }
 
+    @Test
+    void getScheduleCompletionReturnsAllCourseStatusesForSelectedSemester() {
+        User currentUser = new User();
+        Faculty faculty = faculty(UUID.randomUUID());
+        Department department = department(UUID.randomUUID(), faculty);
+        Course complete = course(UUID.randomUUID(), department, "CENG101", 3);
+        Course incomplete = course(UUID.randomUUID(), department, "CENG201", 3);
+        Course notScheduled = course(UUID.randomUUID(), department, "CENG301", 3);
+        Course overScheduled = course(UUID.randomUUID(), department, "CENG401", 3);
+        Classroom classroom = classroom(UUID.randomUUID(), faculty);
+
+        List<Course> courses = List.of(complete, incomplete, notScheduled, overScheduled);
+        List<WeeklySchedule> schedules = List.of(
+                schedule(complete, classroom, "MONDAY", "09:00-10:00"),
+                schedule(complete, classroom, "TUESDAY", "09:00-10:00"),
+                schedule(complete, classroom, "WEDNESDAY", "09:00-10:00"),
+                schedule(incomplete, classroom, "MONDAY", "10:00-11:00"),
+                schedule(incomplete, classroom, "TUESDAY", "10:00-11:00"),
+                schedule(overScheduled, classroom, "MONDAY", "11:00-12:00"),
+                schedule(overScheduled, classroom, "TUESDAY", "11:00-12:00"),
+                schedule(overScheduled, classroom, "WEDNESDAY", "11:00-12:00"),
+                schedule(overScheduled, classroom, "THURSDAY", "11:00-12:00")
+        );
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(courses);
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(schedules);
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+
+        assertThat(response.totalCourses()).isEqualTo(4);
+        assertThat(response.completedCourses()).isEqualTo(1);
+        assertThat(response.incompleteCourses()).isEqualTo(1);
+        assertThat(response.notScheduledCourses()).isEqualTo(1);
+        assertThat(response.overScheduledCourses()).isEqualTo(1);
+        assertThat(response.completionPercentage()).isEqualTo(25);
+        assertThat(response.courses()).anySatisfy(item -> {
+            assertThat(item.courseId()).isEqualTo(complete.getId());
+            assertThat(item.requiredHours()).isEqualTo(3);
+            assertThat(item.scheduledHours()).isEqualTo(3);
+            assertThat(item.remainingHours()).isZero();
+            assertThat(item.status()).isEqualTo("COMPLETE");
+        });
+        assertThat(response.courses()).anySatisfy(item -> {
+            assertThat(item.courseId()).isEqualTo(incomplete.getId());
+            assertThat(item.scheduledHours()).isEqualTo(2);
+            assertThat(item.remainingHours()).isEqualTo(1);
+            assertThat(item.status()).isEqualTo("INCOMPLETE");
+        });
+        assertThat(response.courses()).anySatisfy(item -> {
+            assertThat(item.courseId()).isEqualTo(notScheduled.getId());
+            assertThat(item.scheduledHours()).isZero();
+            assertThat(item.remainingHours()).isEqualTo(3);
+            assertThat(item.status()).isEqualTo("NOT_SCHEDULED");
+        });
+        assertThat(response.courses()).anySatisfy(item -> {
+            assertThat(item.courseId()).isEqualTo(overScheduled.getId());
+            assertThat(item.scheduledHours()).isEqualTo(4);
+            assertThat(item.remainingHours()).isEqualTo(-1);
+            assertThat(item.status()).isEqualTo("OVER_SCHEDULED");
+        });
+    }
+
     private static Faculty faculty(UUID id) {
         Faculty faculty = new Faculty();
         faculty.setId(id);
@@ -114,6 +181,10 @@ class WeeklyScheduleServiceTest {
     }
 
     private static Course course(UUID id, Department department) {
+        return course(id, department, department.getId().toString().substring(0, 4).toUpperCase(), 2);
+    }
+
+    private static Course course(UUID id, Department department, String code, int weeklyHours) {
         Academician academician = new Academician();
         academician.setId(UUID.randomUUID());
         academician.setTitle("Dr.");
@@ -123,14 +194,26 @@ class WeeklyScheduleServiceTest {
 
         Course course = new Course();
         course.setId(id);
-        course.setCode(department.getId().toString().substring(0, 4).toUpperCase());
+        course.setCode(code);
         course.setName("Programlamaya Giris");
         course.setDepartment(department);
         course.setFaculty(department.getFaculty());
         course.setAcademician(academician);
         course.setCourseType(CourseType.ZORUNLU);
         course.setSemester(Semester.GUZ);
+        course.setTheoreticalHours(weeklyHours);
+        course.setPracticalHours(0);
         return course;
+    }
+
+    private static WeeklySchedule schedule(Course course, Classroom classroom, String dayOfWeek, String timeSlot) {
+        WeeklySchedule schedule = new WeeklySchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setCourse(course);
+        schedule.setClassroom(classroom);
+        schedule.setDayOfWeek(dayOfWeek);
+        schedule.setTimeSlot(timeSlot);
+        return schedule;
     }
 
     private static Classroom classroom(UUID id, Faculty faculty) {

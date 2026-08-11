@@ -2,6 +2,7 @@ package com.dts.dersliktakip.controller;
 
 import com.dts.dersliktakip.dto.AvailableClassroomResponse;
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
+import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
 import com.dts.dersliktakip.dto.UpdateWeeklyScheduleRequest;
 import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Semester;
@@ -40,6 +41,15 @@ public class WeeklyScheduleController {
             @RequestParam(required = false) Semester semester
     ) {
         return ResponseEntity.ok(weeklyScheduleService.getSchedules(principal.getUser(), semester));
+    }
+
+    @GetMapping("/status")
+    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    public ResponseEntity<ScheduleCompletionResponse> getScheduleCompletion(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) Semester semester
+    ) {
+        return ResponseEntity.ok(weeklyScheduleService.getScheduleCompletion(principal.getUser(), semester));
     }
 
     @GetMapping("/available-classrooms")
