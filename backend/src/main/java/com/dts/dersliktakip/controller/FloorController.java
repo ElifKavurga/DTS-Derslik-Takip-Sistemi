@@ -82,6 +82,15 @@ public class FloorController {
                 .body(slotLayoutService.createClassroomAndPlace(floorId, request));
     }
 
+    @DeleteMapping("/floors/{floorId}/slot-layout/teaching-spaces/{classroomId}")
+    public ResponseEntity<Void> deleteUnassignedSlotTeachingSpace(
+            @PathVariable UUID floorId,
+            @PathVariable UUID classroomId
+    ) {
+        slotLayoutService.deleteUnassignedTeachingSpace(floorId, classroomId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/buildings/{buildingId}/floors")
     public ResponseEntity<FloorListResponse> getFloorsByBuildingId(@PathVariable UUID buildingId) {
         List<FloorResponse> floors = floorService.getFloorsByBuildingId(buildingId);

@@ -16,7 +16,6 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { getSlotLabel } from '@/components/editor/slotUtils';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { floorLayoutService } from '@/services/floorLayoutService';
@@ -167,20 +166,50 @@ function sortBySlot(a: SpaceObjectRequest, b: SpaceObjectRequest): number {
   return aIndex - bIndex || (a.code ?? a.label).localeCompare(b.code ?? b.label);
 }
 
-function compactPlacements(objects: SpaceObjectRequest[]): SpaceObjectRequest[] {
-  let nextSlotIndex = 0;
-  const placedIds = new Set(
-    objects
-      .filter((object) => isClassroomObject(object) && hasSlot(object))
-      .sort(sortBySlot)
-      .map((object) => object.id),
-  );
+function getSlotOrderIndex(object: SpaceObjectRequest): number {
+  return (object.slotRow ?? 0) * AUTO_COLUMNS + (object.slotColumn ?? 0);
+}
 
+function getLinearSlotLabel(index: number): string {
+  return `A${index + 1}`;
+}
+
+function compactPlacements(objects: SpaceObjectRequest[]): SpaceObjectRequest[] {
+  const placedObjects = objects
+    .filter((object) => isClassroomObject(object) && hasSlot(object))
+    .sort(sortBySlot)
+    .map((object, index) => {
+      const slot = getAutoSlotPosition(index);
+      return { ...object, slotRow: slot.row, slotColumn: slot.column };
+    });
+  const unassignedObjects = objects.filter((object) => !isClassroomObject(object) || !hasSlot(object));
+
+  return [...placedObjects, ...unassignedObjects];
+}
+
+function appendPlacement(objects: SpaceObjectRequest[], placement: SpaceObjectRequest): SpaceObjectRequest[] {
+  const placedCount = objects.filter((object) => isClassroomObject(object) && hasSlot(object)).length;
+  const slot = getAutoSlotPosition(placedCount);
+  return [
+    ...objects,
+    { ...placement, slotRow: slot.row, slotColumn: slot.column },
+  ];
+}
+
+function assignNextSlot(objects: SpaceObjectRequest[], classroomId: string, classroom: ClassroomPlacement): SpaceObjectRequest[] {
+  const placedCount = objects.filter((object) => isClassroomObject(object) && hasSlot(object)).length;
+  const slot = getAutoSlotPosition(placedCount);
   return objects.map((object) => {
-    if (!placedIds.has(object.id)) return object;
-    const slot = getAutoSlotPosition(nextSlotIndex);
-    nextSlotIndex += 1;
-    return { ...object, slotRow: slot.row, slotColumn: slot.column };
+    if (object.classroomId !== classroomId) return object;
+    return {
+      ...object,
+      type: classroom.type,
+      label: classroom.name,
+      code: classroom.code,
+      capacity: classroom.capacity,
+      slotRow: slot.row,
+      slotColumn: slot.column,
+    };
   });
 }
 
@@ -236,6 +265,8 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   const [equipment, setEquipment] = useState<EquipmentState>({ ...DEFAULT_EQUIPMENT });
   const [formErrors, setFormErrors] = useState<ClassroomFormErrors>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [pendingRemovalClassroomId, setPendingRemovalClassroomId] = useState<string | null>(null);
+  const [pendingDeleteClassroomId, setPendingDeleteClassroomId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
   const {
@@ -283,6 +314,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
   }, [saveObjects]);
 
   const autoRows = Math.max(1, Math.ceil(Math.max(placedObjects.length, 1) / AUTO_COLUMNS));
+  const unassignedCount = Math.max(eligibleClassrooms.length - placedObjects.length, 0);
 
   useEffect(() => {
     setMeta(`${floor.name} - Slot Düzeni`, [
@@ -369,6 +401,27 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
     },
   });
 
+  const deleteTeachingSpaceMutation = useMutation({
+    mutationFn: (classroomId: string) => floorLayoutService.deleteUnassignedSlotTeachingSpace(floor.id, classroomId),
+    onSuccess: (_, classroomId) => {
+      queryClient.setQueryData<ClassroomPlacement[]>(['floorClassrooms', floor.id], (current = []) =>
+        current.filter((classroom) => classroom.id !== classroomId)
+      );
+      queryClient.invalidateQueries({ queryKey: ['floorDetail', floor.id] });
+      queryClient.invalidateQueries({ queryKey: ['floorClassrooms', floor.id] });
+      queryClient.invalidateQueries({ queryKey: ['slotLayout', floor.id] });
+      setObjects((prev) => prev.filter((object) => object.classroomId !== classroomId));
+      if (selectedClassroomId === classroomId) {
+        setSelectedClassroomId(null);
+      }
+      setPendingDeleteClassroomId(null);
+      toast.success('Ders alanı silindi.');
+    },
+    onError: (error: AxiosError<{ message: string }>) => {
+      toast.error(error.response?.data?.message ?? 'Ders alanı silinemedi.');
+    },
+  });
+
   const filteredClassrooms = useMemo(() => {
     const query = classroomSearch.trim().toLowerCase();
     if (!query) return eligibleClassrooms;
@@ -392,6 +445,8 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
   const selectedClassroom = selectedClassroomId ? classroomById.get(selectedClassroomId) ?? null : null;
   const selectedObject = selectedClassroomId ? objectByClassroomId.get(selectedClassroomId) ?? null : null;
+  const pendingRemovalClassroom = pendingRemovalClassroomId ? classroomById.get(pendingRemovalClassroomId) ?? null : null;
+  const pendingDeleteClassroom = pendingDeleteClassroomId ? classroomById.get(pendingDeleteClassroomId) ?? null : null;
 
   const resetClassroomForm = () => {
     setNewClassroom({ type: 'CLASSROOM', code: '', name: '', capacity: 30 });
@@ -463,21 +518,10 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
     setObjects((prev) => {
       const current = prev.find((object) => object.classroomId === classroomId);
       if (current) {
-        const slot = getAutoSlotPosition(nextSlotIndex);
-        return compactPlacements(prev.map((object) => object.classroomId === classroomId
-          ? {
-              ...object,
-              type: classroom.type,
-              label: classroom.name,
-              code: classroom.code,
-              capacity: classroom.capacity,
-              slotRow: slot.row,
-              slotColumn: slot.column,
-            }
-          : object));
+        return compactPlacements(assignNextSlot(prev, classroomId, classroom));
       }
 
-      return compactPlacements([...prev, buildClassroomObject(classroom, nextSlotIndex)]);
+      return compactPlacements(appendPlacement(prev, buildClassroomObject(classroom, nextSlotIndex)));
     });
 
     setSelectedClassroomId(classroomId);
@@ -490,6 +534,47 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
       ? { ...object, slotRow: undefined, slotColumn: undefined }
       : object)));
     setSelectedClassroomId(classroomId);
+    setPendingRemovalClassroomId(null);
+    setIsDirty(true);
+  };
+
+  const selectClassroom = (classroomId: string) => {
+    setSelectedClassroomId(classroomId);
+  };
+
+  const handlePlacedClassroomClick = (classroomId: string) => {
+    const targetObject = objectByClassroomId.get(classroomId);
+    if (!targetObject || !hasSlot(targetObject)) {
+      setSelectedClassroomId(classroomId);
+      return;
+    }
+
+    if (!selectedClassroomId) {
+      setSelectedClassroomId(classroomId);
+      return;
+    }
+
+    if (selectedClassroomId === classroomId) {
+      setSelectedClassroomId(null);
+      return;
+    }
+
+    const sourceObject = objectByClassroomId.get(selectedClassroomId);
+    if (!sourceObject || !hasSlot(sourceObject)) {
+      setSelectedClassroomId(classroomId);
+      return;
+    }
+
+    setObjects((prev) => prev.map((object) => {
+      if (object.id === sourceObject.id) {
+        return { ...object, slotRow: targetObject.slotRow, slotColumn: targetObject.slotColumn };
+      }
+      if (object.id === targetObject.id) {
+        return { ...object, slotRow: sourceObject.slotRow, slotColumn: sourceObject.slotColumn };
+      }
+      return object;
+    }));
+    setSelectedClassroomId(null);
     setIsDirty(true);
   };
 
@@ -571,14 +656,18 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                 className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-8 pr-3 text-xs font-medium text-slate-800 outline-none focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/20"
               />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-2">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                 <p className="text-[9px] font-semibold text-slate-400">Toplam alan</p>
                 <p className="text-sm font-bold text-slate-900">{eligibleClassrooms.length}</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <p className="text-[9px] font-semibold text-slate-400">Slot</p>
+                <p className="text-sm font-bold text-slate-900">{placedObjects.length}</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
                 <p className="text-[9px] font-semibold text-slate-400">Yerleşmemiş</p>
-                <p className="text-sm font-bold text-slate-900">{Math.max(eligibleClassrooms.length - placedObjects.length, 0)}</p>
+                <p className="text-sm font-bold text-slate-900">{unassignedCount}</p>
               </div>
             </div>
           </div>
@@ -606,14 +695,15 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                   classrooms={placedClassrooms}
                   objectByClassroomId={objectByClassroomId}
                   selectedClassroomId={selectedClassroomId}
-                  onSelect={setSelectedClassroomId}
+                  onSelect={selectClassroom}
                 />
                 <ClassroomSection
                   title="Yerleştirilmemiş"
                   classrooms={unassignedClassrooms}
                   objectByClassroomId={objectByClassroomId}
                   selectedClassroomId={selectedClassroomId}
-                  onSelect={setSelectedClassroomId}
+                  onSelect={selectClassroom}
+                  onDelete={(classroomId) => setPendingDeleteClassroomId(classroomId)}
                 />
               </div>
             )}
@@ -631,11 +721,11 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                 {selectedObject && hasSlot(selectedObject) ? (
                   <SecondaryButton
                     type="button"
-                    onClick={() => removeClassroomFromSlot(selectedClassroom.id)}
+                    onClick={() => setPendingRemovalClassroomId(selectedClassroom.id)}
                     icon={<Trash2 className="h-3.5 w-3.5" />}
                     className="mt-3 w-full justify-center text-xs"
                   >
-                    Slottan Çıkar
+                    Slotu Kaldır
                   </SecondaryButton>
                 ) : (
                   <PrimaryButton
@@ -658,6 +748,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
 
         <main
           className="min-w-0 flex-1 overflow-auto p-4"
+          onClick={() => setSelectedClassroomId(null)}
         >
           {eligibleClassrooms.length === 0 ? (
             <div className="flex min-h-full items-center justify-center">
@@ -684,13 +775,12 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
               />
             </div>
           ) : (
-            <div className="grid max-w-4xl grid-cols-[repeat(auto-fit,minmax(180px,220px))] gap-3">
+            <div className="grid w-full grid-cols-[repeat(auto-fit,minmax(200px,220px))] justify-start gap-3">
               {placedObjects.map((object, index) => {
                 const classroom = object.classroomId ? classroomById.get(object.classroomId) : null;
                 if (!classroom) return null;
 
-                const slot = getAutoSlotPosition(index);
-                const label = getSlotLabel(slot.row, slot.column);
+                const label = getLinearSlotLabel(index);
                 const isSelected = object.classroomId === selectedClassroomId;
                 const Icon = getTeachingSpaceIcon(classroom.type);
 
@@ -700,12 +790,12 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      setSelectedClassroomId(classroom.id);
+                      handlePlacedClassroomClick(classroom.id);
                     }}
                     onKeyDown={(event) => {
                       if (event.key === 'Delete' || event.key === 'Backspace') {
                         event.preventDefault();
-                        removeClassroomFromSlot(classroom.id);
+                        setPendingRemovalClassroomId(classroom.id);
                       }
                     }}
                     aria-label={`Slot ${label} - ${classroom.code} - ${getTeachingSpaceLabel(classroom.type)} - ${formatCapacity(classroom.capacity)}`}
@@ -728,13 +818,13 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
                       tabIndex={0}
                       onClick={(event) => {
                         event.stopPropagation();
-                        removeClassroomFromSlot(classroom.id);
+                        setPendingRemovalClassroomId(classroom.id);
                       }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
                           event.stopPropagation();
-                          removeClassroomFromSlot(classroom.id);
+                          setPendingRemovalClassroomId(classroom.id);
                         }
                       }}
                       aria-label={`${label} slotundan ${classroom.code} ders alanını çıkar`}
@@ -753,7 +843,7 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
       <div className="flex items-center justify-between border-t border-slate-100 bg-white px-4 py-1">
         <span className="text-[9px] text-slate-400">
           Toplam {eligibleClassrooms.length} ders alanı · {placedObjects.length} slot
-          {unassignedClassrooms.length > 0 ? ` · ${unassignedClassrooms.length} yerleştirilmemiş` : ''}
+          {unassignedCount > 0 ? ` · ${unassignedCount} yerleştirilmemiş` : ''}
         </span>
         <span className={cn('text-[9px] font-semibold', isDirty ? 'text-amber-600' : 'text-slate-300')}>
           {isDirty ? 'Kaydedilmemiş değişiklik var' : 'Güncel'}
@@ -944,6 +1034,71 @@ export const SlotLayoutEditor = ({ floor }: SlotLayoutEditorProps) => {
           </div>
         </div>
       )}
+
+      {pendingRemovalClassroom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                <Trash2 className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Slotu kaldır</h2>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  Bu işlem {pendingRemovalClassroom.code} ders alanını silmez. Sadece slot yerleşimini kaldırır.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <SecondaryButton type="button" onClick={() => setPendingRemovalClassroomId(null)}>
+                Vazgeç
+              </SecondaryButton>
+              <PrimaryButton
+                type="button"
+                onClick={() => removeClassroomFromSlot(pendingRemovalClassroom.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Slotu Kaldır
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {pendingDeleteClassroom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500">
+                <Trash2 className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Ders alanını sil</h2>
+                <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  {pendingDeleteClassroom.code} kaydını tamamen silmek istediğinize emin misiniz? Bu işlem yalnızca slot yerleşimini değil, fiziksel ders alanı kaydını da siler.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <SecondaryButton
+                type="button"
+                onClick={() => setPendingDeleteClassroomId(null)}
+                disabled={deleteTeachingSpaceMutation.isPending}
+              >
+                Vazgeç
+              </SecondaryButton>
+              <PrimaryButton
+                type="button"
+                onClick={() => deleteTeachingSpaceMutation.mutate(pendingDeleteClassroom.id)}
+                loading={deleteTeachingSpaceMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Sil
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1001,6 +1156,7 @@ interface ClassroomSectionProps {
   objectByClassroomId: Map<string, SpaceObjectRequest>;
   selectedClassroomId: string | null;
   onSelect: (classroomId: string) => void;
+  onDelete?: (classroomId: string) => void;
 }
 
 const ClassroomSection = ({
@@ -1009,6 +1165,7 @@ const ClassroomSection = ({
   objectByClassroomId,
   selectedClassroomId,
   onSelect,
+  onDelete,
 }: ClassroomSectionProps) => (
   <section>
     <div className="mb-2 flex items-center justify-between">
@@ -1027,6 +1184,7 @@ const ClassroomSection = ({
           object={objectByClassroomId.get(classroom.id)}
           selected={classroom.id === selectedClassroomId}
           onSelect={() => onSelect(classroom.id)}
+          onDelete={onDelete ? () => onDelete(classroom.id) : undefined}
         />
       ))}
     </div>
@@ -1038,47 +1196,65 @@ interface ClassroomListButtonProps {
   object?: SpaceObjectRequest;
   selected: boolean;
   onSelect: () => void;
+  onDelete?: () => void;
 }
 
-const ClassroomListButton = ({ classroom, object, selected, onSelect }: ClassroomListButtonProps) => {
+const ClassroomListButton = ({ classroom, object, selected, onSelect, onDelete }: ClassroomListButtonProps) => {
   const slotLabel = object && hasSlot(object)
-    ? getSlotLabel(object.slotRow!, object.slotColumn!)
+    ? getLinearSlotLabel(getSlotOrderIndex(object))
     : 'Yerleştirilmemiş';
   const Icon = getTeachingSpaceIcon(classroom.type);
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-label={`${classroom.code} - ${getTeachingSpaceLabel(classroom.type)} - ${formatCapacity(classroom.capacity)} - ${slotLabel}`}
+    <div
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg border p-2 text-left outline-none transition-all focus:ring-2 focus:ring-[#006482]/20',
+        'group relative rounded-lg border outline-none transition-all focus-within:ring-2 focus-within:ring-[#006482]/20',
         selected
           ? 'border-[#006482] bg-[#eff8ff] shadow-sm'
           : 'border-slate-200 bg-white hover:border-[#88d0f2] hover:bg-slate-50',
       )}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <p className="truncate text-sm font-bold text-slate-900">{classroom.code}</p>
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-label={`${classroom.code} - ${getTeachingSpaceLabel(classroom.type)} - ${formatCapacity(classroom.capacity)} - ${slotLabel}`}
+        className="flex w-full items-center gap-2 rounded-lg p-2 pr-9 text-left outline-none"
+      >
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+          <Icon className="h-4 w-4" />
         </div>
-        <p className="truncate text-[11px] font-medium text-slate-500">
-          {getTeachingSpaceLabel(classroom.type)} · {formatCapacity(classroom.capacity)}
-        </p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="max-w-24 truncate text-[10px] font-bold text-slate-600">{formatName(classroom.name)}</p>
-        <p className={cn(
-          'text-[10px] font-bold',
-          slotLabel === 'Yerleştirilmemiş' ? 'text-slate-300' : 'text-[#006482]',
-        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-bold text-slate-900">{classroom.code}</p>
+          </div>
+          <p className="truncate text-[11px] font-medium text-slate-500">
+            {getTeachingSpaceLabel(classroom.type)} · {formatCapacity(classroom.capacity)}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="max-w-24 truncate text-[10px] font-bold text-slate-600">{formatName(classroom.name)}</p>
+          <p className={cn(
+            'text-[10px] font-bold',
+            slotLabel === 'Yerleştirilmemiş' ? 'text-slate-300' : 'text-[#006482]',
+          )}
+          >
+            {slotLabel}
+          </p>
+        </div>
+      </button>
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          aria-label={`${classroom.code} ders alanını sil`}
+          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border border-red-100 bg-white text-red-500 opacity-100 shadow-sm transition hover:bg-red-50 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
         >
-          {slotLabel}
-        </p>
-      </div>
-    </button>
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
   );
 };

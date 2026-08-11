@@ -167,6 +167,31 @@ public class SlotLayoutService {
         return toResponse(savedLayout, getObjects(floorId));
     }
 
+    @Transactional
+    public void deleteUnassignedTeachingSpace(UUID floorId, UUID classroomId) {
+        Floor floor = floorRepository.findById(floorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
+
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ders alanı bulunamadı."));
+
+        if (!classroom.getFloor().getId().equals(floor.getId())) {
+            throw new IllegalArgumentException("Seçilen ders alanı bu kata ait değil.");
+        }
+        toSpaceObjectType(classroom.getType());
+
+        for (SpaceObject object : spaceObjectRepository.findAllByFloorId(floorId)) {
+            if (object.getClassroom() != null
+                    && object.getClassroom().getId().equals(classroomId)
+                    && hasSlot(object.getSlotRow(), object.getSlotColumn())) {
+                throw new IllegalArgumentException("Yerleşmiş ders alanı silinemez. Önce slotu kaldırın.");
+            }
+        }
+
+        spaceObjectRepository.deleteAllByFloorIdAndClassroomId(floorId, classroomId);
+        classroomRepository.delete(classroom);
+    }
+
     private void saveSlotObjects(Floor floor, int rows, int columns, List<SpaceObjectRequest> requests) {
         UUID floorId = floor.getId();
         Map<UUID, SpaceObject> existingById = new HashMap<>();
@@ -187,12 +212,18 @@ public class SlotLayoutService {
         Set<String> requestSlots = new HashSet<>();
         Set<UUID> requestClassrooms = new HashSet<>();
 
+        for (SpaceObjectRequest request : requests) {
+            if (request == null || request.getId() == null) {
+                continue;
+            }
+            if (!requestObjectIds.add(request.getId())) {
+                throw new IllegalArgumentException("Aynı nesne ID'si slot yerleşimine birden fazla kez gönderilemez.");
+            }
+        }
+
         List<SpaceObject> objects = requests.stream()
                 .map(request -> {
                     validateSlotObject(request, rows, columns);
-                    if (!requestObjectIds.add(request.getId())) {
-                        throw new IllegalArgumentException("Aynı nesne ID'si slot yerleşimine birden fazla kez gönderilemez.");
-                    }
 
                     SpaceObject existing = existingById.get(request.getId());
                     if (existing != null && !existing.getFloor().getId().equals(floor.getId())) {
@@ -202,7 +233,7 @@ public class SlotLayoutService {
                     if (hasSlot(request.getSlotRow(), request.getSlotColumn())) {
                         String key = slotKey(request.getSlotRow(), request.getSlotColumn());
                         UUID occupiedBy = occupiedSlots.get(key);
-                        if (occupiedBy != null && !occupiedBy.equals(request.getId())) {
+                        if (occupiedBy != null && !occupiedBy.equals(request.getId()) && !requestObjectIds.contains(occupiedBy)) {
                             throw new IllegalArgumentException("Bu slot zaten kullanılıyor.");
                         }
                         if (!requestSlots.add(key)) {

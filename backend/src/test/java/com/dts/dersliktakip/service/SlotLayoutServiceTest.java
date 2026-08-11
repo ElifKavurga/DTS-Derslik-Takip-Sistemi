@@ -294,6 +294,73 @@ class SlotLayoutServiceTest {
     }
 
     @Test
+    void saveSlotLayoutAllowsSwappingTwoPlacedTeachingSpaces() {
+        SpaceObjectRequest first = slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), 0, 0);
+        SpaceObjectRequest second = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 1);
+        slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(first, second))
+                        .build()
+        );
+
+        first.setSlotRow(0);
+        first.setSlotColumn(1);
+        second.setSlotRow(0);
+        second.setSlotColumn(0);
+        SlotLayoutResponse response = slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(first, second))
+                        .build()
+        );
+
+        assertThat(response.getObjects())
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(classroom.getId());
+                    assertThat(object.getSlotRow()).isZero();
+                    assertThat(object.getSlotColumn()).isEqualTo(1);
+                })
+                .anySatisfy(object -> {
+                    assertThat(object.getClassroomId()).isEqualTo(laboratory.getId());
+                    assertThat(object.getSlotRow()).isZero();
+                    assertThat(object.getSlotColumn()).isZero();
+                });
+    }
+
+    @Test
+    void saveSlotLayoutRejectsMovingIntoOccupiedSlotWhenOccupantIsNotInRequest() {
+        SpaceObjectRequest first = slotObject(SpaceObjectType.CLASSROOM, classroom.getId(), 0, 0);
+        SpaceObjectRequest second = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 1);
+        slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(first, second))
+                        .build()
+        );
+
+        first.setSlotRow(0);
+        first.setSlotColumn(1);
+
+        assertThatThrownBy(() -> slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(first))
+                        .build()
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("slot zaten kullanılıyor");
+    }
+
+    @Test
     void saveSlotLayoutRemovePlacementKeepsPhysicalTeachingSpaceRecord() {
         SpaceObjectRequest object = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), 0, 0);
         slotLayoutService.saveSlotLayout(
@@ -325,6 +392,56 @@ class SlotLayoutServiceTest {
                     assertThat(spaceObject.getSlotRow()).isNull();
                     assertThat(spaceObject.getSlotColumn()).isNull();
                 });
+    }
+
+    @Test
+    void deleteUnassignedTeachingSpaceDeletesPhysicalRecordAndPlacement() {
+        SpaceObjectRequest object = slotObject(SpaceObjectType.LABORATORY, laboratory.getId(), null, null);
+        slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(object))
+                        .build()
+        );
+
+        slotLayoutService.deleteUnassignedTeachingSpace(floor.getId(), laboratory.getId());
+
+        assertThat(classroomRepository.findById(laboratory.getId())).isEmpty();
+        assertThat(spaceObjectRepository.findAllByFloorId(floor.getId()))
+                .noneSatisfy(spaceObject -> assertThat(spaceObject.getClassroom().getId()).isEqualTo(laboratory.getId()));
+    }
+
+    @Test
+    void deleteUnassignedTeachingSpaceRejectsPlacedRecord() {
+        slotLayoutService.saveSlotLayout(
+                floor.getId(),
+                SaveSlotLayoutRequest.builder()
+                        .rows(3)
+                        .columns(4)
+                        .objects(List.of(slotObject(SpaceObjectType.AMPHITHEATER, amphitheater.getId(), 0, 0)))
+                        .build()
+        );
+
+        assertThatThrownBy(() -> slotLayoutService.deleteUnassignedTeachingSpace(floor.getId(), amphitheater.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Önce slotu kaldırın");
+
+        assertThat(classroomRepository.findById(amphitheater.getId())).isPresent();
+    }
+
+    @Test
+    void deleteUnassignedTeachingSpaceRejectsWrongFloorRecord() {
+        Floor otherFloor = new Floor();
+        otherFloor.setName("Başka Kat");
+        otherFloor.setLevel(3);
+        otherFloor.setBuilding(floor.getBuilding());
+        Floor savedOtherFloor = floorRepository.save(otherFloor);
+
+        assertThatThrownBy(() -> slotLayoutService.deleteUnassignedTeachingSpace(savedOtherFloor.getId(), classroom.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bu kata ait değil");
     }
 
     @Test

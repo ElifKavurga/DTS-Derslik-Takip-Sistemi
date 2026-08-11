@@ -43,4 +43,8 @@ export const floorLayoutService = {
     const response = await apiClient.post<SlotLayoutResponse>(`/floors/${floorId}/slot-layout/teaching-spaces`, payload);
     return response.data;
   },
+
+  deleteUnassignedSlotTeachingSpace: async (floorId: string, classroomId: string): Promise<void> => {
+    await apiClient.delete(`/floors/${floorId}/slot-layout/teaching-spaces/${classroomId}`);
+  },
 };
