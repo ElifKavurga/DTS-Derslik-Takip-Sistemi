@@ -28,8 +28,8 @@ export type CourseListResponse = {
 export type CreateCourseRequest = {
   code: string;
   name: string;
-  facultyId: string;
-  departmentId: string;
+  facultyId?: string;
+  departmentId?: string;
   academicianId: string;
   theoreticalHours: number;
   practicalHours: number;

@@ -24,6 +24,7 @@ import { academicianService } from '@/services/academicianService';
 import { facultyService } from '@/services/facultyService';
 import { departmentService } from '@/services/departmentService';
 import { CourseType, Semester } from '@/types';
+import { useAuthStore } from '@/store/useAuthStore';
 
 // ── CourseType & Semester Meta ────────────────────────────────────────────────
 const COURSE_TYPE_META: Record<CourseType, { label: string; cls: string }> = {
@@ -41,8 +42,8 @@ const SEMESTER_META: Record<Semester, { label: string; cls: string }> = {
 const courseSchema = z.object({
   code: z.string().min(1, 'Ders kodu zorunludur.').max(20, 'En fazla 20 karakter.'),
   name: z.string().min(1, 'Ders adı zorunludur.').max(255, 'En fazla 255 karakter.'),
-  facultyId: z.string().min(1, 'Fakülte seçimi zorunludur.'),
-  departmentId: z.string().min(1, 'Bölüm seçimi zorunludur.'),
+  facultyId: z.string().optional(),
+  departmentId: z.string().optional(),
   academicianId: z.string().min(1, 'Akademisyen seçimi zorunludur.'),
   theoreticalHours: z.coerce.number().min(0, 'En az 0 olabilir.'),
   practicalHours: z.coerce.number().min(0, 'En az 0 olabilir.'),
@@ -209,7 +210,7 @@ const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete }
 };
 
 // ── FilterPopover ────────────────────────────────────────────────────────────
-const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll }: any) => {
+const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, showLocationFilters = true }: any) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -246,26 +247,30 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll }: 
             )}
           </div>
           <div className="space-y-3">
-            <div>
-              <label className="dts-input-label">Fakülte</label>
-              <AppSelect
-                value={filters.faculty}
-                onChange={(value) => setFilters({ ...filters, faculty: value })}
-                options={[{ label: 'Tümü', value: '' }, ...lists.faculties.map((faculty: string) => ({ label: faculty, value: faculty }))]}
-                searchable
-                placeholder="Tümü"
-              />
-            </div>
-            <div>
-              <label className="dts-input-label">Bölüm</label>
-              <AppSelect
-                value={filters.department}
-                onChange={(value) => setFilters({ ...filters, department: value })}
-                options={[{ label: 'Tümü', value: '' }, ...lists.departments.map((department: string) => ({ label: department, value: department }))]}
-                searchable
-                placeholder="Tümü"
-              />
-            </div>
+            {showLocationFilters && (
+              <>
+                <div>
+                  <label className="dts-input-label">Fakülte</label>
+                  <AppSelect
+                    value={filters.faculty}
+                    onChange={(value) => setFilters({ ...filters, faculty: value })}
+                    options={[{ label: 'Tümü', value: '' }, ...lists.faculties.map((faculty: string) => ({ label: faculty, value: faculty }))]}
+                    searchable
+                    placeholder="Tümü"
+                  />
+                </div>
+                <div>
+                  <label className="dts-input-label">Bölüm</label>
+                  <AppSelect
+                    value={filters.department}
+                    onChange={(value) => setFilters({ ...filters, department: value })}
+                    options={[{ label: 'Tümü', value: '' }, ...lists.departments.map((department: string) => ({ label: department, value: department }))]}
+                    searchable
+                    placeholder="Tümü"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label className="dts-input-label">Akademisyen</label>
               <AppSelect
@@ -372,6 +377,8 @@ const CourseViewModal = ({ course, onClose }: { course: any; onClose: () => void
 // ── Ana Bileşen ──────────────────────────────────────────────────────────────
 export const CoursesPage = () => {
   const queryClient = useQueryClient();
+  const role = useAuthStore((state) => state.user?.role);
+  const isDepartmentAdmin = role === 'DEPARTMENT_ADMIN';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' });
@@ -431,22 +438,27 @@ export const CoursesPage = () => {
   const watchDepartmentId = watch('departmentId');
 
   // Load dependent data for form
-  const { data: facultiesList } = useQuery({ queryKey: ['faculties'], queryFn: facultyService.getAll });
+  const { data: facultiesList } = useQuery({
+    queryKey: ['faculties'],
+    queryFn: facultyService.getAll,
+    enabled: !isDepartmentAdmin,
+  });
   
   const { data: departmentsForFaculty } = useQuery({
     queryKey: ['departments', watchFacultyId],
-    queryFn: () => departmentService.getByFaculty(watchFacultyId),
-    enabled: !!watchFacultyId,
+    queryFn: () => departmentService.getByFaculty(watchFacultyId!),
+    enabled: !isDepartmentAdmin && !!watchFacultyId,
   });
 
   const { data: academiciansForDept, isFetching: isFetchingAcademicians } = useQuery({
-    queryKey: ['academicians', watchDepartmentId],
-    queryFn: () => academicianService.getByDepartment(watchDepartmentId!),
-    enabled: !!watchDepartmentId,
+    queryKey: ['academicians', isDepartmentAdmin ? 'department-admin-scope' : watchDepartmentId],
+    queryFn: () => isDepartmentAdmin ? academicianService.getAll() : academicianService.getByDepartment(watchDepartmentId!),
+    enabled: isDepartmentAdmin || !!watchDepartmentId,
     staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
+    if (isDepartmentAdmin) return;
     if (!isModalOpen) return;
 
     if (!watchFacultyId) {
@@ -459,9 +471,10 @@ export const CoursesPage = () => {
       setValue('departmentId', '');
       setValue('academicianId', '');
     }
-  }, [isModalOpen, editingCourse, watchFacultyId, setValue]);
+  }, [isDepartmentAdmin, isModalOpen, editingCourse, watchFacultyId, setValue]);
 
   useEffect(() => {
+    if (isDepartmentAdmin) return;
     if (!isModalOpen) return;
 
     if (!watchDepartmentId) {
@@ -472,7 +485,7 @@ export const CoursesPage = () => {
     if (!editingCourse || watchDepartmentId !== editingCourse.departmentId) {
       setValue('academicianId', '');
     }
-  }, [isModalOpen, editingCourse, watchDepartmentId, setValue]);
+  }, [isDepartmentAdmin, isModalOpen, editingCourse, watchDepartmentId, setValue]);
 
   const handleOpenCreate = () => {
     setEditingCourse(null);
@@ -532,8 +545,17 @@ export const CoursesPage = () => {
   });
 
   const onSubmit = (values: CourseFormValues) => {
-    if (editingCourse) updateMutation.mutate({ id: editingCourse.id, payload: values });
-    else createMutation.mutate(values);
+    if (!isDepartmentAdmin && (!values.facultyId || !values.departmentId)) {
+      toast.error('Fakülte ve bölüm seçimi zorunludur.');
+      return;
+    }
+
+    const payload = isDepartmentAdmin
+      ? { ...values, facultyId: undefined, departmentId: undefined }
+      : values;
+
+    if (editingCourse) updateMutation.mutate({ id: editingCourse.id, payload });
+    else createMutation.mutate(payload);
   };
 
   return (
@@ -555,7 +577,7 @@ export const CoursesPage = () => {
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ders adı, kodu veya akademisyen ara..." className="dts-input pl-10 py-2.5 text-sm" />
             {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>}
           </div>
-          <FilterPopover filters={filters} setFilters={setFilters} lists={lists} activeCount={activeFilterCount} onClearAll={() => setFilters({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' })} />
+          <FilterPopover filters={filters} setFilters={setFilters} lists={lists} activeCount={activeFilterCount} onClearAll={() => setFilters({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' })} showLocationFilters={!isDepartmentAdmin} />
         </div>
       )}
 
@@ -617,43 +639,45 @@ export const CoursesPage = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="dts-input-label">Fakülte</label>
-              <Controller
-                name="facultyId"
-                control={control}
-                render={({ field }) => (
-                  <AppSelect
-                    options={(facultiesList?.faculties || []).map((f: any) => ({ label: f.name, value: f.id }))}
-                    value={field.value}
-                    onChange={field.onChange}
-                    searchable
-                    hasError={!!errors.facultyId}
-                    placeholder="Seçiniz..."
-                  />
-                )}
-              />
+          {!isDepartmentAdmin && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="dts-input-label">Fakülte</label>
+                <Controller
+                  name="facultyId"
+                  control={control}
+                  render={({ field }) => (
+                    <AppSelect
+                      options={(facultiesList?.faculties || []).map((f: any) => ({ label: f.name, value: f.id }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      searchable
+                      hasError={!!errors.facultyId}
+                      placeholder="Seçiniz..."
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="dts-input-label">Bölüm</label>
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <AppSelect
+                      options={(departmentsForFaculty || []).map((d: any) => ({ label: d.name, value: d.id }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={!watchFacultyId}
+                      searchable
+                      hasError={!!errors.departmentId}
+                      placeholder="Seçiniz..."
+                    />
+                  )}
+                />
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="dts-input-label">Bölüm</label>
-              <Controller
-                name="departmentId"
-                control={control}
-                render={({ field }) => (
-                  <AppSelect
-                    options={(departmentsForFaculty || []).map((d: any) => ({ label: d.name, value: d.id }))}
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={!watchFacultyId}
-                    searchable
-                    hasError={!!errors.departmentId}
-                    placeholder="Seçiniz..."
-                  />
-                )}
-              />
-            </div>
-          </div>
+          )}
           
           <div className="space-y-1">
             <label className="dts-input-label">Akademisyen</label>
@@ -665,7 +689,7 @@ export const CoursesPage = () => {
                   options={academicianOptions}
                   value={field.value}
                   onChange={field.onChange}
-                  disabled={!watchDepartmentId || isFetchingAcademicians}
+                  disabled={(!isDepartmentAdmin && !watchDepartmentId) || isFetchingAcademicians}
                   searchable
                   hasError={!!errors.academicianId}
                   placeholder={isFetchingAcademicians ? 'Yükleniyor...' : 'Seçiniz...'}

@@ -21,7 +21,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     boolean existsByDepartment_Id(UUID departmentId);
     
-    boolean existsByCode(String code);
+    boolean existsByCodeIgnoreCase(String code);
     
-    boolean existsByCodeAndIdNot(String code, UUID id);
+    boolean existsByCodeIgnoreCaseAndIdNot(String code, UUID id);
 }

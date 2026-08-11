@@ -13,8 +13,8 @@ import java.util.UUID;
 public record UpdateCourseRequest(
         @NotBlank @Size(max = 20) String code,
         @NotBlank @Size(max = 255) String name,
-        @NotNull UUID facultyId,
-        @NotNull UUID departmentId,
+        UUID facultyId,
+        UUID departmentId,
         @NotNull UUID academicianId,
         @Min(0) int theoreticalHours,
         @Min(0) int practicalHours,

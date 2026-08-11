@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -58,29 +59,23 @@ public class CourseService {
 
     @Transactional
     public CourseResponse createCourse(CreateCourseRequest request, User currentUser) {
-        accessScopeService.assertFacultyAccess(currentUser, request.facultyId());
-        accessScopeService.assertDepartmentAccess(currentUser, request.departmentId());
+        String normalizedCode = normalizeCourseCode(request.code());
+        Department department = resolveWritableDepartment(request.facultyId(), request.departmentId(), currentUser);
+        Faculty faculty = department.getFaculty();
 
-        if (courseRepository.existsByCode(request.code())) {
+        if (courseRepository.existsByCodeIgnoreCase(normalizedCode)) {
             throw new IllegalArgumentException("Bu ders kodu zaten kullanılıyor");
         }
 
-        Faculty faculty = facultyRepository.findById(request.facultyId())
-                .orElseThrow(() -> new IllegalArgumentException("Fakülte bulunamadı"));
-        Department department = departmentRepository.findById(request.departmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Bölüm bulunamadı"));
         Academician academician = academicianRepository.findById(request.academicianId())
                 .orElseThrow(() -> new IllegalArgumentException("Akademisyen bulunamadı"));
 
-        if (!department.getFaculty().getId().equals(faculty.getId())) {
-            throw new IllegalArgumentException("Seçilen bölüm bu fakülteye ait değil");
-        }
         if (!academician.getDepartment().getId().equals(department.getId())) {
             throw new IllegalArgumentException("Seçilen akademisyen bu bölüme ait değil");
         }
 
         Course course = new Course();
-        course.setCode(request.code());
+        course.setCode(normalizedCode);
         course.setName(request.name());
         course.setFaculty(faculty);
         course.setDepartment(department);
@@ -109,28 +104,22 @@ public class CourseService {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Ders bulunamadı"));
         assertCourseAccess(currentUser, course);
-        accessScopeService.assertFacultyAccess(currentUser, request.facultyId());
-        accessScopeService.assertDepartmentAccess(currentUser, request.departmentId());
+        String normalizedCode = normalizeCourseCode(request.code());
+        Department department = resolveWritableDepartment(request.facultyId(), request.departmentId(), currentUser);
+        Faculty faculty = department.getFaculty();
 
-        if (courseRepository.existsByCodeAndIdNot(request.code(), id)) {
+        if (courseRepository.existsByCodeIgnoreCaseAndIdNot(normalizedCode, id)) {
             throw new IllegalArgumentException("Bu ders kodu başka bir ders tarafından kullanılıyor");
         }
 
-        Faculty faculty = facultyRepository.findById(request.facultyId())
-                .orElseThrow(() -> new IllegalArgumentException("Fakülte bulunamadı"));
-        Department department = departmentRepository.findById(request.departmentId())
-                .orElseThrow(() -> new IllegalArgumentException("Bölüm bulunamadı"));
         Academician academician = academicianRepository.findById(request.academicianId())
                 .orElseThrow(() -> new IllegalArgumentException("Akademisyen bulunamadı"));
 
-        if (!department.getFaculty().getId().equals(faculty.getId())) {
-            throw new IllegalArgumentException("Seçilen bölüm bu fakülteye ait değil");
-        }
         if (!academician.getDepartment().getId().equals(department.getId())) {
             throw new IllegalArgumentException("Seçilen akademisyen bu bölüme ait değil");
         }
 
-        course.setCode(request.code());
+        course.setCode(normalizedCode);
         course.setName(request.name());
         course.setFaculty(faculty);
         course.setDepartment(department);
@@ -158,6 +147,33 @@ public class CourseService {
         } catch (DataIntegrityViolationException exception) {
             throw new IllegalArgumentException("Bu ders ilişkili kayıtlar bulunduğundan silinemez.");
         }
+    }
+
+    private Department resolveWritableDepartment(UUID facultyId, UUID departmentId, User currentUser) {
+        if (!accessScopeService.isSuperAdmin(currentUser)) {
+            return accessScopeService.requireDepartmentScope(currentUser);
+        }
+
+        if (facultyId == null) {
+            throw new IllegalArgumentException("Fakülte seçimi zorunludur.");
+        }
+        if (departmentId == null) {
+            throw new IllegalArgumentException("Bölüm seçimi zorunludur.");
+        }
+
+        Faculty faculty = facultyRepository.findById(facultyId)
+                .orElseThrow(() -> new IllegalArgumentException("Fakülte bulunamadı"));
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Bölüm bulunamadı"));
+
+        if (!department.getFaculty().getId().equals(faculty.getId())) {
+            throw new IllegalArgumentException("Seçilen bölüm bu fakülteye ait değil");
+        }
+        return department;
+    }
+
+    private String normalizeCourseCode(String code) {
+        return code.trim().toUpperCase(Locale.ROOT);
     }
 
     private void assertCourseAccess(User currentUser, Course course) {

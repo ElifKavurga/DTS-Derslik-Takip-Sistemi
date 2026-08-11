@@ -79,9 +79,9 @@ export const Sidebar = ({
     },
     {
       label: 'Dersler',
-      path: '/super-admin/dersler',
+      path: role === 'DEPARTMENT_ADMIN' ? '/department-admin/dersler' : '/super-admin/dersler',
       icon: BookOpen,
-      roles: ['SUPER_ADMIN'],
+      roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN'],
     },
   ];
   const navigation = navigationItems.filter((item) => canShowItem(item, role));

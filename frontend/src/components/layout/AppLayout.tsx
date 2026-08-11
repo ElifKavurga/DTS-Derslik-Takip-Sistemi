@@ -28,6 +28,10 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Akademisyenler',
     breadcrumbs: ['Ana Ekran', 'Akademisyenler'],
   },
+  courses: {
+    title: 'Dersler',
+    breadcrumbs: ['Ana Ekran', 'Dersler'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
@@ -43,6 +47,9 @@ const resolvePageMeta = (pathname: string) => {
 
   if (pathname.includes('/department-admin/academisyenler')) {
     return pageMeta.academicians;
+  }
+  if (pathname.includes('/super-admin/dersler') || pathname.includes('/department-admin/dersler')) {
+    return pageMeta.courses;
   }
 
   return pageMeta.dashboard;
