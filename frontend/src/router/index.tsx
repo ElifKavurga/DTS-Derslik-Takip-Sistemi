@@ -63,53 +63,63 @@ export const router = createBrowserRouter([
             element: <DashboardPage />,
           },
           {
-            path: '/super-admin/dashboard',
-            element: <DashboardPage />,
-          },
-          {
-            path: '/department-admin/dashboard',
-            element: <DashboardPage />,
-          },
-          {
-            path: '/academician/dashboard',
-            element: <DashboardPage />,
-          },
-          {
             element: <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />,
             children: [
-          {
-            path: '/super-admin/fakulteler',
-            element: <FacultyPage />,
-          },
-          {
-            path: '/super-admin/fakulteler/:id',
-            element: <FacultyDetailPage />,
-          },
-          {
-            path: '/super-admin/binalar/:id',
-            element: <BuildingDetailPage />,
-          },
-          {
-            path: '/super-admin/bolumler',
-            element: <DepartmentsPage />,
-          },
-          {
-            path: '/super-admin/bolumler/:id',
-            element: <DepartmentDetailPage />,
-          },
-          {
-            path: '/super-admin/kullanicilar',
-            element: <UsersPage />,
-          },
-          {
-            path: '/super-admin/dersler',
-            element: <CoursesPage />,
-          },
+              {
+                path: '/super-admin/dashboard',
+                element: <DashboardPage />,
+              },
+              {
+                path: '/super-admin/fakulteler',
+                element: <FacultyPage />,
+              },
+              {
+                path: '/super-admin/fakulteler/:id',
+                element: <FacultyDetailPage />,
+              },
+              {
+                path: '/super-admin/binalar/:id',
+                element: <BuildingDetailPage />,
+              },
+              {
+                path: '/super-admin/bolumler',
+                element: <DepartmentsPage />,
+              },
+              {
+                path: '/super-admin/bolumler/:id',
+                element: <DepartmentDetailPage />,
+              },
+              {
+                path: '/super-admin/kullanicilar',
+                element: <UsersPage />,
+              },
+              {
+                path: '/super-admin/dersler',
+                element: <CoursesPage />,
+              },
             ],
           },
           {
-            path: '/department-admin/dersler',
-            element: <CoursesPage />,
+            element: <ProtectedRoute allowedRoles={['DEPARTMENT_ADMIN']} />,
+            children: [
+              {
+                path: '/department-admin/dashboard',
+                element: <DashboardPage />,
+              },
+              {
+                path: '/department-admin/dersler',
+                element: <CoursesPage />,
+              },
+            ],
+          },
+          {
+            element: <ProtectedRoute allowedRoles={['ACADEMICIAN']} />,
+            children: [
+              {
+                path: '/academician/dashboard',
+                element: <DashboardPage />,
+              },
+            ],
           },
           {
             path: '/profile',

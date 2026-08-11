@@ -41,3 +41,13 @@ export interface DashboardStatsResponse {
   recentBuildings: RecentBuilding[];
   recentUsers: RecentUser[];
 }
+
+export interface DepartmentAdminDashboardResponse {
+  departmentId: string;
+  departmentName: string;
+  departmentCode: string;
+  facultyId: string;
+  facultyName: string;
+  academicianCount: number;
+  courseCount: number;
+}

@@ -2,12 +2,17 @@ package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.DashboardCardStats;
 import com.dts.dersliktakip.dto.DashboardStatsResponse;
+import com.dts.dersliktakip.dto.DepartmentAdminDashboardResponse;
 import com.dts.dersliktakip.dto.RecentBuildingResponse;
 import com.dts.dersliktakip.dto.RecentFacultyResponse;
 import com.dts.dersliktakip.dto.RecentUserResponse;
+import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Role;
+import com.dts.dersliktakip.entity.User;
+import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.BuildingRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
+import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorRepository;
@@ -29,6 +34,9 @@ public class DashboardService {
     private final DepartmentRepository departmentRepository;
     private final ClassroomRepository classroomRepository;
     private final UserRepository userRepository;
+    private final AcademicianRepository academicianRepository;
+    private final CourseRepository courseRepository;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
     public DashboardStatsResponse getDashboardStats() {
@@ -81,6 +89,21 @@ public class DashboardService {
                 .recentFaculties(recentFaculties)
                 .recentBuildings(recentBuildings)
                 .recentUsers(recentUsers)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DepartmentAdminDashboardResponse getDepartmentAdminDashboard(User currentUser) {
+        Department department = accessScopeService.requireDepartmentScope(currentUser);
+
+        return DepartmentAdminDashboardResponse.builder()
+                .departmentId(department.getId())
+                .departmentName(department.getName())
+                .departmentCode(department.getCode())
+                .facultyId(department.getFaculty().getId())
+                .facultyName(department.getFaculty().getName())
+                .academicianCount(academicianRepository.countByDepartment_Id(department.getId()))
+                .courseCount(courseRepository.countByDepartment_Id(department.getId()))
                 .build();
     }
 }

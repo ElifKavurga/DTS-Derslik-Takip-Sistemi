@@ -14,8 +14,10 @@ import {
   Info,
   Calendar,
 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { dashboardService } from '@/services/dashboardService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Role } from '@/types';
 
 const roleLabels: Record<Role, string> = {
@@ -31,6 +33,140 @@ const roleBadgeClasses: Record<Role, string> = {
 };
 
 export const DashboardPage = () => {
+  const role = useAuthStore((state) => state.user?.role);
+
+  if (!role) {
+    return (
+      <div className="space-y-3">
+        <div className="h-24 w-full animate-pulse rounded-2xl bg-slate-100" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+          <div className="h-32 animate-pulse rounded-2xl bg-slate-100" />
+        </div>
+      </div>
+    );
+  }
+
+  if (role === 'DEPARTMENT_ADMIN') {
+    return <DepartmentAdminDashboard />;
+  }
+
+  if (role === 'ACADEMICIAN') {
+    return (
+      <EmptyState
+        title="Ana ekran hazirlaniyor"
+        description="Akademisyen ana ekrani sonraki sprintlerde etkinlestirilecek."
+      />
+    );
+  }
+
+  return <SuperAdminDashboard />;
+};
+
+const DepartmentAdminDashboard = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['departmentAdminDashboard'],
+    queryFn: dashboardService.getDepartmentAdminDashboard,
+  });
+
+  const statCards = [
+    {
+      label: 'Akademisyen Sayisi',
+      value: data?.academicianCount ?? 0,
+      icon: GraduationCap,
+      colorClass: 'text-emerald-600 bg-emerald-50',
+      emptyText: 'Henuz akademisyen bulunmuyor.',
+    },
+    {
+      label: 'Ders Sayisi',
+      value: data?.courseCount ?? 0,
+      icon: BookOpen,
+      colorClass: 'text-[#006482] bg-[#eff8ff]',
+      emptyText: 'Henuz ders bulunmuyor.',
+    },
+  ];
+
+  if (error) {
+    return (
+      <div className="dts-card py-12 text-center">
+        <h3 className="text-lg font-bold text-red-600">Bolum bilgileri yuklenemedi.</h3>
+        <p className="mt-2 text-sm text-slate-500">Lutfen daha sonra tekrar deneyiniz.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="dts-card relative overflow-hidden px-6 py-6">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Bolum kapsami</p>
+            {isLoading ? (
+              <div className="space-y-3">
+                <div className="h-8 w-72 max-w-full animate-pulse rounded-lg bg-slate-100" />
+                <div className="h-4 w-48 animate-pulse rounded-lg bg-slate-100" />
+              </div>
+            ) : (
+              <>
+                <h2 className="break-words text-2xl font-bold tracking-tight text-slate-900">
+                  {data?.departmentName}
+                </h2>
+                <p className="text-sm font-medium text-slate-500">{data?.facultyName}</p>
+              </>
+            )}
+          </div>
+          <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+            Bolum Admini
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <PageTitle
+          title="Ana Ekran"
+          description="Yetkili oldugunuz bolume ait guncel ozet."
+        />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {statCards.map((stat) => {
+            const Icon = stat.icon;
+
+            return (
+              <article key={stat.label} className="dts-card dts-card-hover p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                    {isLoading ? (
+                      <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
+                    ) : (
+                      <>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
+                        {stat.value === 0 && <p className="mt-1 text-xs text-slate-400">{stat.emptyText}</p>}
+                      </>
+                    )}
+                  </div>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.colorClass}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {!isLoading && data?.academicianCount === 0 && data?.courseCount === 0 && (
+        <EmptyState
+          title="Bolum verisi henuz bos"
+          description="Bu bolume ait akademisyen veya ders kaydi eklendiginde ozet burada gorunecek."
+        />
+      )}
+    </div>
+  );
+};
+
+const SuperAdminDashboard = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: dashboardService.getStats,
