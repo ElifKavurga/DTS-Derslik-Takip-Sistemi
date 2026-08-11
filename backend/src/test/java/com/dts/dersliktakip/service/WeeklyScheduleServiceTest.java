@@ -94,6 +94,8 @@ class WeeklyScheduleServiceTest {
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
         when(departmentScheduleConfigRepository.findByDepartmentId(scopedDepartment.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(scopedDepartment.getId(), Semester.GUZ))
+                .thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
                 .thenReturn(List.of(conflict));
 
@@ -120,6 +122,8 @@ class WeeklyScheduleServiceTest {
         when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
         when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
         when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
                 .thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))

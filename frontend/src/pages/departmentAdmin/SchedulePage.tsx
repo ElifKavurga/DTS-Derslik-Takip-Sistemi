@@ -102,6 +102,17 @@ export const SchedulePage = () => {
     [courses, form.courseId],
   );
 
+  const selectedCourseStatus = useMemo(
+    () => scheduleStatus?.courses.find((course) => course.courseId === form.courseId) ?? null,
+    [form.courseId, scheduleStatus],
+  );
+
+  const editingGroupSlotCount = useMemo(() => {
+    if (!editingSchedule) return 0;
+    if (!editingSchedule.scheduleGroupId) return 1;
+    return Math.max(1, schedules.filter((schedule) => schedule.scheduleGroupId === editingSchedule.scheduleGroupId).length);
+  }, [editingSchedule, schedules]);
+
   const timeSlots = useMemo(
     () => timeConfiguration?.slots.map((slot) => slot.value) ?? [],
     [timeConfiguration],
@@ -112,7 +123,13 @@ export const SchedulePage = () => {
     [form.timeSlot, timeConfiguration],
   );
   const selectedSlotIndex = selectedSlot?.index ?? -1;
-  const maxSlotCount = selectedSlotIndex >= 0 ? Math.max(1, timeSlots.length - selectedSlotIndex) : 0;
+  const courseRemainingHours = selectedCourseStatus
+    ? Math.max(0, selectedCourseStatus.remainingHours + (editingSchedule?.courseId === form.courseId ? editingGroupSlotCount : 0))
+    : selectedCourse
+      ? selectedCourse.theoreticalHours + selectedCourse.practicalHours
+      : 0;
+  const consecutiveSlotCount = selectedSlotIndex >= 0 ? Math.max(1, timeSlots.length - selectedSlotIndex) : 0;
+  const maxSlotCount = Math.min(consecutiveSlotCount, courseRemainingHours);
   const slotCountOptions = useMemo(
     () => Array.from({ length: Math.min(maxSlotCount, 12) }, (_, index) => ({
       label: `${index + 1} ders saati`,
@@ -129,9 +146,12 @@ export const SchedulePage = () => {
     if (maxSlotCount > 0 && form.slotCount > maxSlotCount) {
       updateForm({ slotCount: maxSlotCount });
     }
+    if (maxSlotCount === 0 && form.slotCount !== 1) {
+      updateForm({ slotCount: 1 });
+    }
   }, [form.timeSlot, form.slotCount, maxSlotCount]);
 
-  const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot && form.slotCount);
+  const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot && form.slotCount && maxSlotCount > 0);
 
   const { data: classrooms = [], isFetching: isClassroomsLoading } = useQuery({
     queryKey: ['availableClassrooms', form.courseId, form.dayOfWeek, form.timeSlot, form.slotCount, editingSchedule?.id],
@@ -193,8 +213,13 @@ export const SchedulePage = () => {
     () => courses
       .filter((course) => course.active)
       .filter((course) => !selectedSemester || course.semester === selectedSemester)
+      .filter((course) => {
+        if (editingSchedule?.courseId === course.id) return true;
+        const status = scheduleStatus?.courses.find((item) => item.courseId === course.id);
+        return !status || status.remainingHours > 0;
+      })
       .map((course) => ({ label: `${course.code} - ${course.name}`, value: course.id })),
-    [courses, selectedSemester],
+    [courses, editingSchedule, scheduleStatus, selectedSemester],
   );
 
   const incompleteCourses = useMemo(
@@ -322,6 +347,11 @@ export const SchedulePage = () => {
     event.preventDefault();
     if (!form.courseId || !form.dayOfWeek || !form.timeSlot || !form.slotCount || !form.classroomId) {
       toast.error('Ders, gün, saat ve sınıf seçimi zorunludur.');
+      return;
+    }
+
+    if (slotCountOptions.length === 0 || form.slotCount > maxSlotCount) {
+      toast.error('Seçilen ders için bu başlangıç saatinde programlanabilir ders saati kalmadı.');
       return;
     }
 
@@ -690,7 +720,10 @@ const ClassroomPicker = ({
           Sınıflar kontrol ediliyor...
         </div>
       ) : (
-        <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white p-3">
+        <div className="max-h-[22rem] space-y-3 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white p-3">
+          <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">
+            Öğrenci sayısı bulunamadığı için kapasite kontrolü yapılamıyor.
+          </p>
           <ClassroomGroup title="Uygun Sınıflar" classrooms={availableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} />
           <ClassroomGroup title="Uygun Olmayan Sınıflar" classrooms={unavailableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} disabled />
         </div>
@@ -721,7 +754,9 @@ const ClassroomGroup = ({
     <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{title}</p>
     {classrooms.length === 0 ? (
       <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-400">Kayıt yok</p>
-    ) : classrooms.map((classroom) => {
+    ) : (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {classrooms.map((classroom) => {
       const selected = selectedClassroomId === classroom.id;
       return (
         <button
@@ -730,8 +765,8 @@ const ClassroomGroup = ({
           disabled={disabled}
           onClick={() => onSelect(classroom.id)}
           className={cn(
-            'flex w-full items-start justify-between gap-3 rounded-xl border px-3 py-2 text-left transition',
-            selected ? 'border-[#006482]/30 bg-[#eff8ff]' : 'border-slate-200 bg-white',
+            'flex min-h-24 w-full items-start justify-between gap-2 rounded-xl border px-3 py-2 text-left transition',
+            selected ? 'border-[#006482] bg-[#eff8ff] ring-2 ring-[#006482]/10' : 'border-slate-200 bg-white',
             disabled ? 'cursor-not-allowed opacity-75' : 'hover:border-[#006482]/30 hover:bg-[#eff8ff]',
           )}
         >
@@ -740,14 +775,18 @@ const ClassroomGroup = ({
             <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">
               {classroom.capacity} kişi · {classroomTypeLabels[classroom.type] ?? classroom.type}
             </span>
-            <span className={cn('mt-1 block text-[11px] font-semibold', disabled ? 'text-amber-700' : 'text-emerald-700')}>
+            <span className={cn('mt-1 line-clamp-2 text-[11px] font-semibold', disabled ? 'block text-amber-700' : 'hidden')}>
               {classroom.conflictMessage ?? (classroom.capacitySufficient === null || classroom.capacitySufficient === undefined ? 'Kapasite için öğrenci sayısı verisi yok; zaman dilimi uygun.' : 'Kapasite ve zaman dilimi uygun.')}
             </span>
           </span>
-          <span className={cn('mt-0.5 h-4 w-4 shrink-0 rounded-full border', selected ? 'border-[#006482] bg-[#006482]' : 'border-slate-300')} />
+          <span className={cn('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-black', selected ? 'border-[#006482] bg-[#006482] text-white' : 'border-slate-300 text-transparent')}>
+            ✓
+          </span>
         </button>
       );
-    })}
+        })}
+      </div>
+    )}
   </div>
 );
 

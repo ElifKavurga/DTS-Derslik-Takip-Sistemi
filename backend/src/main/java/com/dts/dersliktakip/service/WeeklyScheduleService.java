@@ -159,6 +159,7 @@ public class WeeklyScheduleService {
         String dayOfWeek = normalizeDay(request.dayOfWeek());
         List<String> selectedSlots = resolveSelectedSlots(department, request.timeSlot(), normalizeSlotCount(request.slotCount()));
 
+        assertRemainingHoursSufficient(course, department, selectedSlots.size(), Set.of());
         assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, Set.of());
         assertCapacitySufficient(course, classroom);
 
@@ -188,6 +189,7 @@ public class WeeklyScheduleService {
         List<WeeklySchedule> existingGroup = resolveScheduleGroup(schedule);
         Set<UUID> excludedIds = existingGroup.stream().map(WeeklySchedule::getId).collect(Collectors.toSet());
 
+        assertRemainingHoursSufficient(course, department, selectedSlots.size(), excludedIds);
         assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, excludedIds);
         assertCapacitySufficient(course, classroom);
 
@@ -392,6 +394,19 @@ public class WeeklyScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("Ders programı bulunamadı"));
         assertScheduleAccess(schedule, department);
         return resolveScheduleGroup(schedule).stream().map(WeeklySchedule::getId).collect(Collectors.toSet());
+    }
+
+    private void assertRemainingHoursSufficient(Course course, Department department, int requestedSlotCount, Set<UUID> excludedIds) {
+        int requiredHours = course.getTheoreticalHours() + course.getPracticalHours();
+        int scheduledHours = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), course.getSemester()).stream()
+                .filter(schedule -> schedule.getCourse().getId().equals(course.getId()))
+                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .mapToInt(schedule -> 1)
+                .sum();
+        int remainingHours = requiredHours - scheduledHours;
+        if (requestedSlotCount > remainingHours) {
+            throw new IllegalArgumentException("Seçilen ders saati dersin kalan haftalık saatini aşıyor. Kalan: " + Math.max(remainingHours, 0));
+        }
     }
 
     private void assertSlotsAvailable(Course course, Classroom classroom, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
