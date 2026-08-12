@@ -1,4 +1,0 @@
-C:\Users\ElifK\Desktop\DTS-Derslik-Takip-Sistemi\backend\src\main\resources\application-dev.yml
-C:\Users\ElifK\Desktop\DTS-Derslik-Takip-Sistemi\backend\src\main\resources\application-test.yml
-C:\Users\ElifK\Desktop\DTS-Derslik-Takip-Sistemi\backend\src\main\resources\application.yml
-C:\Users\ElifK\Desktop\DTS-Derslik-Takip-Sistemi\backend\src\test\resources\application-test.yml

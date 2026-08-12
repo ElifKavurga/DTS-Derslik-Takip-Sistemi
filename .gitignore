@@ -13,3 +13,7 @@ frontend/.env.local
 
 *.log
 .DS_Store
+
+# Graphify generated output
+graphify-out/
+backend/graphify-out/
