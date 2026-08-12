@@ -67,6 +67,14 @@ public class WeeklyScheduleController {
         return ResponseEntity.ok(weeklyScheduleService.getAvailableClassrooms(principal.getUser(), courseId, dayOfWeek, timeSlot, slotCount, excludeScheduleId));
     }
 
+    @GetMapping("/classrooms")
+    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    public ResponseEntity<List<AvailableClassroomResponse>> getScheduleClassrooms(
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(weeklyScheduleService.getScheduleClassrooms(principal.getUser()));
+    }
+
     @GetMapping("/time-configuration")
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
     public ResponseEntity<ScheduleTimeConfigurationResponse> getTimeConfiguration(

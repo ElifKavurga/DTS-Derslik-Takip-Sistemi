@@ -25,6 +25,11 @@ export const scheduleService = {
     return response.data;
   },
 
+  getClassrooms: async () => {
+    const response = await apiClient.get<AvailableClassroomResponse[]>('/schedules/classrooms');
+    return response.data;
+  },
+
   getTimeConfiguration: async () => {
     const response = await apiClient.get<ScheduleTimeConfigurationResponse>('/schedules/time-configuration');
     return response.data;

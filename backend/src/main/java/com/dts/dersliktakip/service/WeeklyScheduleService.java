@@ -151,6 +151,26 @@ public class WeeklyScheduleService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AvailableClassroomResponse> getScheduleClassrooms(User currentUser) {
+        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        return classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).stream()
+                .map(classroom -> new AvailableClassroomResponse(
+                        classroom.getId(),
+                        classroom.getCode(),
+                        classroom.getName(),
+                        classroom.getCapacity(),
+                        classroom.getType(),
+                        true,
+                        null,
+                        true,
+                        null,
+                        null,
+                        true
+                ))
+                .toList();
+    }
+
     @Transactional
     public List<WeeklyScheduleResponse> createSchedule(CreateWeeklyScheduleRequest request, User currentUser) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);

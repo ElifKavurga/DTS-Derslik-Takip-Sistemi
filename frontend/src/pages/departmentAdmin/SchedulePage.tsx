@@ -66,9 +66,21 @@ type ScheduleGroupMeta = {
   timeRange: string;
 };
 
+type ScheduleVisualItem = {
+  id: string;
+  dayOfWeek: ScheduleDay;
+  startSlot: string;
+  startIndex: number;
+  schedule: WeeklyScheduleResponse;
+  groupMeta: ScheduleGroupMeta;
+};
+
+const CALENDAR_SLOT_HEIGHT = 88;
+
 export const SchedulePage = () => {
   const queryClient = useQueryClient();
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
+  const [selectedClassroomId, setSelectedClassroomId] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isTimeConfigModalOpen, setIsTimeConfigModalOpen] = useState(false);
@@ -97,9 +109,19 @@ export const SchedulePage = () => {
     queryFn: courseService.getAll,
   });
 
+  const { data: scheduleClassrooms = [] } = useQuery({
+    queryKey: ['scheduleClassrooms'],
+    queryFn: scheduleService.getClassrooms,
+  });
+
   const selectedCourse = useMemo(
     () => courses.find((course) => course.id === form.courseId) ?? null,
     [courses, form.courseId],
+  );
+
+  const selectedCalendarClassroom = useMemo(
+    () => scheduleClassrooms.find((classroom) => classroom.id === selectedClassroomId) ?? null,
+    [scheduleClassrooms, selectedClassroomId],
   );
 
   const selectedCourseStatus = useMemo(
@@ -175,14 +197,19 @@ export const SchedulePage = () => {
     [classrooms],
   );
 
+  const visibleSchedules = useMemo(
+    () => selectedClassroomId ? schedules.filter((schedule) => schedule.classroomId === selectedClassroomId) : schedules,
+    [schedules, selectedClassroomId],
+  );
+
   const schedulesByCell = useMemo(() => {
     const map = new Map<string, WeeklyScheduleResponse[]>();
-    schedules.forEach((schedule) => {
+    visibleSchedules.forEach((schedule) => {
       const key = `${schedule.dayOfWeek}:${schedule.timeSlot}`;
       map.set(key, [...(map.get(key) ?? []), schedule]);
     });
     return map;
-  }, [schedules]);
+  }, [visibleSchedules]);
 
   const scheduleGroupMetaById = useMemo(() => {
     const groups = new Map<string, WeeklyScheduleResponse[]>();
@@ -209,6 +236,54 @@ export const SchedulePage = () => {
     return metaById;
   }, [schedules, timeSlots]);
 
+  const visualScheduleItems = useMemo(() => {
+    const groups = new Map<string, WeeklyScheduleResponse[]>();
+    visibleSchedules.forEach((schedule) => {
+      const key = `${schedule.courseId}:${schedule.classroomId}:${schedule.academicianId}:${schedule.dayOfWeek}`;
+      groups.set(key, [...(groups.get(key) ?? []), schedule]);
+    });
+
+    const items: ScheduleVisualItem[] = [];
+    groups.forEach((groupSchedules) => {
+      const sortedSchedules = [...groupSchedules]
+        .map((schedule) => ({ schedule, index: timeSlots.indexOf(schedule.timeSlot) }))
+        .filter((item) => item.index >= 0)
+        .sort((a, b) => a.index - b.index);
+
+      let segment: typeof sortedSchedules = [];
+      const flushSegment = () => {
+        if (segment.length === 0) return;
+        const first = segment[0];
+        const last = segment[segment.length - 1];
+        const startTime = first.schedule.timeSlot.split('-')[0]?.trim() ?? first.schedule.timeSlot;
+        const endTime = last.schedule.timeSlot.split('-')[1]?.trim() ?? last.schedule.timeSlot;
+        items.push({
+          id: `${first.schedule.id}:${segment.length}`,
+          dayOfWeek: first.schedule.dayOfWeek,
+          startSlot: first.schedule.timeSlot,
+          startIndex: first.index,
+          schedule: first.schedule,
+          groupMeta: {
+            firstScheduleId: first.schedule.id,
+            slotCount: segment.length,
+            timeRange: `${startTime} - ${endTime}`,
+          },
+        });
+        segment = [];
+      };
+
+      sortedSchedules.forEach((item) => {
+        const previous = segment[segment.length - 1];
+        if (previous && item.index !== previous.index + 1) {
+          flushSegment();
+        }
+        segment.push(item);
+      });
+      flushSegment();
+    });
+    return items;
+  }, [timeSlots, visibleSchedules]);
+
   const courseOptions = useMemo(
     () => courses
       .filter((course) => course.active)
@@ -220,6 +295,17 @@ export const SchedulePage = () => {
       })
       .map((course) => ({ label: `${course.code} - ${course.name}`, value: course.id })),
     [courses, editingSchedule, scheduleStatus, selectedSemester],
+  );
+
+  const calendarClassroomOptions = useMemo(
+    () => [
+      { label: 'Tüm Sınıflar', value: '' },
+      ...scheduleClassrooms.map((classroom) => ({
+        label: `${classroom.code} - ${classroom.capacity} kişi`,
+        value: classroom.id,
+      })),
+    ],
+    [scheduleClassrooms],
   );
 
   const incompleteCourses = useMemo(
@@ -421,7 +507,17 @@ export const SchedulePage = () => {
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
           <p className="mt-0.5 text-xs font-medium text-slate-400">Oluşturulmuş ders programı kayıtları takvimde gösterilir.</p>
         </div>
-        <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="w-full sm:w-56">
+            <AppSelect
+              value={selectedClassroomId}
+              onChange={setSelectedClassroomId}
+              options={calendarClassroomOptions}
+              placeholder="SÄ±nÄ±f seÃ§iniz"
+            />
+          </div>
+          <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+        </div>
       </div>
 
       {isLoading ? (
@@ -436,7 +532,7 @@ export const SchedulePage = () => {
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
           <p className="text-sm font-bold text-amber-800">Ders saatleri oluÅŸturulamadÄ±. Saat ayarlarÄ±nÄ± kontrol edin.</p>
         </div>
-      ) : schedules.length === 0 ? (
+      ) : visibleSchedules.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">Henüz haftalık ders programı oluşturulmadı.</h3>
@@ -444,7 +540,13 @@ export const SchedulePage = () => {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white">
-          <div className="grid min-w-[980px]" style={{ gridTemplateColumns: '116px repeat(5, minmax(160px, 1fr))' }}>
+          <div
+            className="grid min-w-[980px]"
+            style={{
+              gridTemplateColumns: '116px repeat(5, minmax(160px, 1fr))',
+              gridTemplateRows: `44px repeat(${timeSlots.length}, ${CALENDAR_SLOT_HEIGHT}px)`,
+            }}
+          >
             <div className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Saat</div>
             {scheduleDays.map((day) => (
               <div key={day.value} className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -459,30 +561,44 @@ export const SchedulePage = () => {
                 </div>
                 {scheduleDays.map((day) => {
                   const cellSchedules = schedulesByCell.get(`${day.value}:${slot}`) ?? [];
-                  const visibleSchedules = cellSchedules.filter((schedule) => scheduleGroupMetaById.get(schedule.id)?.firstScheduleId === schedule.id);
                   const hasConflict = cellSchedules.some((schedule, index) =>
                     cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
                   );
 
                   return (
-                    <div key={`${day.value}-${slot}`} className="min-h-28 border-b border-r border-slate-100 p-2">
-                      <div className="space-y-2">
-                        {visibleSchedules.map((schedule) => (
-                          <ScheduleCard
-                            key={schedule.id}
-                            schedule={schedule}
-                            groupMeta={scheduleGroupMetaById.get(schedule.id)}
-                            hasConflict={hasConflict}
-                            onEdit={() => openEdit(schedule)}
-                            onDelete={() => setDeletingSchedule(schedule)}
-                          />
-                        ))}
-                      </div>
+                    <div key={`${day.value}-${slot}`} className="h-full border-b border-r border-slate-100 p-2">
+                      {hasConflict && (
+                        <div className="h-full rounded-xl border border-red-100 bg-red-50/40" />
+                      )}
                     </div>
                   );
                 })}
               </Fragment>
             ))}
+            {visualScheduleItems.map((item) => {
+              const dayIndex = scheduleDays.findIndex((day) => day.value === item.dayOfWeek);
+              const hasConflict = (schedulesByCell.get(`${item.dayOfWeek}:${item.startSlot}`) ?? []).some((schedule, index, cellSchedules) =>
+                cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
+              );
+              return (
+                <div
+                  key={item.id}
+                  className="z-10 p-2"
+                  style={{
+                    gridColumn: dayIndex + 2,
+                    gridRow: `${item.startIndex + 2} / span ${item.groupMeta.slotCount}`,
+                  }}
+                >
+                  <ScheduleCard
+                    schedule={item.schedule}
+                    groupMeta={item.groupMeta}
+                    hasConflict={hasConflict}
+                    onEdit={() => openEdit(item.schedule)}
+                    onDelete={() => setDeletingSchedule(item.schedule)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -900,7 +1016,7 @@ const ScheduleCard = ({
   onEdit: () => void;
   onDelete: () => void;
 }) => (
-  <article className={cn('rounded-xl border p-2.5 shadow-sm', hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]')}>
+  <article className={cn('flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm', hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]')}>
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
         <p className="truncate text-xs font-extrabold text-slate-900">{schedule.courseCode}</p>
