@@ -80,15 +80,15 @@ export const Sidebar = ({
     },
     {
       label: 'Dersler',
-      path: role === 'DEPARTMENT_ADMIN' ? '/department-admin/dersler' : '/super-admin/dersler',
+      path: role === 'ACADEMICIAN' ? '/academician/dersler' : (role === 'DEPARTMENT_ADMIN' ? '/department-admin/dersler' : '/super-admin/dersler'),
       icon: BookOpen,
-      roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN'],
+      roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'],
     },
     {
       label: 'Ders Programı',
-      path: '/department-admin/ders-programi',
+      path: role === 'ACADEMICIAN' ? '/academician/ders-programi' : '/department-admin/ders-programi',
       icon: CalendarDays,
-      roles: ['DEPARTMENT_ADMIN'],
+      roles: ['DEPARTMENT_ADMIN', 'ACADEMICIAN'],
     },
   ];
   const navigation = navigationItems.filter((item) => canShowItem(item, role));

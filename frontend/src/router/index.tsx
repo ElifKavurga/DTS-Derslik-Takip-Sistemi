@@ -129,6 +129,14 @@ export const router = createBrowserRouter([
                 path: '/academician/dashboard',
                 element: <DashboardPage />,
               },
+              {
+                path: '/academician/ders-programi',
+                element: <SchedulePage />,
+              },
+              {
+                path: '/academician/dersler',
+                element: <CoursesPage />,
+              },
             ],
           },
           {

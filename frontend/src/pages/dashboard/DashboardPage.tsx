@@ -14,9 +14,16 @@ import {
   Users,
   Info,
   Calendar,
+  Clock,
+  CheckCircle2,
+  MapPin,
+  User,
+  ArrowRight,
+  AlertCircle,
 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
+import { cn } from '@/utils/cn';
 import { dashboardService } from '@/services/dashboardService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Role } from '@/types';
@@ -53,12 +60,7 @@ export const DashboardPage = () => {
   }
 
   if (role === 'ACADEMICIAN') {
-    return (
-      <EmptyState
-        title="Ana ekran hazirlaniyor"
-        description="Akademisyen ana ekrani sonraki sprintlerde etkinlestirilecek."
-      />
-    );
+    return <AcademicianDashboard />;
   }
 
   return <SuperAdminDashboard />;
@@ -624,6 +626,292 @@ const SuperAdminDashboard = () => {
           </div>
         </div>
       </section>
+    </div>
+  );
+};
+
+const AcademicianDashboard = () => {
+  const [selectedSemester, setSelectedSemester] = React.useState<string>('GUZ');
+  const user = useAuthStore((state) => state.user);
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['academicianDashboard', selectedSemester],
+    queryFn: () => dashboardService.getAcademicianDashboard(selectedSemester),
+  });
+
+  const getDayLabel = (day: string) => {
+    const labels: Record<string, string> = {
+      MONDAY: 'Pazartesi',
+      TUESDAY: 'Salı',
+      WEDNESDAY: 'Çarşamba',
+      THURSDAY: 'Perşembe',
+      FRIDAY: 'Cuma',
+    };
+    return labels[day] || day;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Header Skeleton */}
+        <div className="h-32 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+        <div className="grid gap-6 md:grid-cols-12">
+          {/* Left panel Skeleton */}
+          <div className="space-y-6 md:col-span-8">
+            <div className="h-48 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+            <div className="h-64 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+          </div>
+          {/* Right panel Skeleton */}
+          <div className="space-y-6 md:col-span-4">
+            <div className="h-44 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+            <div className="h-64 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <h3 className="text-base font-bold text-slate-800">Yükleme Başarısız</h3>
+        <p className="mt-1 text-xs text-slate-400 max-w-xs leading-normal">
+          Dashboard verileri yüklenirken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.
+        </p>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="mt-4 rounded-xl bg-[#006482] px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-[#00526b] transition active:scale-95"
+        >
+          Yeniden Dene
+        </button>
+      </div>
+    );
+  }
+
+  const { academician, academicTerm, todayCourses = [], nextCourse, courses = [], weeklySummary = {} } = data || {};
+
+  const todayLabel = new Date().toLocaleDateString('tr-TR', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Dynamic greeting banner */}
+      <div className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white p-6 shadow-md md:p-8">
+        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-48 w-48 rounded-full bg-[#88d0f2]/10 blur-2xl" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[#006482]/20 bg-[#eff8ff] px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#006482]">
+              {academicTerm}
+            </span>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
+              Hoş geldiniz, {academician?.title} {academician?.firstName} {academician?.lastName}
+            </h1>
+            <p className="text-xs font-medium text-slate-400">
+              {academician?.departmentName} · {academician?.facultyName}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-white/70 border border-slate-100 p-3 shadow-sm backdrop-blur-sm">
+            <Calendar className="h-5 w-5 text-[#006482]" />
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Bugün</p>
+              <p className="text-xs font-bold text-slate-700">{todayLabel}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-12">
+        {/* Left Side: Today's courses & Schedules */}
+        <div className="space-y-6 md:col-span-8">
+          {/* Next Class Highlight */}
+          {nextCourse ? (
+            <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-6 shadow-sm">
+              <div className="absolute right-0 top-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-emerald-100/10 blur-xl" />
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Sıradaki Dersiniz</h3>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] font-bold text-slate-950">
+                    <span>{nextCourse.courseCode} · {nextCourse.courseName}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
+                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Saat</span>
+                  <span className="mt-1 block text-xs font-bold text-slate-700">{nextCourse.timeSlot}</span>
+                </div>
+                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
+                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Derslik</span>
+                  <span className="mt-1 block text-xs font-bold text-slate-700">{nextCourse.classroomCode} · {nextCourse.classroomName}</span>
+                </div>
+                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
+                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Bölüm</span>
+                  <span className="mt-1 block text-xs font-bold text-slate-700 truncate">{nextCourse.courseName ? academician?.departmentName : ''}</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Today's Courses List */}
+          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Bugünün Ders Programı</h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-400">Bugün vermeniz gereken derslerin listesi.</p>
+
+            <div className="mt-4 space-y-3">
+              {todayCourses.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <p className="mt-2.5 text-xs font-bold text-slate-700">Bugün dersiniz bulunmuyor</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">Kendinize vakit ayırabilir veya hazırlık yapabilirsiniz.</p>
+                </div>
+              ) : (
+                todayCourses.map((course, index) => {
+                  let isFinished = false;
+                  try {
+                    const turkeyTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));
+                    const currentHour = turkeyTime.getHours();
+                    const currentMinute = turkeyTime.getMinutes();
+                    const nowMinutes = currentHour * 60 + currentMinute;
+                    
+                    const slotEnd = course.timeSlot.split('-')[1]?.trim();
+                    if (slotEnd) {
+                      const endHour = parseInt(slotEnd.split(':')[0]);
+                      const endMinute = parseInt(slotEnd.split(':')[1]);
+                      const endMinutes = endHour * 60 + endMinute;
+                      isFinished = nowMinutes > endMinutes;
+                    }
+                  } catch (e) {}
+
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        'flex items-center gap-4 rounded-2xl border p-4 transition-all duration-200',
+                        isFinished
+                          ? 'border-slate-100 bg-slate-50/50 text-slate-400'
+                          : 'border-slate-100 hover:border-[#88d0f2]/60 hover:shadow-md hover:shadow-slate-100'
+                      )}
+                    >
+                      <div className={cn(
+                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xs font-extrabold tracking-wider',
+                        isFinished ? 'bg-slate-100 text-slate-400' : 'bg-[#eff8ff] text-[#006482]'
+                      )}>
+                        {course.timeSlot.split('-')[0]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            'rounded px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase',
+                            isFinished ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-500'
+                          )}>
+                            {course.courseCode}
+                          </span>
+                          {isFinished && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                              <CheckCircle2 className="h-3 w-3" /> Tamamlandı
+                            </span>
+                          )}
+                        </div>
+                        <h4 className={cn('mt-1 text-xs font-bold leading-normal truncate', isFinished ? 'text-slate-400' : 'text-slate-900')}>
+                          {course.courseName}
+                        </h4>
+                        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                          <MapPin className="h-3 w-3 shrink-0" /> {course.classroomCode} · {course.classroomName}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Weekly Summary & Course list */}
+        <div className="space-y-6 md:col-span-4">
+          {/* Weekly Summary Widget */}
+          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Haftalık Ders Özeti</h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-400">Hangi gün kaç ders saati dersiniz var.</p>
+
+            <div className="mt-4 space-y-2">
+              {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'].map((day) => {
+                const count = weeklySummary[day] ?? 0;
+                return (
+                  <div key={day} className="flex items-center justify-between rounded-xl border border-slate-50 p-2.5">
+                    <span className="text-xs font-bold text-slate-600">{getDayLabel(day)}</span>
+                    <span className={cn(
+                      'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-extrabold leading-none',
+                      count > 0 ? 'bg-[#eff8ff] text-[#006482]' : 'bg-slate-50 text-slate-400'
+                    )}>
+                      {count > 0 ? `${count} ders` : 'Boş'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Link
+              to="/academician/ders-programi"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+            >
+              Haftalık Programı Gör
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {/* Courses Widget */}
+          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Verdiğim Dersler</h2>
+            <p className="mt-0.5 text-xs font-medium text-slate-400">Bu dönem atandığınız aktif dersler.</p>
+
+            <div className="mt-4 space-y-3">
+              {courses.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium">Atanmış ders bulunmuyor.</div>
+              ) : (
+                courses.slice(0, 3).map((course: any, idx: number) => (
+                  <div key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-50 p-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 text-xs font-bold uppercase">
+                      {course.code.substring(0, 2)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-[9px] font-bold tracking-widest text-[#006482] uppercase">{course.code}</span>
+                      <h4 className="mt-0.5 text-xs font-bold text-slate-800 truncate" title={course.name}>{course.name}</h4>
+                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">AKTS: {course.ects} · {course.theoreticalHours + course.practicalHours} saat/hafta</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {courses.length > 3 && (
+              <div className="mt-2 text-center text-[10px] font-bold text-slate-400">
+                +{courses.length - 3} ders daha
+              </div>
+            )}
+
+            <Link
+              to="/academician/dersler"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+            >
+              Tüm Dersleri Gör
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

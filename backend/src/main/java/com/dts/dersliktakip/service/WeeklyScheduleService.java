@@ -22,7 +22,9 @@ import com.dts.dersliktakip.exception.ScheduleConflictException;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
+import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
+import com.dts.dersliktakip.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -66,9 +68,19 @@ public class WeeklyScheduleService {
     private final ClassroomRepository classroomRepository;
     private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
     private final AccessScopeService accessScopeService;
+    private final AcademicianRepository academicianRepository;
 
     @Transactional(readOnly = true)
     public List<WeeklyScheduleResponse> getSchedules(User currentUser, Semester semester) {
+        if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+            List<WeeklySchedule> schedules = semester == null
+                    ? weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId())
+                    : weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), semester);
+            return schedules.stream().map(this::toResponse).toList();
+        }
+
         Department department = accessScopeService.requireDepartmentScope(currentUser);
         List<WeeklySchedule> schedules = semester == null
                 ? weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId())
@@ -587,7 +599,7 @@ public class WeeklyScheduleService {
         return schedule;
     }
 
-    private WeeklyScheduleResponse toResponse(WeeklySchedule schedule) {
+    public WeeklyScheduleResponse toResponse(WeeklySchedule schedule) {
         Course course = schedule.getCourse();
         Academician academician = course.getAcademician();
         Classroom classroom = schedule.getClassroom();

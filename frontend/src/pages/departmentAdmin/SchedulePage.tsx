@@ -23,6 +23,7 @@ import {
   scheduleDays,
 } from '@/types';
 import { cn } from '@/utils/cn';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const semesterOptions: { label: string; value: Semester | '' }[] = [
   { label: 'Tüm Dönemler', value: '' },
@@ -108,6 +109,8 @@ const slotEnd = (slot: string) => slot.split('-')[1]?.trim() ?? slot;
 
 export const SchedulePage = () => {
   const queryClient = useQueryClient();
+  const role = useAuthStore((state) => state.user?.role);
+  const isReadOnly = role === 'ACADEMICIAN';
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -649,7 +652,9 @@ export const SchedulePage = () => {
           <p className="mt-0.5 text-[13px] text-slate-400">Bölüm derslerini haftalık takvime manuel yerleştirin.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
+          {!isReadOnly && (
+            <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
+          )}
           <div className="flex w-full min-w-[180px] items-center gap-2 sm:w-44">
             <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
             <AppSelect
@@ -663,7 +668,7 @@ export const SchedulePage = () => {
         </div>
       </div>
 
-      {filteredScheduleStatus && (
+      {!isReadOnly && filteredScheduleStatus && (
         <div className="grid gap-3 xl:grid-cols-[1.1fr_1.4fr]">
           <ScheduleStatusOverview
             status={filteredScheduleStatus}
@@ -695,10 +700,12 @@ export const SchedulePage = () => {
               value={selectedGrade}
               onChange={setSelectedGrade}
               options={gradeOptions}
-              placeholder="SÄ±nÄ±f seÃ§iniz"
+              placeholder="Sınıf seçiniz"
             />
           </div>
-          <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+          {!isReadOnly && (
+            <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+          )}
         </div>
       </div>
 
@@ -723,7 +730,9 @@ export const SchedulePage = () => {
               {selectedGradeLabel} için {filteredScheduleStatus.totalCourses} ders programlanmayı bekliyor.
             </p>
           )}
-          <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+          {!isReadOnly && (
+            <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white">
@@ -791,6 +800,7 @@ export const SchedulePage = () => {
                       onOpenDetails={() => setScheduleDetail({ schedule: item.schedule, groupMeta: item.groupMeta, hasConflict })}
                       onEdit={() => openEdit(item.schedule)}
                       onDelete={() => setDeletingSchedule(item.schedule)}
+                      isReadOnly={isReadOnly}
                     />
                   </div>
                 );
@@ -1386,6 +1396,7 @@ const ScheduleCard = ({
   onOpenDetails,
   onEdit,
   onDelete,
+  isReadOnly = false,
 }: {
   schedule: WeeklyScheduleResponse;
   groupMeta?: ScheduleGroupMeta;
@@ -1393,6 +1404,7 @@ const ScheduleCard = ({
   onOpenDetails: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  isReadOnly?: boolean;
 }) => {
   const shouldCenterContent = (groupMeta?.slotCount ?? 1) >= 3;
   return (
@@ -1417,14 +1429,16 @@ const ScheduleCard = ({
         <p className="truncate text-xs font-extrabold text-slate-900">{schedule.courseCode}</p>
         <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-600">{schedule.courseName}</p>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
-        <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-[#006482]" aria-label="Düzenle">
-          <Edit2 className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-red-600" aria-label="Sil">
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      {!isReadOnly && (
+        <div className="flex shrink-0 items-center gap-1">
+          <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-[#006482]" aria-label="Düzenle">
+            <Edit2 className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-red-600" aria-label="Sil">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
     <div className="mt-2 space-y-1 text-[10px] font-semibold text-slate-500">
       <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> <span className="truncate">{schedule.academicianName}</span></p>

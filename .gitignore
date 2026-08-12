@@ -15,5 +15,4 @@ frontend/.env.local
 .DS_Store
 
 # Graphify generated output
-graphify-out/
-backend/graphify-out/
+/graphify-out/

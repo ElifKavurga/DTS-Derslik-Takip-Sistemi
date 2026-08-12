@@ -24,13 +24,13 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<CourseListResponse> getAllCourses(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(courseService.getAllCourses(principal.getUser()));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<CourseResponse> getCourseById(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal

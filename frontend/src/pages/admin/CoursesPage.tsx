@@ -66,9 +66,10 @@ interface CourseActionsMenuProps {
   onCopy: () => void;
   onToggleActive: () => void;
   onDelete: () => void;
+  isReadOnly?: boolean;
 }
 
-const CourseActionsMenu = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete }: CourseActionsMenuProps) => {
+const CourseActionsMenu = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, isReadOnly = false }: CourseActionsMenuProps) => {
   const [open, setOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -93,18 +94,22 @@ const CourseActionsMenu = ({ course, onView, onEdit, onCopy, onToggleActive, onD
     setOpen((o) => !o);
   };
 
-  const items = [
-    { label: 'Detayları Görüntüle', icon: <Eye className="h-3.5 w-3.5" />, onClick: onView, variant: 'default' },
-    { label: 'Düzenle', icon: <Edit2 className="h-3.5 w-3.5" />, onClick: onEdit, variant: 'default' },
-    { label: 'Kopyasını Oluştur', icon: <Copy className="h-3.5 w-3.5" />, onClick: onCopy, variant: 'default' },
-    {
-      label: course.active ? 'Pasif Yap' : 'Aktif Yap',
-      icon: course.active ? <ToggleLeft className="h-3.5 w-3.5" /> : <ToggleRight className="h-3.5 w-3.5" />,
-      onClick: onToggleActive,
-      variant: 'default',
-    },
-    { label: 'Sil', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: onDelete, variant: 'danger' },
-  ];
+  const items = isReadOnly
+    ? [
+        { label: 'Detayları Görüntüle', icon: <Eye className="h-3.5 w-3.5" />, onClick: onView, variant: 'default' },
+      ]
+    : [
+        { label: 'Detayları Görüntüle', icon: <Eye className="h-3.5 w-3.5" />, onClick: onView, variant: 'default' },
+        { label: 'Düzenle', icon: <Edit2 className="h-3.5 w-3.5" />, onClick: onEdit, variant: 'default' },
+        { label: 'Kopyasını Oluştur', icon: <Copy className="h-3.5 w-3.5" />, onClick: onCopy, variant: 'default' },
+        {
+          label: course.active ? 'Pasif Yap' : 'Aktif Yap',
+          icon: course.active ? <ToggleLeft className="h-3.5 w-3.5" /> : <ToggleRight className="h-3.5 w-3.5" />,
+          onClick: onToggleActive,
+          variant: 'default',
+        },
+        { label: 'Sil', icon: <Trash2 className="h-3.5 w-3.5" />, onClick: onDelete, variant: 'danger' },
+      ];
 
   return (
     <div className="shrink-0">
@@ -158,7 +163,7 @@ const InfoRow = ({ icon, text }: { icon: React.ReactNode; text?: string | null }
 };
 
 // ── CourseCard ───────────────────────────────────────────────────────────────
-const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete }: any) => {
+const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, isReadOnly = false }: any) => {
   return (
     <div className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/50 bg-white px-5 py-4 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-lg hover:shadow-slate-200/70">
       <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-transparent group-hover:bg-[#006482] transition-colors duration-200" />
@@ -194,16 +199,18 @@ const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete }
           {course.active ? 'Aktif' : 'Pasif'}
         </span>
 
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all duration-150 hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] group-hover:border-[#006482]/20 active:scale-95"
-        >
-          <Edit2 className="h-3 w-3" />
-          Düzenle
-        </button>
+        {!isReadOnly && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all duration-150 hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] group-hover:border-[#006482]/20 active:scale-95"
+          >
+            <Edit2 className="h-3 w-3" />
+            Düzenle
+          </button>
+        )}
 
-        <CourseActionsMenu course={course} onView={onView} onEdit={onEdit} onCopy={onCopy} onToggleActive={onToggleActive} onDelete={onDelete} />
+        <CourseActionsMenu course={course} onView={onView} onEdit={onEdit} onCopy={onCopy} onToggleActive={onToggleActive} onDelete={onDelete} isReadOnly={isReadOnly} />
       </div>
     </div>
   );
@@ -379,6 +386,7 @@ export const CoursesPage = () => {
   const queryClient = useQueryClient();
   const role = useAuthStore((state) => state.user?.role);
   const isDepartmentAdmin = role === 'DEPARTMENT_ADMIN';
+  const isReadOnly = role === 'ACADEMICIAN';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' });
@@ -566,7 +574,9 @@ export const CoursesPage = () => {
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dersler {coursesList.length > 0 && <span className="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{filteredCourses.length}{filteredCourses.length !== coursesList.length ? ` / ${coursesList.length}` : ''}</span>}</h1>
           <p className="mt-0.5 text-[13px] text-slate-400">Üniversitede açılan dersleri tanımlayabilirsiniz.</p>
         </div>
-        <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>Yeni Ders</PrimaryButton>
+        {!isReadOnly && (
+          <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>Yeni Ders</PrimaryButton>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -601,7 +611,9 @@ export const CoursesPage = () => {
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400 text-2xl font-bold"><BookOpen className="h-8 w-8" /></div>
           <h3 className="text-base font-bold text-slate-700">Henüz ders yok</h3>
-          <PrimaryButton onClick={handleOpenCreate} className="mt-5" icon={<Plus className="h-4 w-4" />}>Yeni Ders Ekle</PrimaryButton>
+          {!isReadOnly && (
+            <PrimaryButton onClick={handleOpenCreate} className="mt-5" icon={<Plus className="h-4 w-4" />}>Yeni Ders Ekle</PrimaryButton>
+          )}
         </div>
       ) : filteredCourses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-14 text-center">
@@ -618,6 +630,7 @@ export const CoursesPage = () => {
               onCopy={() => handleOpenCopy(course)}
               onToggleActive={() => toggleMutation.mutate({ id: course.id, payload: { ...course, active: !course.active } })}
               onDelete={() => setDeletingCourse(course)}
+              isReadOnly={isReadOnly}
             />
           ))}
         </div>

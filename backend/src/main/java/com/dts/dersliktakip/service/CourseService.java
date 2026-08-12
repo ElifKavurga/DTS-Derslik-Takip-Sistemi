@@ -9,6 +9,7 @@ import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Faculty;
 import com.dts.dersliktakip.entity.User;
+import com.dts.dersliktakip.entity.Role;
 import com.dts.dersliktakip.mapper.CourseMapper;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
@@ -39,9 +40,16 @@ public class CourseService {
 
     @Transactional(readOnly = true)
     public CourseListResponse getAllCourses(User currentUser) {
-        List<Course> visibleCourses = accessScopeService.isSuperAdmin(currentUser)
-                ? courseRepository.findAll()
-                : courseRepository.findAllByDepartmentId(accessScopeService.requireDepartmentScope(currentUser).getId());
+        List<Course> visibleCourses;
+        if (accessScopeService.isSuperAdmin(currentUser)) {
+            visibleCourses = courseRepository.findAll();
+        } else if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+            visibleCourses = courseRepository.findAllByAcademicianId(academician.getId());
+        } else {
+            visibleCourses = courseRepository.findAllByDepartmentId(accessScopeService.requireDepartmentScope(currentUser).getId());
+        }
 
         List<CourseResponse> courses = visibleCourses.stream()
                 .map(courseMapper::toResponse)
@@ -178,6 +186,14 @@ public class CourseService {
 
     private void assertCourseAccess(User currentUser, Course course) {
         if (accessScopeService.isSuperAdmin(currentUser)) {
+            return;
+        }
+        if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+            if (course.getAcademician() == null || !course.getAcademician().getId().equals(academician.getId())) {
+                throw new AccessDeniedException("Bu ders icin yetkiniz yok.");
+            }
             return;
         }
         Department scopedDepartment = accessScopeService.requireDepartmentScope(currentUser);

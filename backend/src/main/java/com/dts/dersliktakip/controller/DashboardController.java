@@ -34,4 +34,13 @@ public class DashboardController {
     ) {
         return ResponseEntity.ok(dashboardService.getDepartmentAdminDashboard(principal.getUser(), semester));
     }
+
+    @GetMapping("/academician")
+    @PreAuthorize("hasRole('ACADEMICIAN')")
+    public ResponseEntity<com.dts.dersliktakip.dto.AcademicianDashboardResponse> getAcademicianDashboard(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam(required = false) com.dts.dersliktakip.entity.Semester semester
+    ) {
+        return ResponseEntity.ok(dashboardService.getAcademicianDashboard(principal.getUser(), semester));
+    }
 }

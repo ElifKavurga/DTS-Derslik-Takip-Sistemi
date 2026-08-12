@@ -37,7 +37,7 @@ public class WeeklyScheduleController {
     private final WeeklyScheduleService weeklyScheduleService;
 
     @GetMapping
-    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<List<WeeklyScheduleResponse>> getSchedules(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Semester semester

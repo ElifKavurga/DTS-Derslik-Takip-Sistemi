@@ -57,3 +57,15 @@ export interface DepartmentAdminDashboardResponse {
   scheduleSummary: ScheduleCompletionResponse;
   warnings: string[];
 }
+
+import { AcademicianResponse, CourseResponse } from './course';
+import { WeeklyScheduleResponse } from './schedule';
+
+export interface AcademicianDashboardResponse {
+  academician: AcademicianResponse;
+  academicTerm: string;
+  todayCourses: WeeklyScheduleResponse[];
+  nextCourse?: WeeklyScheduleResponse | null;
+  courses: CourseResponse[];
+  weeklySummary: Record<string, number>;
+}

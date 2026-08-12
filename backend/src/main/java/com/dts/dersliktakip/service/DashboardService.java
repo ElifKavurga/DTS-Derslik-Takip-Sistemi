@@ -1,14 +1,23 @@
 package com.dts.dersliktakip.service;
 
+import com.dts.dersliktakip.dto.AcademicianDashboardResponse;
+import com.dts.dersliktakip.dto.AcademicianResponse;
+import com.dts.dersliktakip.dto.CourseResponse;
 import com.dts.dersliktakip.dto.DashboardCardStats;
 import com.dts.dersliktakip.dto.DashboardStatsResponse;
 import com.dts.dersliktakip.dto.DepartmentAdminDashboardResponse;
 import com.dts.dersliktakip.dto.RecentBuildingResponse;
 import com.dts.dersliktakip.dto.RecentFacultyResponse;
 import com.dts.dersliktakip.dto.RecentUserResponse;
+import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
+import com.dts.dersliktakip.entity.Academician;
+import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Role;
 import com.dts.dersliktakip.entity.User;
+import com.dts.dersliktakip.entity.WeeklySchedule;
+import com.dts.dersliktakip.mapper.AcademicianMapper;
+import com.dts.dersliktakip.mapper.CourseMapper;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.BuildingRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
@@ -17,11 +26,20 @@ import com.dts.dersliktakip.repository.DepartmentRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorRepository;
 import com.dts.dersliktakip.repository.UserRepository;
+import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +56,9 @@ public class DashboardService {
     private final CourseRepository courseRepository;
     private final AccessScopeService accessScopeService;
     private final WeeklyScheduleService weeklyScheduleService;
+    private final WeeklyScheduleRepository weeklyScheduleRepository;
+    private final AcademicianMapper academicianMapper;
+    private final CourseMapper courseMapper;
 
     @Transactional(readOnly = true)
     public DashboardStatsResponse getDashboardStats() {
@@ -125,5 +146,79 @@ public class DashboardService {
                 .scheduleSummary(scheduleSummary)
                 .warnings(warnings)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public AcademicianDashboardResponse getAcademicianDashboard(User currentUser, com.dts.dersliktakip.entity.Semester semester) {
+        Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+
+        List<Course> courses = semester == null
+                ? courseRepository.findAllByAcademicianId(academician.getId())
+                : courseRepository.findAllByAcademicianIdAndSemester(academician.getId(), semester);
+
+        List<WeeklySchedule> schedules = semester == null
+                ? weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId())
+                : weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), semester);
+
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Istanbul"));
+        LocalTime nowTime = LocalTime.now(ZoneId.of("Europe/Istanbul"));
+        String todayDayOfWeek = today.getDayOfWeek().name();
+
+        List<WeeklyScheduleResponse> todayCourses = schedules.stream()
+                .filter(ws -> ws.getDayOfWeek().equalsIgnoreCase(todayDayOfWeek))
+                .sorted(Comparator.comparing(ws -> getStartTime(ws.getTimeSlot())))
+                .map(weeklyScheduleService::toResponse)
+                .toList();
+
+        WeeklyScheduleResponse nextCourse = todayCourses.stream()
+                .filter(ws -> !getStartTime(ws.timeSlot()).isBefore(nowTime))
+                .findFirst()
+                .orElse(null);
+
+        Map<String, Long> weeklySummary = schedules.stream()
+                .collect(Collectors.groupingBy(
+                        WeeklySchedule::getDayOfWeek,
+                        Collectors.mapping(
+                                ws -> ws.getScheduleGroupId() != null ? ws.getScheduleGroupId() : ws.getCourse().getId() + "-" + ws.getDayOfWeek() + "-" + ws.getTimeSlot(),
+                                Collectors.toSet()
+                        )
+                ))
+                .entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> (long) entry.getValue().size()
+                ));
+
+        Map<String, Long> completeSummary = new LinkedHashMap<>();
+        for (String day : List.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY")) {
+            completeSummary.put(day, weeklySummary.getOrDefault(day, 0L));
+        }
+
+        int year = today.getYear();
+        int month = today.getMonthValue();
+        String academicYear = (month >= 8) ? year + "-" + (year + 1) : (year - 1) + "-" + year;
+        String semesterLabel = (semester != null) ? (semester == com.dts.dersliktakip.entity.Semester.GUZ ? "Güz" : (semester == com.dts.dersliktakip.entity.Semester.BAHAR ? "Bahar" : "Yaz Okulu")) : "Güz";
+        String academicTerm = academicYear + " " + semesterLabel;
+
+        return AcademicianDashboardResponse.builder()
+                .academician(academicianMapper.toResponse(academician))
+                .academicTerm(academicTerm)
+                .todayCourses(todayCourses)
+                .nextCourse(nextCourse)
+                .courses(courses.stream().map(courseMapper::toResponse).toList())
+                .weeklySummary(completeSummary)
+                .build();
+    }
+
+    private LocalTime getStartTime(String timeSlot) {
+        if (timeSlot == null || !timeSlot.contains("-")) {
+            return LocalTime.MIN;
+        }
+        try {
+            return LocalTime.parse(timeSlot.split("-")[0].trim(), DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (Exception e) {
+            return LocalTime.MIN;
+        }
     }
 }
