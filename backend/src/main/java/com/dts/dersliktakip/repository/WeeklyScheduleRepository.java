@@ -45,6 +45,9 @@ public interface WeeklyScheduleRepository extends JpaRepository<WeeklySchedule, 
     @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "classroom"})
     List<WeeklySchedule> findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(UUID academicianId, String dayOfWeek, String timeSlot);
 
+    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "classroom"})
+    List<WeeklySchedule> findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(UUID departmentId, int grade, String dayOfWeek, String timeSlot);
+
     @EntityGraph(attributePaths = {"course", "course.department", "classroom"})
     Optional<WeeklySchedule> findFirstByClassroom_IdAndDayOfWeekAndTimeSlot(UUID classroomId, String dayOfWeek, String timeSlot);
 

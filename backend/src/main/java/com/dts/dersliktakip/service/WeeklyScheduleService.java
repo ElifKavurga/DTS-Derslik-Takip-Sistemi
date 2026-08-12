@@ -12,6 +12,7 @@ import com.dts.dersliktakip.dto.WeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.Course;
+import com.dts.dersliktakip.entity.CourseType;
 import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.DepartmentScheduleConfig;
 import com.dts.dersliktakip.entity.Semester;
@@ -161,6 +162,7 @@ public class WeeklyScheduleService {
 
         assertRemainingHoursSufficient(course, department, selectedSlots.size(), Set.of());
         assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, Set.of());
+        assertNoGradeConflict(course, department, dayOfWeek, selectedSlots, Set.of());
         assertCapacitySufficient(course, classroom);
 
         UUID groupId = UUID.randomUUID();
@@ -191,6 +193,7 @@ public class WeeklyScheduleService {
 
         assertRemainingHoursSufficient(course, department, selectedSlots.size(), excludedIds);
         assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, excludedIds);
+        assertNoGradeConflict(course, department, dayOfWeek, selectedSlots, excludedIds);
         assertCapacitySufficient(course, classroom);
 
         UUID groupId = Optional.ofNullable(schedule.getScheduleGroupId()).orElse(UUID.randomUUID());
@@ -400,7 +403,7 @@ public class WeeklyScheduleService {
         int requiredHours = course.getTheoreticalHours() + course.getPracticalHours();
         int scheduledHours = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), course.getSemester()).stream()
                 .filter(schedule -> schedule.getCourse().getId().equals(course.getId()))
-                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .filter(schedule -> !isExcluded(schedule, excludedIds))
                 .mapToInt(schedule -> 1)
                 .sum();
         int remainingHours = requiredHours - scheduledHours;
@@ -428,15 +431,51 @@ public class WeeklyScheduleService {
         }
     }
 
+    private void assertNoGradeConflict(Course course, Department department, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+        for (String slot : selectedSlots) {
+            Optional<WeeklySchedule> conflict = findGradeConflict(course, department, dayOfWeek, slot, excludedIds);
+            if (conflict.isPresent()) {
+                Course conflictCourse = conflict.get().getCourse();
+                throw new IllegalArgumentException(
+                        course.getGrade() + ". sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders bulunuyor: "
+                                + conflictCourse.getCode() + " - " + conflictCourse.getName() + " (" + dayLabel(dayOfWeek) + " " + slot + ")"
+                );
+            }
+        }
+    }
+
+    private Optional<WeeklySchedule> findGradeConflict(Course course, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
+        return findGradeConflict(course, course.getDepartment(), dayOfWeek, timeSlot, excludedIds);
+    }
+
+    private Optional<WeeklySchedule> findGradeConflict(Course course, Department department, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
+        if (course.getCourseType() != CourseType.ZORUNLU || department == null) {
+            return Optional.empty();
+        }
+        return weeklyScheduleRepository
+                .findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), dayOfWeek, timeSlot)
+                .stream()
+                .filter(schedule -> !isExcluded(schedule, excludedIds))
+                .filter(schedule -> schedule.getCourse() != null)
+                .filter(schedule -> !schedule.getCourse().getId().equals(course.getId()))
+                .filter(schedule -> schedule.getCourse().getCourseType() == CourseType.ZORUNLU)
+                .findFirst();
+    }
+
     private Optional<WeeklySchedule> findClassroomConflict(Classroom classroom, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
         return weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot).stream()
-                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .filter(schedule -> !isExcluded(schedule, excludedIds))
                 .findFirst();
+    }
+
+    private boolean isExcluded(WeeklySchedule schedule, Set<UUID> excludedIds) {
+        UUID scheduleId = schedule.getId();
+        return scheduleId != null && excludedIds.contains(scheduleId);
     }
 
     private Optional<WeeklySchedule> findAcademicianConflict(Course course, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
         return weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), dayOfWeek, timeSlot).stream()
-                .filter(schedule -> !excludedIds.contains(schedule.getId()))
+                .filter(schedule -> !isExcluded(schedule, excludedIds))
                 .findFirst();
     }
 
@@ -454,12 +493,18 @@ public class WeeklyScheduleService {
                 .map(Optional::get)
                 .findFirst();
         Optional<WeeklySchedule> academicianConflict = Optional.empty();
+        Optional<WeeklySchedule> gradeConflict = Optional.empty();
         Optional<Integer> studentCount = Optional.empty();
         Boolean capacitySufficient = null;
 
         if (course != null) {
             academicianConflict = selectedSlots.stream()
                     .map(slot -> findAcademicianConflict(course, dayOfWeek, slot, excludedIds))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .findFirst();
+            gradeConflict = selectedSlots.stream()
+                    .map(slot -> findGradeConflict(course, dayOfWeek, slot, excludedIds))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .findFirst();
@@ -470,7 +515,8 @@ public class WeeklyScheduleService {
         boolean timeSlotAvailable = classroomConflict.isEmpty();
         boolean capacityOk = capacitySufficient == null || capacitySufficient;
         boolean lecturerOk = academicianConflict.isEmpty();
-        boolean selectable = timeSlotAvailable && capacityOk && lecturerOk;
+        boolean gradeOk = gradeConflict.isEmpty();
+        boolean selectable = timeSlotAvailable && capacityOk && lecturerOk && gradeOk;
 
         return new AvailableClassroomResponse(
                 classroom.getId(),
@@ -479,7 +525,7 @@ public class WeeklyScheduleService {
                 classroom.getCapacity(),
                 classroom.getType(),
                 selectable,
-                resolveAvailabilityMessage(classroom, classroomConflict, academicianConflict, studentCount, capacitySufficient),
+                resolveAvailabilityMessage(classroom, classroomConflict, academicianConflict, gradeConflict, studentCount, capacitySufficient),
                 timeSlotAvailable,
                 capacitySufficient,
                 studentCount.orElse(null),
@@ -491,6 +537,7 @@ public class WeeklyScheduleService {
             Classroom classroom,
             Optional<WeeklySchedule> classroomConflict,
             Optional<WeeklySchedule> academicianConflict,
+            Optional<WeeklySchedule> gradeConflict,
             Optional<Integer> studentCount,
             Boolean capacitySufficient
     ) {
@@ -499,6 +546,11 @@ public class WeeklyScheduleService {
         }
         if (academicianConflict.isPresent()) {
             return "Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + academicianConflict.get().getTimeSlot();
+        }
+        if (gradeConflict.isPresent()) {
+            Course conflictCourse = gradeConflict.get().getCourse();
+            return conflictCourse.getGrade() + ". sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders var: "
+                    + conflictCourse.getCode() + " - " + conflictCourse.getName() + " (" + gradeConflict.get().getTimeSlot() + ")";
         }
         if (Boolean.FALSE.equals(capacitySufficient)) {
             return classroom.getCode() + " sınıfı " + classroom.getCapacity() + " kişilik. Ders öğrenci sayısı: " + studentCount.orElse(0);
@@ -615,6 +667,10 @@ public class WeeklyScheduleService {
 
     private String conflictMessage(Classroom classroom, String dayOfWeek, String timeSlot) {
         return classroom.getCode() + " sınıfı " + DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek) + " " + timeSlot + " zamanında kullanımdadır.";
+    }
+
+    private String dayLabel(String dayOfWeek) {
+        return DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek);
     }
 
     private String formatAcademicianName(Academician academician) {

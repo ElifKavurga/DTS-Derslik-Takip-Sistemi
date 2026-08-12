@@ -136,6 +136,40 @@ class WeeklyScheduleServiceTest {
     }
 
     @Test
+    void createScheduleRejectsRequiredCourseConflictForSameGrade() {
+        User currentUser = new User();
+        Faculty faculty = faculty(UUID.randomUUID());
+        Department department = department(UUID.randomUUID(), faculty);
+        Course course = course(UUID.randomUUID(), department, "CENG303", 3);
+        Course conflictingCourse = course(UUID.randomUUID(), department, "CENG301", 3);
+        Classroom classroom = classroom(UUID.randomUUID(), faculty);
+        Classroom otherClassroom = classroom(UUID.randomUUID(), faculty);
+        otherClassroom.setId(UUID.randomUUID());
+        otherClassroom.setCode("D102");
+        WeeklySchedule conflict = schedule(conflictingCourse, otherClassroom, "MONDAY", "10:05-10:50");
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
+
+        assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders bulunuyor")
+                .hasMessageContaining(conflictingCourse.getCode());
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void getScheduleCompletionReturnsAllCourseStatusesForSelectedSemester() {
         User currentUser = new User();
         Faculty faculty = faculty(UUID.randomUUID());
