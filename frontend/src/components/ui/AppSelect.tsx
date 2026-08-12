@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -46,6 +46,17 @@ export const AppSelect = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const updateMenuPosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const isBottomSpaceSmall = window.innerHeight - rect.bottom < 260;
+    setMenuStyle({
+      top: isBottomSpaceSmall ? Math.max(12, rect.top - 8) : rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -60,14 +71,21 @@ export const AppSelect = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleScroll = () => setIsOpen(false);
+    const handleScroll = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) {
+        return;
+      }
+      updateMenuPosition();
+    };
+    const handleResize = () => updateMenuPosition();
     window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleScroll);
+    window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [isOpen]);
+  }, [isOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (isOpen && searchable) {
@@ -90,14 +108,8 @@ export const AppSelect = ({
 
   const handleOpen = () => {
     if (disabled) return;
-    if (!isOpen && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const isBottomSpaceSmall = window.innerHeight - rect.bottom < 260;
-      setMenuStyle({
-        top: isBottomSpaceSmall ? Math.max(12, rect.top - 8) : rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      });
+    if (!isOpen) {
+      updateMenuPosition();
       setSearchQuery('');
       setHighlightedIndex(0);
     }
