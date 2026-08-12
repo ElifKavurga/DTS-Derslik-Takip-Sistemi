@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Settings, Trash2, User, XCircle } from 'lucide-react';
@@ -70,17 +70,28 @@ type ScheduleVisualItem = {
   id: string;
   dayOfWeek: ScheduleDay;
   startSlot: string;
-  startIndex: number;
   schedule: WeeklyScheduleResponse;
   groupMeta: ScheduleGroupMeta;
+  top: number;
+  height: number;
 };
 
-const CALENDAR_SLOT_HEIGHT = 88;
+const CALENDAR_HEADER_HEIGHT = 44;
+const CALENDAR_MINUTE_HEIGHT = 1.45;
+const MIN_EVENT_HEIGHT = 56;
+
+const parseTimeToMinutes = (time: string) => {
+  const [hour, minute] = time.split(':').map(Number);
+  return hour * 60 + minute;
+};
+
+const slotStart = (slot: string) => slot.split('-')[0]?.trim() ?? slot;
+const slotEnd = (slot: string) => slot.split('-')[1]?.trim() ?? slot;
 
 export const SchedulePage = () => {
   const queryClient = useQueryClient();
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
-  const [selectedClassroomId, setSelectedClassroomId] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isTimeConfigModalOpen, setIsTimeConfigModalOpen] = useState(false);
@@ -109,25 +120,38 @@ export const SchedulePage = () => {
     queryFn: courseService.getAll,
   });
 
-  const { data: scheduleClassrooms = [] } = useQuery({
-    queryKey: ['scheduleClassrooms'],
-    queryFn: scheduleService.getClassrooms,
-  });
-
   const selectedCourse = useMemo(
     () => courses.find((course) => course.id === form.courseId) ?? null,
     [courses, form.courseId],
-  );
-
-  const selectedCalendarClassroom = useMemo(
-    () => scheduleClassrooms.find((classroom) => classroom.id === selectedClassroomId) ?? null,
-    [scheduleClassrooms, selectedClassroomId],
   );
 
   const selectedCourseStatus = useMemo(
     () => scheduleStatus?.courses.find((course) => course.courseId === form.courseId) ?? null,
     [form.courseId, scheduleStatus],
   );
+
+  const gradeOptions = useMemo(() => {
+    const grades = Array.from(new Set(
+      courses
+        .filter((course) => course.active)
+        .filter((course) => !selectedSemester || course.semester === selectedSemester)
+        .map((course) => course.grade)
+        .filter((grade): grade is number => Number.isFinite(grade)),
+    )).sort((a, b) => a - b);
+    return grades.map((grade) => ({ label: `${grade}. Sınıf`, value: String(grade) }));
+  }, [courses, selectedSemester]);
+
+  useEffect(() => {
+    if (gradeOptions.length === 0) {
+      if (selectedGrade) setSelectedGrade('');
+      return;
+    }
+    if (!gradeOptions.some((option) => option.value === selectedGrade)) {
+      setSelectedGrade(gradeOptions[0].value);
+    }
+  }, [gradeOptions, selectedGrade]);
+
+  const selectedGradeNumber = selectedGrade ? Number(selectedGrade) : null;
 
   const editingGroupSlotCount = useMemo(() => {
     if (!editingSchedule) return 0;
@@ -139,6 +163,18 @@ export const SchedulePage = () => {
     () => timeConfiguration?.slots.map((slot) => slot.value) ?? [],
     [timeConfiguration],
   );
+
+  const calendarStartMinute = useMemo(
+    () => timeSlots.length > 0 ? parseTimeToMinutes(slotStart(timeSlots[0])) : 0,
+    [timeSlots],
+  );
+
+  const calendarEndMinute = useMemo(
+    () => timeSlots.length > 0 ? parseTimeToMinutes(slotEnd(timeSlots[timeSlots.length - 1])) : 0,
+    [timeSlots],
+  );
+
+  const calendarBodyHeight = Math.max(0, (calendarEndMinute - calendarStartMinute) * CALENDAR_MINUTE_HEIGHT);
 
   const selectedSlot = useMemo(
     () => timeConfiguration?.slots.find((slot) => slot.value === form.timeSlot) ?? null,
@@ -197,9 +233,16 @@ export const SchedulePage = () => {
     [classrooms],
   );
 
+  const courseById = useMemo(
+    () => new Map(courses.map((course) => [course.id, course])),
+    [courses],
+  );
+
   const visibleSchedules = useMemo(
-    () => selectedClassroomId ? schedules.filter((schedule) => schedule.classroomId === selectedClassroomId) : schedules,
-    [schedules, selectedClassroomId],
+    () => selectedGradeNumber === null
+      ? schedules
+      : schedules.filter((schedule) => courseById.get(schedule.courseId)?.grade === selectedGradeNumber),
+    [courseById, schedules, selectedGradeNumber],
   );
 
   const schedulesByCell = useMemo(() => {
@@ -255,19 +298,22 @@ export const SchedulePage = () => {
         if (segment.length === 0) return;
         const first = segment[0];
         const last = segment[segment.length - 1];
-        const startTime = first.schedule.timeSlot.split('-')[0]?.trim() ?? first.schedule.timeSlot;
-        const endTime = last.schedule.timeSlot.split('-')[1]?.trim() ?? last.schedule.timeSlot;
+        const startTime = slotStart(first.schedule.timeSlot);
+        const endTime = slotEnd(last.schedule.timeSlot);
+        const top = (parseTimeToMinutes(startTime) - calendarStartMinute) * CALENDAR_MINUTE_HEIGHT;
+        const height = Math.max(MIN_EVENT_HEIGHT, (parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime)) * CALENDAR_MINUTE_HEIGHT);
         items.push({
           id: `${first.schedule.id}:${segment.length}`,
           dayOfWeek: first.schedule.dayOfWeek,
           startSlot: first.schedule.timeSlot,
-          startIndex: first.index,
           schedule: first.schedule,
           groupMeta: {
             firstScheduleId: first.schedule.id,
             slotCount: segment.length,
             timeRange: `${startTime} - ${endTime}`,
           },
+          top,
+          height,
         });
         segment = [];
       };
@@ -282,30 +328,31 @@ export const SchedulePage = () => {
       flushSegment();
     });
     return items;
-  }, [timeSlots, visibleSchedules]);
+  }, [calendarStartMinute, timeSlots, visibleSchedules]);
 
   const courseOptions = useMemo(
     () => courses
       .filter((course) => course.active)
       .filter((course) => !selectedSemester || course.semester === selectedSemester)
+      .filter((course) => selectedGradeNumber === null || course.grade === selectedGradeNumber)
       .filter((course) => {
         if (editingSchedule?.courseId === course.id) return true;
         const status = scheduleStatus?.courses.find((item) => item.courseId === course.id);
         return !status || status.remainingHours > 0;
       })
       .map((course) => ({ label: `${course.code} - ${course.name}`, value: course.id })),
-    [courses, editingSchedule, scheduleStatus, selectedSemester],
+    [courses, editingSchedule, scheduleStatus, selectedGradeNumber, selectedSemester],
   );
 
   const calendarClassroomOptions = useMemo(
     () => [
       { label: 'Tüm Sınıflar', value: '' },
-      ...scheduleClassrooms.map((classroom) => ({
+      ...[].map((classroom: AvailableClassroomResponse) => ({
         label: `${classroom.code} - ${classroom.capacity} kişi`,
         value: classroom.id,
       })),
     ],
-    [scheduleClassrooms],
+    [],
   );
 
   const incompleteCourses = useMemo(
@@ -317,6 +364,26 @@ export const SchedulePage = () => {
     () => scheduleStatus?.courses.filter((course) => course.status === 'NOT_SCHEDULED') ?? [],
     [scheduleStatus],
   );
+
+  const filteredScheduleStatus = useMemo(() => {
+    if (!scheduleStatus || selectedGradeNumber === null) return scheduleStatus;
+    const coursesForGrade = scheduleStatus.courses.filter((course) => course.grade === selectedGradeNumber);
+    const completedCourses = coursesForGrade.filter((course) => course.status === 'COMPLETE').length;
+    const incompleteCount = coursesForGrade.filter((course) => course.status === 'INCOMPLETE').length;
+    const notScheduledCount = coursesForGrade.filter((course) => course.status === 'NOT_SCHEDULED').length;
+    const overScheduledCourses = coursesForGrade.filter((course) => course.status === 'OVER_SCHEDULED').length;
+    const totalCourses = coursesForGrade.length;
+    return {
+      ...scheduleStatus,
+      totalCourses,
+      completedCourses,
+      incompleteCourses: incompleteCount,
+      notScheduledCourses: notScheduledCount,
+      overScheduledCourses,
+      completionPercentage: totalCourses === 0 ? 100 : Math.round((completedCourses * 100) / totalCourses),
+      courses: coursesForGrade,
+    };
+  }, [scheduleStatus, selectedGradeNumber]);
 
   const openCreate = (courseId = '') => {
     setEditingSchedule(null);
@@ -492,12 +559,12 @@ export const SchedulePage = () => {
         </div>
       </div>
 
-      {scheduleStatus && (
+      {filteredScheduleStatus && (
         <ScheduleStatusOverview
-          status={scheduleStatus}
+          status={filteredScheduleStatus}
           isLoading={isStatusLoading}
-          incompleteCourses={incompleteCourses}
-          notScheduledCourses={notScheduledCourses}
+          incompleteCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED')}
+          notScheduledCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED')}
           onShowDetails={() => setIsStatusModalOpen(true)}
         />
       )}
@@ -510,9 +577,9 @@ export const SchedulePage = () => {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="w-full sm:w-56">
             <AppSelect
-              value={selectedClassroomId}
-              onChange={setSelectedClassroomId}
-              options={calendarClassroomOptions}
+              value={selectedGrade}
+              onChange={setSelectedGrade}
+              options={gradeOptions}
               placeholder="SÄ±nÄ±f seÃ§iniz"
             />
           </div>
@@ -540,65 +607,74 @@ export const SchedulePage = () => {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/70 bg-white">
-          <div
-            className="grid min-w-[980px]"
-            style={{
-              gridTemplateColumns: '116px repeat(5, minmax(160px, 1fr))',
-              gridTemplateRows: `44px repeat(${timeSlots.length}, ${CALENDAR_SLOT_HEIGHT}px)`,
-            }}
-          >
-            <div className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Saat</div>
-            {scheduleDays.map((day) => (
-              <div key={day.value} className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
-                {day.label}
-              </div>
-            ))}
-
-            {timeSlots.map((slot) => (
-              <Fragment key={slot}>
-                <div key={`${slot}-label`} className="border-b border-r border-slate-100 px-3 py-4 text-xs font-bold text-slate-500">
-                  {formatSlot(slot)}
+          <div className="min-w-[980px]">
+            <div className="grid" style={{ gridTemplateColumns: '116px repeat(5, minmax(160px, 1fr))' }}>
+              <div className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-400">Saat</div>
+              {scheduleDays.map((day) => (
+                <div key={day.value} className="border-b border-r border-slate-100 bg-slate-50 px-3 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {day.label}
                 </div>
-                {scheduleDays.map((day) => {
-                  const cellSchedules = schedulesByCell.get(`${day.value}:${slot}`) ?? [];
-                  const hasConflict = cellSchedules.some((schedule, index) =>
-                    cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
-                  );
-
-                  return (
-                    <div key={`${day.value}-${slot}`} className="h-full border-b border-r border-slate-100 p-2">
-                      {hasConflict && (
-                        <div className="h-full rounded-xl border border-red-100 bg-red-50/40" />
-                      )}
+              ))}
+            </div>
+            <div className="relative grid" style={{ gridTemplateColumns: '116px repeat(5, minmax(160px, 1fr))', height: calendarBodyHeight }}>
+              {timeSlots.map((slot) => {
+                const top = (parseTimeToMinutes(slotStart(slot)) - calendarStartMinute) * CALENDAR_MINUTE_HEIGHT;
+                const height = Math.max(1, (parseTimeToMinutes(slotEnd(slot)) - parseTimeToMinutes(slotStart(slot))) * CALENDAR_MINUTE_HEIGHT);
+                return (
+                  <div key={slot} className="contents">
+                    <div
+                      className="absolute left-0 w-[116px] border-r border-slate-100 px-3 pt-2 text-xs font-bold text-slate-500"
+                      style={{ top, height }}
+                    >
+                      {formatSlot(slot)}
                     </div>
-                  );
-                })}
-              </Fragment>
-            ))}
-            {visualScheduleItems.map((item) => {
-              const dayIndex = scheduleDays.findIndex((day) => day.value === item.dayOfWeek);
-              const hasConflict = (schedulesByCell.get(`${item.dayOfWeek}:${item.startSlot}`) ?? []).some((schedule, index, cellSchedules) =>
-                cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
-              );
-              return (
-                <div
-                  key={item.id}
-                  className="z-10 p-2"
-                  style={{
-                    gridColumn: dayIndex + 2,
-                    gridRow: `${item.startIndex + 2} / span ${item.groupMeta.slotCount}`,
-                  }}
-                >
-                  <ScheduleCard
-                    schedule={item.schedule}
-                    groupMeta={item.groupMeta}
-                    hasConflict={hasConflict}
-                    onEdit={() => openEdit(item.schedule)}
-                    onDelete={() => setDeletingSchedule(item.schedule)}
-                  />
-                </div>
-              );
-            })}
+                    <div
+                      className="absolute left-[116px] right-0 border-t border-slate-100"
+                      style={{ top }}
+                    />
+                    {scheduleDays.map((day, index) => {
+                      const cellSchedules = schedulesByCell.get(`${day.value}:${slot}`) ?? [];
+                      const hasConflict = cellSchedules.some((schedule, scheduleIndex) =>
+                        cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== scheduleIndex
+                      );
+                      return (
+                        <div
+                          key={`${day.value}-${slot}`}
+                          className={cn('absolute border-r border-slate-100', hasConflict && 'bg-red-50/30')}
+                          style={{ left: `calc(116px + ${index} * ((100% - 116px) / 5))`, width: 'calc((100% - 116px) / 5)', top, height }}
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              {visualScheduleItems.map((item) => {
+                const dayIndex = scheduleDays.findIndex((day) => day.value === item.dayOfWeek);
+                const hasConflict = (schedulesByCell.get(`${item.dayOfWeek}:${item.startSlot}`) ?? []).some((schedule, index, cellSchedules) =>
+                  cellSchedules.findIndex((other) => other.classroomId === schedule.classroomId) !== index
+                );
+                return (
+                  <div
+                    key={item.id}
+                    className="absolute z-10 p-2"
+                    style={{
+                      left: `calc(116px + ${dayIndex} * ((100% - 116px) / 5))`,
+                      width: 'calc((100% - 116px) / 5)',
+                      top: item.top,
+                      height: item.height,
+                    }}
+                  >
+                    <ScheduleCard
+                      schedule={item.schedule}
+                      groupMeta={item.groupMeta}
+                      hasConflict={hasConflict}
+                      onEdit={() => openEdit(item.schedule)}
+                      onDelete={() => setDeletingSchedule(item.schedule)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -726,20 +802,20 @@ export const SchedulePage = () => {
         </form>
       </FormModal>
 
-      {scheduleStatus && (
+      {filteredScheduleStatus && (
         <FormModal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Program Durumu">
           <div className="space-y-3">
-            {incompleteCourses.length === 0 && notScheduledCourses.length === 0 ? (
+            {filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED').length === 0 && filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED').length === 0 ? (
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
                 Seçili dönemde programı eksik ders bulunmuyor.
               </div>
             ) : (
               <>
-                {incompleteCourses.length > 0 && (
-                  <CourseStatusPanel title="Programı Tamamlanmayan Dersler" courses={incompleteCourses} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
+                {filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED').length > 0 && (
+                  <CourseStatusPanel title="Programı Tamamlanmayan Dersler" courses={filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED')} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
                 )}
-                {notScheduledCourses.length > 0 && (
-                  <CourseStatusPanel title="Henüz Programa Eklenmeyen Dersler" courses={notScheduledCourses} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
+                {filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED').length > 0 && (
+                  <CourseStatusPanel title="Henüz Programa Eklenmeyen Dersler" courses={filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED')} onOpenCourse={(courseId) => { setIsStatusModalOpen(false); openCreate(courseId); }} />
                 )}
               </>
             )}
