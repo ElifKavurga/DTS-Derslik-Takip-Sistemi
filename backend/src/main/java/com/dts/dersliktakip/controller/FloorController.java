@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.dts.dersliktakip.security.UserPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +28,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class FloorController {
 
     private final FloorService floorService;
@@ -34,16 +35,25 @@ public class FloorController {
     private final SlotLayoutService slotLayoutService;
 
     @GetMapping("/floors/{floorId}")
-    public ResponseEntity<FloorDetailResponse> getFloorDetail(@PathVariable UUID floorId) {
-        return ResponseEntity.ok(floorLayoutService.getFloorDetail(floorId));
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<FloorDetailResponse> getFloorDetail(
+            @PathVariable UUID floorId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(floorLayoutService.getFloorDetail(floorId, principal.getUser()));
     }
 
     @GetMapping("/floors/{floorId}/classrooms")
-    public ResponseEntity<List<ClassroomPlacementResponse>> getClassroomsForPlacement(@PathVariable UUID floorId) {
-        return ResponseEntity.ok(floorLayoutService.getClassroomsForPlacement(floorId));
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<List<ClassroomPlacementResponse>> getClassroomsForPlacement(
+            @PathVariable UUID floorId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(floorLayoutService.getClassroomsForPlacement(floorId, principal.getUser()));
     }
 
     @PostMapping("/floors/{floorId}/layout")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<FloorDetailResponse> saveLayout(
             @PathVariable UUID floorId,
             @Valid @RequestBody SaveFloorLayoutRequest request
@@ -52,11 +62,16 @@ public class FloorController {
     }
 
     @GetMapping("/floors/{floorId}/slot-layout")
-    public ResponseEntity<SlotLayoutResponse> getSlotLayout(@PathVariable UUID floorId) {
-        return ResponseEntity.ok(slotLayoutService.getSlotLayout(floorId));
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<SlotLayoutResponse> getSlotLayout(
+            @PathVariable UUID floorId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(slotLayoutService.getSlotLayout(floorId, principal.getUser()));
     }
 
     @PostMapping("/floors/{floorId}/slot-layout")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<SlotLayoutResponse> saveSlotLayout(
             @PathVariable UUID floorId,
             @Valid @RequestBody SaveSlotLayoutRequest request
@@ -65,6 +80,7 @@ public class FloorController {
     }
 
     @PostMapping("/floors/{floorId}/slot-layout/classrooms")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<SlotLayoutResponse> createSlotClassroom(
             @PathVariable UUID floorId,
             @Valid @RequestBody CreateSlotClassroomRequest request
@@ -74,6 +90,7 @@ public class FloorController {
     }
 
     @PostMapping("/floors/{floorId}/slot-layout/teaching-spaces")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<SlotLayoutResponse> createSlotTeachingSpace(
             @PathVariable UUID floorId,
             @Valid @RequestBody CreateSlotClassroomRequest request
@@ -83,6 +100,7 @@ public class FloorController {
     }
 
     @DeleteMapping("/floors/{floorId}/slot-layout/teaching-spaces/{classroomId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteUnassignedSlotTeachingSpace(
             @PathVariable UUID floorId,
             @PathVariable UUID classroomId
@@ -92,12 +110,17 @@ public class FloorController {
     }
 
     @GetMapping("/buildings/{buildingId}/floors")
-    public ResponseEntity<FloorListResponse> getFloorsByBuildingId(@PathVariable UUID buildingId) {
-        List<FloorResponse> floors = floorService.getFloorsByBuildingId(buildingId);
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<FloorListResponse> getFloorsByBuildingId(
+            @PathVariable UUID buildingId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        List<FloorResponse> floors = floorService.getFloorsByBuildingId(buildingId, principal.getUser());
         return ResponseEntity.ok(new FloorListResponse(floors));
     }
 
     @PostMapping("/buildings/{buildingId}/floors")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<FloorResponse> createFloor(
             @PathVariable UUID buildingId,
             @Valid @RequestBody CreateFloorRequest request
@@ -107,6 +130,7 @@ public class FloorController {
     }
 
     @PutMapping("/floors/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<FloorResponse> updateFloor(
             @PathVariable UUID floorId,
             @Valid @RequestBody UpdateFloorRequest request
@@ -115,6 +139,7 @@ public class FloorController {
     }
 
     @DeleteMapping("/floors/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteFloor(@PathVariable UUID floorId) {
         floorService.deleteFloor(floorId);
         return ResponseEntity.noContent().build();

@@ -9,6 +9,7 @@ import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.ClassroomType;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.PlanMode;
+import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.SlotLayout;
 import com.dts.dersliktakip.entity.SpaceObject;
 import com.dts.dersliktakip.entity.SpaceObjectStatus;
@@ -39,6 +40,18 @@ public class SlotLayoutService {
     private final SpaceObjectRepository spaceObjectRepository;
     private final ClassroomRepository classroomRepository;
     private final SpaceObjectMapper spaceObjectMapper;
+    private final AccessScopeService accessScopeService;
+
+    @Transactional(readOnly = true)
+    public SlotLayoutResponse getSlotLayout(UUID floorId, User currentUser) {
+        if (!floorRepository.existsById(floorId)) {
+            throw new ResourceNotFoundException("Kat bulunamadı.");
+        }
+        Floor floor = floorRepository.findById(floorId).get();
+        accessScopeService.assertFacultyAccess(currentUser, floor.getBuilding().getFaculty().getId());
+
+        return getSlotLayout(floorId);
+    }
 
     @Transactional(readOnly = true)
     public SlotLayoutResponse getSlotLayout(UUID floorId) {

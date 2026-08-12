@@ -16,26 +16,37 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+import com.dts.dersliktakip.security.UserPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('SUPER_ADMIN')")
 public class BuildingController {
 
     private final BuildingService buildingService;
 
     @GetMapping("/buildings/{buildingId}")
-    public ResponseEntity<BuildingDetailResponse> getBuildingById(@PathVariable UUID buildingId) {
-        return ResponseEntity.ok(buildingService.getBuildingDetailById(buildingId));
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<BuildingDetailResponse> getBuildingById(
+            @PathVariable UUID buildingId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        return ResponseEntity.ok(buildingService.getBuildingDetailById(buildingId, principal.getUser()));
     }
 
     @GetMapping("/faculties/{facultyId}/buildings")
-    public ResponseEntity<BuildingListResponse> getBuildingsByFacultyId(@PathVariable UUID facultyId) {
-        List<BuildingResponse> buildings = buildingService.getBuildingsByFacultyId(facultyId);
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPARTMENT_ADMIN')")
+    public ResponseEntity<BuildingListResponse> getBuildingsByFacultyId(
+            @PathVariable UUID facultyId,
+            @AuthenticationPrincipal UserPrincipal principal
+    ) {
+        List<BuildingResponse> buildings = buildingService.getBuildingsByFacultyId(facultyId, principal.getUser());
         return ResponseEntity.ok(new BuildingListResponse(buildings));
     }
 
     @PostMapping("/faculties/{facultyId}/buildings")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<BuildingResponse> createBuilding(
             @PathVariable UUID facultyId,
             @Valid @RequestBody CreateBuildingRequest request
@@ -45,6 +56,7 @@ public class BuildingController {
     }
 
     @PutMapping("/buildings/{buildingId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<BuildingResponse> updateBuilding(
             @PathVariable UUID buildingId,
             @Valid @RequestBody UpdateBuildingRequest request
@@ -53,6 +65,7 @@ public class BuildingController {
     }
 
     @DeleteMapping("/buildings/{buildingId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteBuilding(@PathVariable UUID buildingId) {
         buildingService.deleteBuilding(buildingId);
         return ResponseEntity.noContent().build();

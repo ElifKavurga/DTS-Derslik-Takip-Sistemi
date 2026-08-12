@@ -4,6 +4,7 @@ import com.dts.dersliktakip.dto.CreateFloorRequest;
 import com.dts.dersliktakip.dto.FloorResponse;
 import com.dts.dersliktakip.dto.UpdateFloorRequest;
 import com.dts.dersliktakip.entity.Building;
+import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.PlanMode;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
@@ -26,12 +27,14 @@ public class FloorService {
     private final BuildingRepository buildingRepository;
     private final ClassroomRepository classroomRepository;
     private final FloorMapper floorMapper;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
-    public List<FloorResponse> getFloorsByBuildingId(UUID buildingId) {
-        if (!buildingRepository.existsById(buildingId)) {
-            throw new ResourceNotFoundException("Bina bulunamadı.");
-        }
+    public List<FloorResponse> getFloorsByBuildingId(UUID buildingId, User currentUser) {
+        Building building = buildingRepository.findById(buildingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı."));
+        accessScopeService.assertFacultyAccess(currentUser, building.getFaculty().getId());
+
         List<Floor> floors = floorRepository.findAllByBuildingIdOrderByLevelAsc(buildingId);
         return floors.stream()
                 .map(floorMapper::toResponse)

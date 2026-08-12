@@ -6,6 +6,7 @@ import com.dts.dersliktakip.dto.BuildingResponse;
 import com.dts.dersliktakip.dto.UpdateBuildingRequest;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Faculty;
+import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.mapper.BuildingMapper;
 import com.dts.dersliktakip.repository.BuildingRepository;
@@ -28,11 +29,14 @@ public class BuildingService {
     private final FloorRepository floorRepository;
     private final ClassroomRepository classroomRepository;
     private final BuildingMapper buildingMapper;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
-    public BuildingDetailResponse getBuildingDetailById(UUID buildingId) {
+    public BuildingDetailResponse getBuildingDetailById(UUID buildingId, User currentUser) {
         Building building = buildingRepository.findById(buildingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı."));
+
+        accessScopeService.assertFacultyAccess(currentUser, building.getFaculty().getId());
 
         return BuildingDetailResponse.builder()
                 .id(building.getId())
@@ -46,7 +50,9 @@ public class BuildingService {
     }
 
     @Transactional(readOnly = true)
-    public List<BuildingResponse> getBuildingsByFacultyId(UUID facultyId) {
+    public List<BuildingResponse> getBuildingsByFacultyId(UUID facultyId, User currentUser) {
+        accessScopeService.assertFacultyAccess(currentUser, facultyId);
+
         if (!facultyRepository.existsById(facultyId)) {
             throw new ResourceNotFoundException("Fakülte bulunamadı.");
         }

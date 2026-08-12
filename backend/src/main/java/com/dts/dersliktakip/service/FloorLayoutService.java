@@ -12,6 +12,7 @@ import com.dts.dersliktakip.entity.FloorLayout;
 import com.dts.dersliktakip.entity.SpaceObject;
 import com.dts.dersliktakip.entity.SpaceObjectStatus;
 import com.dts.dersliktakip.entity.SpaceObjectType;
+import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.mapper.SpaceObjectMapper;
 import com.dts.dersliktakip.repository.ClassroomRepository;
@@ -42,6 +43,17 @@ public class FloorLayoutService {
     private final SpaceObjectRepository spaceObjectRepository;
     private final ClassroomRepository classroomRepository;
     private final SpaceObjectMapper spaceObjectMapper;
+    private final AccessScopeService accessScopeService;
+
+    @Transactional(readOnly = true)
+    public FloorDetailResponse getFloorDetail(UUID floorId, User currentUser) {
+        Floor floor = floorRepository.findById(floorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
+        
+        accessScopeService.assertFacultyAccess(currentUser, floor.getBuilding().getFaculty().getId());
+
+        return getFloorDetail(floorId);
+    }
 
     @Transactional(readOnly = true)
     public FloorDetailResponse getFloorDetail(UUID floorId) {
@@ -80,10 +92,11 @@ public class FloorLayoutService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassroomPlacementResponse> getClassroomsForPlacement(UUID floorId) {
-        if (!floorRepository.existsById(floorId)) {
-            throw new ResourceNotFoundException("Kat bulunamadı.");
-        }
+    public List<ClassroomPlacementResponse> getClassroomsForPlacement(UUID floorId, User currentUser) {
+        Floor floor = floorRepository.findById(floorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
+        
+        accessScopeService.assertFacultyAccess(currentUser, floor.getBuilding().getFaculty().getId());
 
         return classroomRepository.findAllByFloorIdOrderByCodeAsc(floorId)
                 .stream()
