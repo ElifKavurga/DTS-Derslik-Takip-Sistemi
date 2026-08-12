@@ -16,6 +16,7 @@ import { DepartmentsPage } from '@/pages/admin/DepartmentsPage';
 import { DepartmentDetailPage } from '@/pages/admin/DepartmentDetailPage';
 import { AcademiciansPage } from '@/pages/departmentAdmin/AcademiciansPage';
 import { SchedulePage } from '@/pages/departmentAdmin/SchedulePage';
+import { AcademicianCoursesPage } from '@/pages/academician/AcademicianCoursesPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -135,7 +136,7 @@ export const router = createBrowserRouter([
               },
               {
                 path: '/academician/dersler',
-                element: <CoursesPage />,
+                element: <AcademicianCoursesPage />,
               },
             ],
           },
