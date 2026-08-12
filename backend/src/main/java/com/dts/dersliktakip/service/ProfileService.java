@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import com.dts.dersliktakip.entity.Role;
+
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -23,6 +25,7 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
     private final PasswordEncoder passwordEncoder;
+    private final UserService userService;
 
     @Transactional(readOnly = true)
     public ProfileResponse getProfile(UUID userId) {
@@ -36,8 +39,23 @@ public class ProfileService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
+        String originalFirstName = user.getFirstName();
+        String originalLastName = user.getLastName();
+        String originalTitle = user.getTitle();
+
         profileMapper.updateEntityFromRequest(request, user);
+
+        if (user.getRoles() != null && user.getRoles().contains(Role.ACADEMICIAN)) {
+            user.setFirstName(originalFirstName);
+            user.setLastName(originalLastName);
+            user.setTitle(originalTitle);
+        }
+
         User updatedUser = userRepository.save(user);
+
+        if (updatedUser.getRoles() != null && updatedUser.getRoles().contains(Role.ACADEMICIAN)) {
+            userService.syncAcademicianRecord(updatedUser);
+        }
 
         return profileMapper.toUpdateResponse(updatedUser);
     }

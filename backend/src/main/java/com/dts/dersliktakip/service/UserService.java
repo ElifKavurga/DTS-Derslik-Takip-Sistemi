@@ -218,6 +218,11 @@ public class UserService {
                 .forEach(user -> syncAcademicianRecord(user, null, null));
     }
 
+    @Transactional
+    public void syncAcademicianRecord(User user) {
+        syncAcademicianRecord(user, null, null);
+    }
+
     private void syncAcademicianRecord(User user, UUID facultyId, UUID departmentId) {
         Set<Role> roles = user.getRoles();
         boolean isAcademician = roles != null && roles.contains(Role.ACADEMICIAN);

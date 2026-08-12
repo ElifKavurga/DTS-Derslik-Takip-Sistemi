@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, EyeOff, Mail, Phone, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Phone, User, Landmark, GraduationCap, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -11,6 +11,7 @@ import { PageTitle } from '@/components/layout/PageTitle';
 import { profileService } from '@/services/profileService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ChangePasswordRequest, UpdateProfileRequest } from '@/types';
+import { cn } from '@/utils/cn';
 
 const roleLabels = {
   SUPER_ADMIN: 'Süper Admin',
@@ -30,6 +31,12 @@ const profileSchema = z.object({
   title: z
     .string()
     .max(100, 'Unvan en fazla 100 karakter olabilir.')
+    .nullable()
+    .optional()
+    .or(z.literal('')),
+  avatarUrl: z
+    .string()
+    .max(255, 'Avatar URL en fazla 255 karakter olabilir.')
     .nullable()
     .optional()
     .or(z.literal('')),
@@ -80,6 +87,7 @@ export const ProfilePage = () => {
       lastName: '',
       phone: '',
       title: '',
+      avatarUrl: '',
     },
   });
 
@@ -105,6 +113,7 @@ export const ProfilePage = () => {
         lastName: profile.lastName ?? '',
         phone: profile.phone ?? '',
         title: profile.title ?? '',
+        avatarUrl: profile.avatarUrl ?? '',
       });
     }
   }, [profile, resetProfile]);
@@ -118,6 +127,7 @@ export const ProfilePage = () => {
         lastName: data.lastName ?? '',
         phone: data.phone ?? '',
         title: data.title ?? '',
+        avatarUrl: data.avatarUrl ?? '',
       });
       queryClient.setQueryData(['profile'], data);
 
@@ -164,7 +174,7 @@ export const ProfilePage = () => {
       lastName: values.lastName,
       phone: values.phone || null,
       title: values.title || null,
-      avatarUrl: profile?.avatarUrl || null,
+      avatarUrl: values.avatarUrl || null,
     });
   };
 
@@ -185,6 +195,8 @@ export const ProfilePage = () => {
       </div>
     );
   }
+
+  const isAcademician = profile?.role === 'ACADEMICIAN';
 
   const initials =
     profile?.fullName
@@ -247,30 +259,12 @@ export const ProfilePage = () => {
       <section className="dts-card p-6 lg:p-8">
         <div className="mb-6">
           <h3 className="text-sm font-bold tracking-tight text-slate-900">Profil Bilgileri</h3>
-          <p className="mt-1 text-xs text-slate-500">Ad soyad, telefon ve unvan bilgilerinizi güncelleyin.</p>
+          <p className="mt-1 text-xs text-slate-500">Profil bilgilerinizi buradan görüntüleyebilir ve kişisel bilgilerinizi güncelleyebilirsiniz.</p>
         </div>
 
-        <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="firstName" className="dts-input-label">
-                Ad
-              </label>
-              <input id="firstName" type="text" placeholder="Adınız" className="dts-input" {...registerProfile('firstName')} />
-              {profileErrors.firstName && (
-                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.firstName.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="lastName" className="dts-input-label">
-                Soyad
-              </label>
-              <input id="lastName" type="text" placeholder="Soyadınız" className="dts-input" {...registerProfile('lastName')} />
-              {profileErrors.lastName && (
-                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.lastName.message}</p>
-              )}
-            </div>
+        <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-5">
+          <div className="border-b border-slate-100 pb-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Kişisel Bilgiler</h4>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -291,30 +285,164 @@ export const ProfilePage = () => {
             </div>
 
             <div>
-              <label htmlFor="title" className="dts-input-label">
-                Unvan
+              <label htmlFor="avatarUrl" className="dts-input-label">
+                Profil Fotoğrafı URL
               </label>
-              <input id="title" type="text" placeholder="Örn. Prof. Dr." className="dts-input" {...registerProfile('title')} />
-              {profileErrors.title && (
-                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.title.message}</p>
+              <input
+                id="avatarUrl"
+                type="text"
+                placeholder="https://example.com/photo.jpg"
+                className="dts-input"
+                {...registerProfile('avatarUrl')}
+              />
+              {profileErrors.avatarUrl && (
+                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.avatarUrl.message}</p>
               )}
             </div>
           </div>
 
+          <div className="border-b border-slate-100 pb-3 pt-2">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">İdari ve Akademik Bilgiler</h4>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="firstName" className="dts-input-label">
+                Ad
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                placeholder="Adınız"
+                readOnly={isAcademician}
+                className={cn(
+                  "dts-input",
+                  isAcademician && "cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+                )}
+                {...registerProfile('firstName')}
+              />
+              {profileErrors.firstName && (
+                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.firstName.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="dts-input-label">
+                Soyad
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                placeholder="Soyadınız"
+                readOnly={isAcademician}
+                className={cn(
+                  "dts-input",
+                  isAcademician && "cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+                )}
+                {...registerProfile('lastName')}
+              />
+              {profileErrors.lastName && (
+                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.lastName.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="title" className="dts-input-label">
+                Unvan
+              </label>
+              <input
+                id="title"
+                type="text"
+                placeholder="Örn. Prof. Dr."
+                readOnly={isAcademician}
+                className={cn(
+                  "dts-input",
+                  isAcademician && "cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+                )}
+                {...registerProfile('title')}
+              />
+              {profileErrors.title && (
+                <p className="mt-1.5 text-xs font-medium text-red-600">{profileErrors.title.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="dts-input-label">
+                Kurumsal E-posta
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={profile?.email ?? ''}
+                readOnly
+                className="dts-input cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="faculty" className="dts-input-label">
+                Fakülte
+              </label>
+              <input
+                id="faculty"
+                type="text"
+                value={profile?.faculty ?? ''}
+                readOnly
+                className="dts-input cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="department" className="dts-input-label">
+                Bölüm
+              </label>
+              <input
+                id="department"
+                type="text"
+                value={profile?.department ?? ''}
+                readOnly
+                className="dts-input cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
+              />
+            </div>
+          </div>
+
           <div>
-            <label htmlFor="email" className="dts-input-label">
-              Kurumsal E-posta
+            <label htmlFor="role" className="dts-input-label">
+              Sistem Rolü
             </label>
             <input
-              id="email"
-              type="email"
-              value={profile?.email ?? ''}
+              id="role"
+              type="text"
+              value={profile?.role ? roleLabels[profile.role] : ''}
               readOnly
               className="dts-input cursor-default border-slate-200/70 bg-slate-50 text-slate-600"
             />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                if (profile) {
+                  resetProfile({
+                    firstName: profile.firstName ?? '',
+                    lastName: profile.lastName ?? '',
+                    phone: profile.phone ?? '',
+                    title: profile.title ?? '',
+                    avatarUrl: profile.avatarUrl ?? '',
+                  });
+                  toast.success('Değişiklikler iptal edildi.');
+                }
+              }}
+              disabled={!isProfileDirty || updateProfileMutation.isPending}
+              className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              İptal
+            </button>
             <button
               type="submit"
               disabled={!isProfileDirty || updateProfileMutation.isPending}
