@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Settings, Trash2, User, XCircle } from 'lucide-react';
 import { AppSelect } from '@/components/ui/AppSelect';
@@ -36,6 +37,17 @@ type ScheduleFormState = {
   timeSlot: string;
   slotCount: number;
   classroomId: string;
+};
+
+type ScheduleApiError = {
+  message?: string;
+  code?: string | null;
+  details?: string[] | null;
+};
+
+type ScheduleValidationAlert = {
+  title: string;
+  details: string[];
 };
 
 const initialForm: ScheduleFormState = {
@@ -98,6 +110,7 @@ export const SchedulePage = () => {
   const [editingSchedule, setEditingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [form, setForm] = useState<ScheduleFormState>(initialForm);
+  const [backendValidation, setBackendValidation] = useState<ScheduleValidationAlert | null>(null);
   const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
 
   const { data: schedules = [], isLoading, error } = useQuery({
@@ -232,6 +245,44 @@ export const SchedulePage = () => {
     () => classrooms.filter((classroom) => !classroom.selectable),
     [classrooms],
   );
+
+  const selectedClassroomOption = useMemo(
+    () => classrooms.find((classroom) => classroom.id === form.classroomId) ?? null,
+    [classrooms, form.classroomId],
+  );
+
+  const formValidationAlert = useMemo<ScheduleValidationAlert | null>(() => {
+    if (slotCountOptions.length === 0 && form.courseId && form.timeSlot) {
+      return {
+        title: 'Bu saate ders koyulamaz.',
+        details: ['Seçilen ders için bu başlangıç saatinde programlanabilir ders saati kalmadı.'],
+      };
+    }
+
+    if (selectedClassroomOption && !selectedClassroomOption.selectable) {
+      return {
+        title: selectedClassroomOption.conflictCode === 'CAPACITY_CONFLICT'
+          ? 'Bu derslik yeterli kapasiteye sahip değil.'
+          : 'Bu saate ders koyulamaz.',
+        details: validationDetails(selectedClassroomOption),
+      };
+    }
+
+    if (canQueryClassrooms && !isClassroomsLoading && classrooms.length > 0 && availableClassrooms.length === 0) {
+      const firstConflict = classrooms[0];
+      return {
+        title: 'Bu saate ders koyulamaz.',
+        details: [
+          'Seçilen zaman aralığında uygun derslik bulunamadı.',
+          ...validationDetails(firstConflict),
+        ],
+      };
+    }
+
+    return null;
+  }, [availableClassrooms.length, canQueryClassrooms, classrooms, form.courseId, form.timeSlot, isClassroomsLoading, selectedClassroomOption, slotCountOptions.length]);
+
+  const activeValidationAlert = backendValidation ?? formValidationAlert;
 
   const courseById = useMemo(
     () => new Map(courses.map((course) => [course.id, course])),
@@ -387,6 +438,7 @@ export const SchedulePage = () => {
 
   const openCreate = (courseId = '') => {
     setEditingSchedule(null);
+    setBackendValidation(null);
     setForm({ ...initialForm, courseId });
     setIsModalOpen(true);
   };
@@ -399,6 +451,7 @@ export const SchedulePage = () => {
       : [schedule];
     const firstSchedule = groupedSchedules[0] ?? schedule;
     setEditingSchedule(schedule);
+    setBackendValidation(null);
     setForm({
       courseId: firstSchedule.courseId,
       dayOfWeek: firstSchedule.dayOfWeek,
@@ -425,10 +478,12 @@ export const SchedulePage = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingSchedule(null);
+    setBackendValidation(null);
     setForm(initialForm);
   };
 
   const updateForm = (patch: Partial<ScheduleFormState>) => {
+    setBackendValidation(null);
     setForm((current) => {
       const next = { ...current, ...patch };
       if ('dayOfWeek' in patch || 'timeSlot' in patch || 'slotCount' in patch) {
@@ -444,13 +499,18 @@ export const SchedulePage = () => {
   const createMutation = useMutation({
     mutationFn: scheduleService.create,
     onSuccess: async (createdSchedules) => {
-      toast.success('Ders programı eklendi.');
+      const firstSchedule = createdSchedules[0];
+      toast.success(firstSchedule ? `${firstSchedule.courseCode} ${dayLabel(firstSchedule.dayOfWeek)} ${formatSlot(firstSchedule.timeSlot)} programına eklendi.` : 'Ders programı eklendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
       queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
       await notifyCourseStatus(createdSchedules[0]?.courseId ?? form.courseId);
       closeModal();
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı eklenemedi.'),
+    onError: (err: AxiosError<ScheduleApiError>) => {
+      const alert = apiErrorToValidationAlert(err, 'Ders programı eklenemedi.');
+      setBackendValidation(alert);
+      toast.error(alert.title);
+    },
   });
 
   const updateMutation = useMutation({
@@ -462,13 +522,18 @@ export const SchedulePage = () => {
       slotCount: payload.slotCount,
     }),
     onSuccess: async (updatedSchedules) => {
-      toast.success('Ders programı güncellendi.');
+      const firstSchedule = updatedSchedules[0];
+      toast.success(firstSchedule ? `${firstSchedule.courseCode} ${dayLabel(firstSchedule.dayOfWeek)} ${formatSlot(firstSchedule.timeSlot)} programı güncellendi.` : 'Ders programı güncellendi.');
       queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
       queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
       await notifyCourseStatus(updatedSchedules[0]?.courseId ?? form.courseId);
       closeModal();
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı güncellenemedi.'),
+    onError: (err: AxiosError<ScheduleApiError>) => {
+      const alert = apiErrorToValidationAlert(err, 'Ders programı güncellenemedi.');
+      setBackendValidation(alert);
+      toast.error(alert.title);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -505,6 +570,16 @@ export const SchedulePage = () => {
 
     if (slotCountOptions.length === 0 || form.slotCount > maxSlotCount) {
       toast.error('Seçilen ders için bu başlangıç saatinde programlanabilir ders saati kalmadı.');
+      return;
+    }
+
+    if (selectedClassroomOption && !selectedClassroomOption.selectable) {
+      const alert = formValidationAlert ?? {
+        title: 'Bu saate ders koyulamaz.',
+        details: validationDetails(selectedClassroomOption),
+      };
+      setBackendValidation(alert);
+      toast.error(alert.title);
       return;
     }
 
@@ -696,6 +771,8 @@ export const SchedulePage = () => {
           <ReadonlyLecturer course={selectedCourse} />
           <CourseSummary course={selectedCourse} />
 
+          {activeValidationAlert && <ScheduleValidationBanner alert={activeValidationAlert} />}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="dts-input-label">Gün</label>
@@ -753,7 +830,13 @@ export const SchedulePage = () => {
 
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <SecondaryButton type="button" onClick={closeModal}>İptal</SecondaryButton>
-            <PrimaryButton type="submit" loading={createMutation.isPending || updateMutation.isPending}>Kaydet</PrimaryButton>
+            <PrimaryButton
+              type="submit"
+              loading={createMutation.isPending || updateMutation.isPending}
+              disabled={Boolean(selectedClassroomOption && !selectedClassroomOption.selectable)}
+            >
+              Kaydet
+            </PrimaryButton>
           </div>
         </form>
       </FormModal>
@@ -825,6 +908,46 @@ export const SchedulePage = () => {
     </div>
   );
 };
+
+function validationDetails(classroom: AvailableClassroomResponse) {
+  if (classroom.conflictDetails && classroom.conflictDetails.length > 0) {
+    return classroom.conflictDetails;
+  }
+  if (classroom.conflictMessage) {
+    return [classroom.conflictMessage];
+  }
+  if (classroom.capacitySufficient === false) {
+    return ['Bu derslik yeterli kapasiteye sahip değil.'];
+  }
+  return ['Seçilen zaman aralığı bu derslik için uygun değil.'];
+}
+
+function apiErrorToValidationAlert(error: AxiosError<ScheduleApiError>, fallback: string): ScheduleValidationAlert {
+  const data = error.response?.data;
+  const isScheduleConflict = Boolean(data?.code && data.code.includes('CONFLICT'));
+  return {
+    title: isScheduleConflict ? data?.message || 'Bu saate ders koyulamaz.' : fallback,
+    details: data?.details && data.details.length > 0
+      ? data.details
+      : [data?.message || fallback],
+  };
+}
+
+const ScheduleValidationBanner = ({ alert }: { alert: ScheduleValidationAlert }) => (
+  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-900">
+    <div className="flex items-start gap-2">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+      <div className="min-w-0">
+        <p className="font-extrabold">{alert.title}</p>
+        <ul className="mt-1 space-y-1 font-semibold leading-snug text-amber-800">
+          {alert.details.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+);
 
 const TimeInput = ({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) => (
   <div className="space-y-1">
@@ -920,7 +1043,7 @@ const ClassroomPicker = ({
           <ClassroomGroup title="Uygun Olmayan Sınıflar" classrooms={unavailableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} disabled />
         </div>
       )}
-      {selectedClassroom && (
+      {selectedClassroom?.selectable && (
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs font-semibold text-emerald-700">
           {selectedClassroom.code} seçildi · Kapasite: {selectedClassroom.capacity} kişi · Zaman dilimi uygun
         </div>
@@ -967,9 +1090,13 @@ const ClassroomGroup = ({
             <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">
               {classroom.capacity} kişi · {classroomTypeLabels[classroom.type] ?? classroom.type}
             </span>
-            <span className={cn('mt-1 line-clamp-2 text-[11px] font-semibold', disabled ? 'block text-amber-700' : 'hidden')}>
-              {classroom.conflictMessage ?? (classroom.capacitySufficient === null || classroom.capacitySufficient === undefined ? 'Kapasite için öğrenci sayısı verisi yok; zaman dilimi uygun.' : 'Kapasite ve zaman dilimi uygun.')}
-            </span>
+            {disabled && (
+              <span className="mt-1 block space-y-0.5 text-[11px] font-semibold text-amber-700">
+                {validationDetails(classroom).slice(0, 2).map((detail) => (
+                  <span key={detail} className="block line-clamp-2">{detail}</span>
+                ))}
+              </span>
+            )}
           </span>
           <span className={cn('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-black', selected ? 'border-[#006482] bg-[#006482] text-white' : 'border-slate-300 text-transparent')}>
             ✓

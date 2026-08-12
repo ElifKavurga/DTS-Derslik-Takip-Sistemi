@@ -67,6 +67,8 @@ export type AvailableClassroomResponse = {
   timeSlotAvailable?: boolean | null;
   capacitySufficient?: boolean | null;
   studentCount?: number | null;
+  conflictCode?: string | null;
+  conflictDetails?: string[] | null;
   selectable: boolean;
 };
 

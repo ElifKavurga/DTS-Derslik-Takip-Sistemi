@@ -2,6 +2,7 @@ package com.dts.dersliktakip.dto;
 
 import com.dts.dersliktakip.entity.ClassroomType;
 
+import java.util.List;
 import java.util.UUID;
 
 public record AvailableClassroomResponse(
@@ -15,6 +16,8 @@ public record AvailableClassroomResponse(
         Boolean timeSlotAvailable,
         Boolean capacitySufficient,
         Integer studentCount,
+        String conflictCode,
+        List<String> conflictDetails,
         boolean selectable
 ) {
 }

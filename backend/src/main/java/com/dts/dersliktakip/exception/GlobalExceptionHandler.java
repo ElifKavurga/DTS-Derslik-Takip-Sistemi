@@ -58,6 +58,24 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request.getRequestURI(), List.of());
     }
 
+    @ExceptionHandler(ScheduleConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleScheduleConflictException(
+            ScheduleConflictException exception,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT.getReasonPhrase(),
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of(),
+                exception.getCode(),
+                exception.getDetails()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
     @ExceptionHandler({
             InvalidResetTokenException.class,
             ExpiredResetTokenException.class,

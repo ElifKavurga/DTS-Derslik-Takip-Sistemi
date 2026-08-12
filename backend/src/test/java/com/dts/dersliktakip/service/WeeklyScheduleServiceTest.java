@@ -14,6 +14,7 @@ import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.Semester;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.WeeklySchedule;
+import com.dts.dersliktakip.exception.ScheduleConflictException;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
@@ -100,9 +101,13 @@ class WeeklyScheduleServiceTest {
                 .thenReturn(List.of(conflict));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("D101 sınıfı Pazartesi 10:05-10:50 zamanında kullanımdadır.")
-                .hasMessageContaining(conflictingCourse.getCode());
+                .isInstanceOf(ScheduleConflictException.class)
+                .hasMessage("Bu saate ders koyulamaz.")
+                .satisfies(exception -> {
+                    ScheduleConflictException conflictException = (ScheduleConflictException) exception;
+                    assertThat(conflictException.getCode()).isEqualTo("CLASSROOM_CONFLICT");
+                    assertThat(conflictException.getDetails()).anyMatch(detail -> detail.contains(conflictingCourse.getCode()));
+                });
         verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 
@@ -130,8 +135,13 @@ class WeeklyScheduleServiceTest {
                 .thenReturn(List.of(conflict));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: 10:05-10:50");
+                .isInstanceOf(ScheduleConflictException.class)
+                .hasMessage("Bu saate ders koyulamaz.")
+                .satisfies(exception -> {
+                    ScheduleConflictException conflictException = (ScheduleConflictException) exception;
+                    assertThat(conflictException.getCode()).isEqualTo("ACADEMICIAN_CONFLICT");
+                    assertThat(conflictException.getDetails()).anyMatch(detail -> detail.contains(conflictingCourse.getCode()));
+                });
         verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 
@@ -163,9 +173,13 @@ class WeeklyScheduleServiceTest {
                 .thenReturn(List.of(conflict));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders bulunuyor")
-                .hasMessageContaining(conflictingCourse.getCode());
+                .isInstanceOf(ScheduleConflictException.class)
+                .hasMessage("Bu saate ders koyulamaz.")
+                .satisfies(exception -> {
+                    ScheduleConflictException conflictException = (ScheduleConflictException) exception;
+                    assertThat(conflictException.getCode()).isEqualTo("STUDENT_GROUP_CONFLICT");
+                    assertThat(conflictException.getDetails()).anyMatch(detail -> detail.contains(conflictingCourse.getCode()));
+                });
         verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
     }
 

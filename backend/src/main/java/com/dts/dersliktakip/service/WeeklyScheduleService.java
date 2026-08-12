@@ -18,6 +18,7 @@ import com.dts.dersliktakip.entity.DepartmentScheduleConfig;
 import com.dts.dersliktakip.entity.Semester;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.WeeklySchedule;
+import com.dts.dersliktakip.exception.ScheduleConflictException;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
@@ -47,6 +48,11 @@ public class WeeklyScheduleService {
 
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final Set<String> DAYS = Set.of("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY");
+    private static final String CLASSROOM_CONFLICT = "CLASSROOM_CONFLICT";
+    private static final String ACADEMICIAN_CONFLICT = "ACADEMICIAN_CONFLICT";
+    private static final String STUDENT_GROUP_CONFLICT = "STUDENT_GROUP_CONFLICT";
+    private static final String CAPACITY_CONFLICT = "CAPACITY_CONFLICT";
+    private static final String SCHEDULE_CONFLICT = "SCHEDULE_CONFLICT";
     private static final Map<String, String> DAY_LABELS = Map.of(
             "MONDAY", "Pazartesi",
             "TUESDAY", "Salı",
@@ -161,8 +167,7 @@ public class WeeklyScheduleService {
         List<String> selectedSlots = resolveSelectedSlots(department, request.timeSlot(), normalizeSlotCount(request.slotCount()));
 
         assertRemainingHoursSufficient(course, department, selectedSlots.size(), Set.of());
-        assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, Set.of());
-        assertNoGradeConflict(course, department, dayOfWeek, selectedSlots, Set.of());
+        assertScheduleSelectionAvailable(course, department, classroom, dayOfWeek, selectedSlots, Set.of());
         assertCapacitySufficient(course, classroom);
 
         UUID groupId = UUID.randomUUID();
@@ -173,7 +178,7 @@ public class WeeklyScheduleService {
         try {
             return weeklyScheduleRepository.saveAll(schedules).stream().map(this::toResponse).toList();
         } catch (DataIntegrityViolationException exception) {
-            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0)));
+            throw new ScheduleConflictException(CLASSROOM_CONFLICT, "Bu saate ders koyulamaz.", List.of(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0))));
         }
     }
 
@@ -192,8 +197,7 @@ public class WeeklyScheduleService {
         Set<UUID> excludedIds = existingGroup.stream().map(WeeklySchedule::getId).collect(Collectors.toSet());
 
         assertRemainingHoursSufficient(course, department, selectedSlots.size(), excludedIds);
-        assertSlotsAvailable(course, classroom, dayOfWeek, selectedSlots, excludedIds);
-        assertNoGradeConflict(course, department, dayOfWeek, selectedSlots, excludedIds);
+        assertScheduleSelectionAvailable(course, department, classroom, dayOfWeek, selectedSlots, excludedIds);
         assertCapacitySufficient(course, classroom);
 
         UUID groupId = Optional.ofNullable(schedule.getScheduleGroupId()).orElse(UUID.randomUUID());
@@ -206,7 +210,7 @@ public class WeeklyScheduleService {
         try {
             return weeklyScheduleRepository.saveAll(schedules).stream().map(this::toResponse).toList();
         } catch (DataIntegrityViolationException exception) {
-            throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0)));
+            throw new ScheduleConflictException(CLASSROOM_CONFLICT, "Bu saate ders koyulamaz.", List.of(conflictMessage(classroom, dayOfWeek, selectedSlots.get(0))));
         }
     }
 
@@ -412,36 +416,34 @@ public class WeeklyScheduleService {
         }
     }
 
-    private void assertSlotsAvailable(Course course, Classroom classroom, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
-        for (String slot : selectedSlots) {
-            Optional<WeeklySchedule> classroomConflict = findClassroomConflict(classroom, dayOfWeek, slot, excludedIds);
-            if (classroomConflict.isPresent()) {
-                WeeklySchedule conflict = classroomConflict.get();
-                Course conflictCourse = conflict.getCourse();
-                Department conflictDepartment = conflictCourse != null ? conflictCourse.getDepartment() : null;
-                String detail = conflictCourse != null
-                        ? " Çakışan ders: " + conflictCourse.getCode() + " - " + conflictCourse.getName()
-                        : "";
-                String departmentDetail = conflictDepartment != null ? " (" + conflictDepartment.getName() + ")" : "";
-                throw new IllegalArgumentException(conflictMessage(classroom, dayOfWeek, slot) + detail + departmentDetail);
-            }
-            if (findAcademicianConflict(course, dayOfWeek, slot, excludedIds).isPresent()) {
-                throw new IllegalArgumentException("Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + slot);
-            }
+    private void assertScheduleSelectionAvailable(Course course, Department department, Classroom classroom, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+        List<ScheduleConflictItem> conflicts = collectScheduleConflicts(course, department, classroom, dayOfWeek, selectedSlots, excludedIds);
+        if (!conflicts.isEmpty()) {
+            throw new ScheduleConflictException(
+                    resolveConflictCode(conflicts),
+                    "Bu saate ders koyulamaz.",
+                    conflicts.stream().map(ScheduleConflictItem::detail).distinct().toList()
+            );
         }
     }
 
-    private void assertNoGradeConflict(Course course, Department department, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+    private List<ScheduleConflictItem> collectScheduleConflicts(Course course, Department department, Classroom classroom, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
+        List<ScheduleConflictItem> conflicts = new ArrayList<>();
         for (String slot : selectedSlots) {
-            Optional<WeeklySchedule> conflict = findGradeConflict(course, department, dayOfWeek, slot, excludedIds);
-            if (conflict.isPresent()) {
-                Course conflictCourse = conflict.get().getCourse();
-                throw new IllegalArgumentException(
-                        course.getGrade() + ". sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders bulunuyor: "
-                                + conflictCourse.getCode() + " - " + conflictCourse.getName() + " (" + dayLabel(dayOfWeek) + " " + slot + ")"
-                );
-            }
+            findClassroomConflict(classroom, dayOfWeek, slot, excludedIds)
+                    .ifPresent(conflict -> conflicts.add(new ScheduleConflictItem(CLASSROOM_CONFLICT, classroomConflictDetail(classroom, conflict, dayOfWeek, slot))));
+            findAcademicianConflict(course, dayOfWeek, slot, excludedIds)
+                    .ifPresent(conflict -> conflicts.add(new ScheduleConflictItem(ACADEMICIAN_CONFLICT, academicianConflictDetail(course, conflict, dayOfWeek, slot))));
+            findGradeConflict(course, department, dayOfWeek, slot, excludedIds)
+                    .ifPresent(conflict -> conflicts.add(new ScheduleConflictItem(STUDENT_GROUP_CONFLICT, studentGroupConflictDetail(course, conflict, dayOfWeek, slot))));
         }
+        return conflicts;
+    }
+
+    private String resolveConflictCode(List<ScheduleConflictItem> conflicts) {
+        return conflicts.stream().map(ScheduleConflictItem::code).distinct().count() == 1
+                ? conflicts.get(0).code()
+                : SCHEDULE_CONFLICT;
     }
 
     private Optional<WeeklySchedule> findGradeConflict(Course course, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
@@ -482,41 +484,40 @@ public class WeeklyScheduleService {
     private void assertCapacitySufficient(Course course, Classroom classroom) {
         Optional<Integer> studentCount = resolveStudentCount(course);
         if (studentCount.isPresent() && classroom.getCapacity() < studentCount.get()) {
-            throw new IllegalArgumentException(classroom.getCode() + " sınıfının kapasitesi yetersiz. Ders öğrenci sayısı: " + studentCount.get());
+            throw new ScheduleConflictException(
+                    CAPACITY_CONFLICT,
+                    "Bu derslik yeterli kapasiteye sahip değil.",
+                    List.of("Ders: " + studentCount.get() + " öğrenci. Derslik: " + classroom.getCode() + " - " + classroom.getCapacity() + " kişi.")
+            );
         }
     }
 
     private AvailableClassroomResponse toAvailableClassroomResponse(Classroom classroom, Course course, String dayOfWeek, List<String> selectedSlots, Set<UUID> excludedIds) {
-        Optional<WeeklySchedule> classroomConflict = selectedSlots.stream()
-                .map(slot -> findClassroomConflict(classroom, dayOfWeek, slot, excludedIds))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .findFirst();
-        Optional<WeeklySchedule> academicianConflict = Optional.empty();
-        Optional<WeeklySchedule> gradeConflict = Optional.empty();
+        List<ScheduleConflictItem> conflicts = course == null
+                ? selectedSlots.stream()
+                        .map(slot -> findClassroomConflict(classroom, dayOfWeek, slot, excludedIds)
+                                .map(conflict -> new ScheduleConflictItem(CLASSROOM_CONFLICT, classroomConflictDetail(classroom, conflict, dayOfWeek, slot))))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .toList()
+                : collectScheduleConflicts(course, course.getDepartment(), classroom, dayOfWeek, selectedSlots, excludedIds);
         Optional<Integer> studentCount = Optional.empty();
         Boolean capacitySufficient = null;
 
         if (course != null) {
-            academicianConflict = selectedSlots.stream()
-                    .map(slot -> findAcademicianConflict(course, dayOfWeek, slot, excludedIds))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .findFirst();
-            gradeConflict = selectedSlots.stream()
-                    .map(slot -> findGradeConflict(course, dayOfWeek, slot, excludedIds))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .findFirst();
             studentCount = resolveStudentCount(course);
             capacitySufficient = studentCount.map(count -> classroom.getCapacity() >= count).orElse(null);
+            if (Boolean.FALSE.equals(capacitySufficient)) {
+                conflicts = new ArrayList<>(conflicts);
+                conflicts.add(new ScheduleConflictItem(
+                        CAPACITY_CONFLICT,
+                        "Bu derslik yeterli kapasiteye sahip değil. Ders: " + studentCount.orElse(0) + " öğrenci. Derslik: " + classroom.getCode() + " - " + classroom.getCapacity() + " kişi."
+                ));
+            }
         }
 
-        boolean timeSlotAvailable = classroomConflict.isEmpty();
-        boolean capacityOk = capacitySufficient == null || capacitySufficient;
-        boolean lecturerOk = academicianConflict.isEmpty();
-        boolean gradeOk = gradeConflict.isEmpty();
-        boolean selectable = timeSlotAvailable && capacityOk && lecturerOk && gradeOk;
+        boolean timeSlotAvailable = conflicts.stream().noneMatch(conflict -> CLASSROOM_CONFLICT.equals(conflict.code()));
+        boolean selectable = conflicts.isEmpty();
 
         return new AvailableClassroomResponse(
                 classroom.getId(),
@@ -525,40 +526,51 @@ public class WeeklyScheduleService {
                 classroom.getCapacity(),
                 classroom.getType(),
                 selectable,
-                resolveAvailabilityMessage(classroom, classroomConflict, academicianConflict, gradeConflict, studentCount, capacitySufficient),
+                resolveAvailabilityMessage(conflicts, studentCount),
                 timeSlotAvailable,
                 capacitySufficient,
                 studentCount.orElse(null),
+                conflicts.isEmpty() ? null : resolveConflictCode(conflicts),
+                conflicts.stream().map(ScheduleConflictItem::detail).distinct().toList(),
                 selectable
         );
     }
 
     private String resolveAvailabilityMessage(
-            Classroom classroom,
-            Optional<WeeklySchedule> classroomConflict,
-            Optional<WeeklySchedule> academicianConflict,
-            Optional<WeeklySchedule> gradeConflict,
-            Optional<Integer> studentCount,
-            Boolean capacitySufficient
+            List<ScheduleConflictItem> conflicts,
+            Optional<Integer> studentCount
     ) {
-        if (classroomConflict.isPresent()) {
-            return classroom.getCode() + " seçilen ders süresinin tamamında uygun değil. Çakışan saat: " + classroomConflict.get().getTimeSlot();
-        }
-        if (academicianConflict.isPresent()) {
-            return "Bu akademisyen seçilen zaman dilimlerinden birinde başka bir derste görevlidir: " + academicianConflict.get().getTimeSlot();
-        }
-        if (gradeConflict.isPresent()) {
-            Course conflictCourse = gradeConflict.get().getCourse();
-            return conflictCourse.getGrade() + ". sınıf öğrencileri için bu zaman aralığında başka bir zorunlu ders var: "
-                    + conflictCourse.getCode() + " - " + conflictCourse.getName() + " (" + gradeConflict.get().getTimeSlot() + ")";
-        }
-        if (Boolean.FALSE.equals(capacitySufficient)) {
-            return classroom.getCode() + " sınıfı " + classroom.getCapacity() + " kişilik. Ders öğrenci sayısı: " + studentCount.orElse(0);
+        if (!conflicts.isEmpty()) {
+            return conflicts.get(0).detail();
         }
         if (studentCount.isEmpty()) {
             return "Ders öğrenci sayısı mevcut veri modelinde bulunmadığı için kapasite doğrulanamadı.";
         }
         return null;
+    }
+
+    private String classroomConflictDetail(Classroom classroom, WeeklySchedule conflict, String dayOfWeek, String slot) {
+        Course conflictCourse = conflict.getCourse();
+        String courseDetail = conflictCourse != null
+                ? conflictCourse.getCode() + " - " + conflictCourse.getName()
+                : "Başka bir ders";
+        return classroom.getCode() + " dersliği bu saatlerde dolu. " + courseDetail + " - " + dayLabel(dayOfWeek) + " " + slot;
+    }
+
+    private String academicianConflictDetail(Course course, WeeklySchedule conflict, String dayOfWeek, String slot) {
+        Course conflictCourse = conflict.getCourse();
+        String courseDetail = conflictCourse != null
+                ? conflictCourse.getCode() + " - " + conflictCourse.getName()
+                : "başka bir ders";
+        return formatAcademicianName(course.getAcademician()) + " bu saatlerde başka bir derse atanmıştır. " + courseDetail + " - " + dayLabel(dayOfWeek) + " " + slot;
+    }
+
+    private String studentGroupConflictDetail(Course course, WeeklySchedule conflict, String dayOfWeek, String slot) {
+        Course conflictCourse = conflict.getCourse();
+        String courseDetail = conflictCourse != null
+                ? conflictCourse.getCode() + " - " + conflictCourse.getName()
+                : "başka bir ders";
+        return course.getGrade() + ". sınıf öğrencilerinin bu saatlerde başka bir dersi bulunuyor. " + courseDetail + " - " + dayLabel(dayOfWeek) + " " + slot;
     }
 
     private Optional<Integer> resolveStudentCount(Course course) {
@@ -675,5 +687,8 @@ public class WeeklyScheduleService {
 
     private String formatAcademicianName(Academician academician) {
         return (academician.getTitle() + " " + academician.getFirstName() + " " + academician.getLastName()).trim();
+    }
+
+    private record ScheduleConflictItem(String code, String detail) {
     }
 }
