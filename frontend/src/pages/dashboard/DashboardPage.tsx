@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -64,25 +65,41 @@ export const DashboardPage = () => {
 };
 
 const DepartmentAdminDashboard = () => {
+  const [selectedSemester, setSelectedSemester] = React.useState<string>('GUZ');
+  
   const { data, isLoading, error } = useQuery({
-    queryKey: ['departmentAdminDashboard'],
-    queryFn: dashboardService.getDepartmentAdminDashboard,
+    queryKey: ['departmentAdminDashboard', selectedSemester],
+    queryFn: () => dashboardService.getDepartmentAdminDashboard(selectedSemester),
   });
 
   const statCards = [
     {
-      label: 'Akademisyen Sayisi',
+      label: 'Toplam Ders',
+      value: data?.courseCount ?? 0,
+      icon: BookOpen,
+      colorClass: 'text-[#006482] bg-[#eff8ff]',
+      emptyText: 'Henuz ders bulunmuyor.',
+    },
+    {
+      label: 'Akademisyen',
       value: data?.academicianCount ?? 0,
       icon: GraduationCap,
       colorClass: 'text-emerald-600 bg-emerald-50',
       emptyText: 'Henuz akademisyen bulunmuyor.',
     },
     {
-      label: 'Ders Sayisi',
-      value: data?.courseCount ?? 0,
-      icon: BookOpen,
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
-      emptyText: 'Henuz ders bulunmuyor.',
+      label: 'Derslik',
+      value: data?.classroomCount ?? 0,
+      icon: MapPinned,
+      colorClass: 'text-amber-600 bg-amber-50',
+      emptyText: 'Derslik bulunmuyor.',
+    },
+    {
+      label: 'Programlanan Ders',
+      value: data?.scheduleSummary?.completedCourses ?? 0,
+      icon: Calendar,
+      colorClass: 'text-indigo-600 bg-indigo-50',
+      emptyText: 'Programlanan ders yok.',
     },
   ];
 
@@ -95,13 +112,18 @@ const DepartmentAdminDashboard = () => {
     );
   }
 
+  const completionPercentage = data?.scheduleSummary?.completionPercentage ?? 0;
+  const incompleteOrNotScheduled = data?.scheduleSummary?.courses.filter(
+    (c) => c.status === 'INCOMPLETE' || c.status === 'NOT_SCHEDULED'
+  ) || [];
+
   return (
     <div className="space-y-6">
       <section className="dts-card relative overflow-hidden px-6 py-6">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Bolum kapsami</p>
+          <div className="min-w-0 space-y-2 flex-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Ana Ekran</p>
             {isLoading ? (
               <div className="space-y-3">
                 <div className="h-8 w-72 max-w-full animate-pulse rounded-lg bg-slate-100" />
@@ -110,51 +132,181 @@ const DepartmentAdminDashboard = () => {
             ) : (
               <>
                 <h2 className="break-words text-2xl font-bold tracking-tight text-slate-900">
-                  {data?.departmentName}
+                  {data?.departmentName} Bölümü
                 </h2>
                 <p className="text-sm font-medium text-slate-500">{data?.facultyName}</p>
               </>
             )}
           </div>
-          <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-            Bolum Admini
+          
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#006482]/20"
+            >
+              <option value="GUZ">Güz Dönemi</option>
+              <option value="BAHAR">Bahar Dönemi</option>
+              <option value="YAZ_OKULU">Yaz Okulu</option>
+            </select>
+            <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              Bolum Admini
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="space-y-3">
-        <PageTitle
-          title="Ana Ekran"
-          description="Yetkili oldugunuz bolume ait guncel ozet."
-        />
+      {/* İstatistikler */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <article key={stat.label} className="dts-card dts-card-hover p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                  {isLoading ? (
+                    <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
+                  ) : (
+                    <>
+                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
+                      {stat.value === 0 && <p className="mt-1 text-[10px] text-slate-400">{stat.emptyText}</p>}
+                    </>
+                  )}
+                </div>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.colorClass}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {statCards.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <article key={stat.label} className="dts-card dts-card-hover p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                    {isLoading ? (
-                      <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
-                    ) : (
-                      <>
-                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
-                        {stat.value === 0 && <p className="mt-1 text-xs text-slate-400">{stat.emptyText}</p>}
-                      </>
-                    )}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Ders Programı Durumu */}
+          <section className="dts-card p-5 space-y-4">
+            <h3 className="text-sm font-bold text-slate-800">Ders Programı Durumu</h3>
+            {isLoading ? (
+               <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex justify-between items-end">
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold text-slate-900">{completionPercentage}%</p>
+                    <p className="text-xs text-slate-500">Tamamlanma Oranı</p>
                   </div>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.colorClass}`}>
-                    <Icon className="h-5 w-5" />
+                  <div className="text-right text-xs space-y-1 text-slate-600">
+                    <p><span className="text-emerald-600 font-bold">✓ Tamamlanan:</span> {data?.scheduleSummary?.completedCourses ?? 0}</p>
+                    <p><span className="text-amber-600 font-bold">⚠ Eksik:</span> {data?.scheduleSummary?.incompleteCourses ?? 0}</p>
+                    <p><span className="text-slate-400 font-bold">○ Programlanmamış:</span> {data?.scheduleSummary?.notScheduledCourses ?? 0}</p>
                   </div>
                 </div>
-              </article>
-            );
-          })}
+                <div className="w-full bg-slate-100 rounded-full h-3">
+                  <div 
+                    className="bg-[#006482] h-3 rounded-full transition-all duration-500" 
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Eksik Programlar */}
+          <section className="dts-card p-5 space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-bold text-slate-800">Eksik / Programlanmamış Dersler</h3>
+              <Link to="/bolum-admin/ders-programi" className="text-xs font-bold text-[#006482] hover:underline">Tümünü Gör</Link>
+            </div>
+            
+            {isLoading ? (
+               <div className="space-y-2">
+                 <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
+                 <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
+               </div>
+            ) : incompleteOrNotScheduled.length === 0 ? (
+              <p className="text-xs text-slate-500 py-2">Harika! Tüm dersler programlanmış.</p>
+            ) : (
+              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+                {incompleteOrNotScheduled.slice(0, 5).map((course) => (
+                  <div key={course.courseId} className="flex justify-between items-center p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">{course.courseCode} - {course.courseName}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{course.status === 'NOT_SCHEDULED' ? 'Hiç programlanmamış' : `${course.remainingHours} saat eksik`}</p>
+                    </div>
+                    <Link to="/bolum-admin/ders-programi" className="px-3 py-1.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
+                      Programa Git
+                    </Link>
+                  </div>
+                ))}
+                {incompleteOrNotScheduled.length > 5 && (
+                  <p className="text-[10px] text-center text-slate-400 pt-2">+ {incompleteOrNotScheduled.length - 5} ders daha</p>
+                )}
+              </div>
+            )}
+          </section>
         </div>
-      </section>
+
+        <div className="space-y-6">
+          {/* Uyarılar */}
+          {data?.warnings && data.warnings.length > 0 && (
+            <section className="dts-card p-5 bg-amber-50/50 border border-amber-100 space-y-3">
+              <h3 className="text-xs font-bold text-amber-800 flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                DİKKAT GEREKENLER
+              </h3>
+              <ul className="space-y-2">
+                {data.warnings.map((warning, idx) => (
+                  <li key={idx} className="text-xs text-amber-700 flex items-start gap-1.5">
+                    <span className="text-amber-500 mt-0.5">⚠</span>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* Hızlı İşlemler */}
+          <section className="dts-card p-5 space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Hızlı İşlemler</h3>
+            <div className="grid gap-2">
+              <Link to="/bolum-admin/ders-programi" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-800">Ders Programı</p>
+                </div>
+              </Link>
+              <Link to="/bolum-admin/dersler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-800">Dersler</p>
+                </div>
+              </Link>
+              <Link to="/bolum-admin/akademisyenler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-800">Akademisyenler</p>
+                </div>
+              </Link>
+              <Link to="/bolum-admin/derslikler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                  <MapPinned className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-800">Derslikler</p>
+                </div>
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
 
       {!isLoading && data?.academicianCount === 0 && data?.courseCount === 0 && (
         <EmptyState

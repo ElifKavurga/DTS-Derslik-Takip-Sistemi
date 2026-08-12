@@ -1,7 +1,9 @@
 package com.dts.dersliktakip.dto;
 
+import com.dts.dersliktakip.entity.Semester;
 import lombok.Builder;
 
+import java.util.List;
 import java.util.UUID;
 
 @Builder
@@ -12,6 +14,10 @@ public record DepartmentAdminDashboardResponse(
         UUID facultyId,
         String facultyName,
         long academicianCount,
-        long courseCount
+        long courseCount,
+        Semester semester,
+        long classroomCount,
+        ScheduleCompletionResponse scheduleSummary,
+        List<String> warnings
 ) {
 }

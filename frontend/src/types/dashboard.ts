@@ -1,4 +1,6 @@
 import { Role } from './index';
+import { Semester } from './course';
+import { ScheduleCompletionResponse } from './schedule';
 
 export interface DashboardCardStats {
   totalFaculties: number;
@@ -50,4 +52,8 @@ export interface DepartmentAdminDashboardResponse {
   facultyName: string;
   academicianCount: number;
   courseCount: number;
+  semester?: Semester | null;
+  classroomCount: number;
+  scheduleSummary: ScheduleCompletionResponse;
+  warnings: string[];
 }

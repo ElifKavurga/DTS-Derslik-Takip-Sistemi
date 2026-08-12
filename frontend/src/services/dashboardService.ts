@@ -6,8 +6,9 @@ export const dashboardService = {
     const response = await apiClient.get<DashboardStatsResponse>('/dashboard/stats');
     return response.data;
   },
-  getDepartmentAdminDashboard: async () => {
-    const response = await apiClient.get<DepartmentAdminDashboardResponse>('/dashboard/department-admin');
+  getDepartmentAdminDashboard: async (semester?: string) => {
+    const params = semester ? { semester } : undefined;
+    const response = await apiClient.get<DepartmentAdminDashboardResponse>('/dashboard/department-admin', { params });
     return response.data;
   },
 };

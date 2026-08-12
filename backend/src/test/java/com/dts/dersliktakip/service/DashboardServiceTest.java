@@ -54,6 +54,9 @@ class DashboardServiceTest {
     @Mock
     private AccessScopeService accessScopeService;
 
+    @Mock
+    private WeeklyScheduleService weeklyScheduleService;
+
     @InjectMocks
     private DashboardService dashboardService;
 
@@ -73,11 +76,23 @@ class DashboardServiceTest {
         department.setCode("BM");
         department.setFaculty(faculty);
 
+        com.dts.dersliktakip.entity.Semester semester = com.dts.dersliktakip.entity.Semester.GUZ;
         when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
         when(academicianRepository.countByDepartment_Id(departmentId)).thenReturn(10L);
         when(courseRepository.countByDepartment_Id(departmentId)).thenReturn(20L);
+        
+        java.util.List<com.dts.dersliktakip.entity.Classroom> mockClassrooms = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            mockClassrooms.add(new com.dts.dersliktakip.entity.Classroom());
+        }
+        when(classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(facultyId)).thenReturn(mockClassrooms);
+        
+        com.dts.dersliktakip.dto.ScheduleCompletionResponse mockScheduleResponse = new com.dts.dersliktakip.dto.ScheduleCompletionResponse(
+                departmentId, "Bilgisayar Muhendisligi", semester, 20, 15, 3, 2, 0, 75, java.util.Collections.emptyList()
+        );
+        when(weeklyScheduleService.getScheduleCompletion(currentUser, semester)).thenReturn(mockScheduleResponse);
 
-        DepartmentAdminDashboardResponse response = dashboardService.getDepartmentAdminDashboard(currentUser);
+        DepartmentAdminDashboardResponse response = dashboardService.getDepartmentAdminDashboard(currentUser, semester);
 
         assertThat(response.departmentId()).isEqualTo(departmentId);
         assertThat(response.departmentName()).isEqualTo("Bilgisayar Muhendisligi");
@@ -85,8 +100,15 @@ class DashboardServiceTest {
         assertThat(response.facultyName()).isEqualTo("Muhendislik Fakultesi");
         assertThat(response.academicianCount()).isEqualTo(10L);
         assertThat(response.courseCount()).isEqualTo(20L);
+        assertThat(response.semester()).isEqualTo(semester);
+        assertThat(response.classroomCount()).isEqualTo(5L);
+        assertThat(response.scheduleSummary()).isEqualTo(mockScheduleResponse);
+        assertThat(response.warnings()).containsExactly("3 dersin programı eksik.", "2 ders henüz programlanmamış.");
+
         verify(accessScopeService).requireDepartmentScope(currentUser);
         verify(academicianRepository).countByDepartment_Id(departmentId);
         verify(courseRepository).countByDepartment_Id(departmentId);
+        verify(classroomRepository).findAllByFloorBuildingFacultyIdOrderByCodeAsc(facultyId);
+        verify(weeklyScheduleService).getScheduleCompletion(currentUser, semester);
     }
 }

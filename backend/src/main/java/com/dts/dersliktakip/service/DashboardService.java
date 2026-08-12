@@ -37,6 +37,7 @@ public class DashboardService {
     private final AcademicianRepository academicianRepository;
     private final CourseRepository courseRepository;
     private final AccessScopeService accessScopeService;
+    private final WeeklyScheduleService weeklyScheduleService;
 
     @Transactional(readOnly = true)
     public DashboardStatsResponse getDashboardStats() {
@@ -93,8 +94,23 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public DepartmentAdminDashboardResponse getDepartmentAdminDashboard(User currentUser) {
+    public DepartmentAdminDashboardResponse getDepartmentAdminDashboard(User currentUser, com.dts.dersliktakip.entity.Semester semester) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
+
+        long classroomCount = classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).size();
+        
+        com.dts.dersliktakip.dto.ScheduleCompletionResponse scheduleSummary = weeklyScheduleService.getScheduleCompletion(currentUser, semester);
+        
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+        if (scheduleSummary.incompleteCourses() > 0) {
+            warnings.add(scheduleSummary.incompleteCourses() + " dersin programı eksik.");
+        }
+        if (scheduleSummary.notScheduledCourses() > 0) {
+            warnings.add(scheduleSummary.notScheduledCourses() + " ders henüz programlanmamış.");
+        }
+        if (scheduleSummary.overScheduledCourses() > 0) {
+            warnings.add(scheduleSummary.overScheduledCourses() + " dersin haftalık saat ihtiyacı aşılmış.");
+        }
 
         return DepartmentAdminDashboardResponse.builder()
                 .departmentId(department.getId())
@@ -104,6 +120,10 @@ public class DashboardService {
                 .facultyName(department.getFaculty().getName())
                 .academicianCount(academicianRepository.countByDepartment_Id(department.getId()))
                 .courseCount(courseRepository.countByDepartment_Id(department.getId()))
+                .semester(semester)
+                .classroomCount(classroomCount)
+                .scheduleSummary(scheduleSummary)
+                .warnings(warnings)
                 .build();
     }
 }
