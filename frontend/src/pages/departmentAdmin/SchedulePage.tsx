@@ -50,6 +50,12 @@ type ScheduleValidationAlert = {
   details: string[];
 };
 
+type ScheduleDetailState = {
+  schedule: WeeklyScheduleResponse;
+  groupMeta?: ScheduleGroupMeta;
+  hasConflict: boolean;
+};
+
 const initialForm: ScheduleFormState = {
   courseId: '',
   dayOfWeek: '',
@@ -109,6 +115,7 @@ export const SchedulePage = () => {
   const [isTimeConfigModalOpen, setIsTimeConfigModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<WeeklyScheduleResponse | null>(null);
   const [deletingSchedule, setDeletingSchedule] = useState<WeeklyScheduleResponse | null>(null);
+  const [scheduleDetail, setScheduleDetail] = useState<ScheduleDetailState | null>(null);
   const [form, setForm] = useState<ScheduleFormState>(initialForm);
   const [backendValidation, setBackendValidation] = useState<ScheduleValidationAlert | null>(null);
   const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
@@ -436,6 +443,28 @@ export const SchedulePage = () => {
     };
   }, [scheduleStatus, selectedGradeNumber]);
 
+  const selectedGradeLabel = gradeOptions.find((option) => option.value === selectedGrade)?.label ?? 'Sınıf';
+
+  const gradeScheduleSummary = useMemo(() => {
+    if (!filteredScheduleStatus) return null;
+    const requiredHours = filteredScheduleStatus.courses.reduce((total, course) => total + course.requiredHours, 0);
+    const scheduledHours = filteredScheduleStatus.courses.reduce((total, course) => total + course.scheduledHours, 0);
+    const missingHours = filteredScheduleStatus.courses.reduce((total, course) => total + Math.max(course.remainingHours, 0), 0);
+    return {
+      courseCount: filteredScheduleStatus.totalCourses,
+      requiredHours,
+      scheduledHours,
+      missingHours,
+    };
+  }, [filteredScheduleStatus]);
+
+  const compactProblemCourses = useMemo(
+    () => filteredScheduleStatus?.courses
+      .filter((course) => course.status === 'INCOMPLETE' || course.status === 'NOT_SCHEDULED' || course.status === 'OVER_SCHEDULED')
+      .slice(0, 5) ?? [],
+    [filteredScheduleStatus],
+  );
+
   const openCreate = (courseId = '') => {
     setEditingSchedule(null);
     setBackendValidation(null);
@@ -635,13 +664,24 @@ export const SchedulePage = () => {
       </div>
 
       {filteredScheduleStatus && (
-        <ScheduleStatusOverview
-          status={filteredScheduleStatus}
-          isLoading={isStatusLoading}
-          incompleteCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED')}
-          notScheduledCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED')}
-          onShowDetails={() => setIsStatusModalOpen(true)}
-        />
+        <div className="grid gap-3 xl:grid-cols-[1.1fr_1.4fr]">
+          <ScheduleStatusOverview
+            status={filteredScheduleStatus}
+            isLoading={isStatusLoading}
+            incompleteCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED')}
+            notScheduledCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED')}
+            onShowDetails={() => setIsStatusModalOpen(true)}
+          />
+          {gradeScheduleSummary && (
+            <GradeScheduleSummary
+              gradeLabel={selectedGradeLabel}
+              summary={gradeScheduleSummary}
+              problemCourses={compactProblemCourses}
+              onOpenCourse={(courseId) => openCreate(courseId)}
+              onShowDetails={() => setIsStatusModalOpen(true)}
+            />
+          )}
+        </div>
       )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -678,6 +718,11 @@ export const SchedulePage = () => {
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">Henüz haftalık ders programı oluşturulmadı.</h3>
+          {filteredScheduleStatus && filteredScheduleStatus.totalCourses > 0 && (
+            <p className="mt-1 text-xs font-semibold text-slate-400">
+              {selectedGradeLabel} için {filteredScheduleStatus.totalCourses} ders programlanmayı bekliyor.
+            </p>
+          )}
           <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
         </div>
       ) : (
@@ -743,6 +788,7 @@ export const SchedulePage = () => {
                       schedule={item.schedule}
                       groupMeta={item.groupMeta}
                       hasConflict={hasConflict}
+                      onOpenDetails={() => setScheduleDetail({ schedule: item.schedule, groupMeta: item.groupMeta, hasConflict })}
                       onEdit={() => openEdit(item.schedule)}
                       onDelete={() => setDeletingSchedule(item.schedule)}
                     />
@@ -845,12 +891,31 @@ export const SchedulePage = () => {
         isOpen={!!deletingSchedule}
         onClose={() => setDeletingSchedule(null)}
         onConfirm={() => deletingSchedule && deleteMutation.mutate(deletingSchedule.id)}
-        title="Ders Programını Kaldır"
-        message="Bu ders programını kaldırmak istediğinize emin misiniz?"
-        confirmText="Kaldır"
+        title="Dersi Programdan Sil"
+        message={deletingSchedule
+          ? `${deletingSchedule.courseCode} - ${deletingSchedule.courseName} programdan kaldırılacak. Ders kaydı sistemde kalır.`
+          : 'Bu ders programdan kaldırılacak. Ders kaydı sistemde kalır.'}
+        confirmText="Programdan Sil"
         cancelText="Vazgeç"
         confirmLoading={deleteMutation.isPending}
       />
+
+      <FormModal isOpen={!!scheduleDetail} onClose={() => setScheduleDetail(null)} title="Ders Programı Detayı">
+        {scheduleDetail && (
+          <ScheduleDetailPanel
+            detail={scheduleDetail}
+            course={courseById.get(scheduleDetail.schedule.courseId) ?? null}
+            onEdit={() => {
+              setScheduleDetail(null);
+              openEdit(scheduleDetail.schedule);
+            }}
+            onDelete={() => {
+              setDeletingSchedule(scheduleDetail.schedule);
+              setScheduleDetail(null);
+            }}
+          />
+        )}
+      </FormModal>
 
       <FormModal isOpen={isTimeConfigModalOpen} onClose={() => setIsTimeConfigModalOpen(false)} title="Ders Saatleri">
         <form onSubmit={submitTimeConfig} className="space-y-4">
@@ -1109,6 +1174,114 @@ const ClassroomGroup = ({
   </div>
 );
 
+const GradeScheduleSummary = ({
+  gradeLabel,
+  summary,
+  problemCourses,
+  onOpenCourse,
+  onShowDetails,
+}: {
+  gradeLabel: string;
+  summary: { courseCount: number; requiredHours: number; scheduledHours: number; missingHours: number };
+  problemCourses: CourseScheduleStatusItemResponse[];
+  onOpenCourse: (courseId: string) => void;
+  onShowDetails: () => void;
+}) => (
+  <section className="rounded-2xl border border-slate-200/70 bg-white px-4 py-3">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="min-w-0">
+        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
+        <div className="mt-2 grid grid-cols-4 gap-2">
+          <SummaryMetric label="Ders" value={summary.courseCount} />
+          <SummaryMetric label="Saat" value={summary.requiredHours} />
+          <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
+          <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 lg:max-w-[58%]">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Eksik / Fazla Dersler ({problemCourses.length})</p>
+          <button type="button" onClick={onShowDetails} className="text-[11px] font-bold text-[#006482] hover:underline">Detay</button>
+        </div>
+        {problemCourses.length === 0 ? (
+          <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Seçili sınıf için program tamam.</p>
+        ) : (
+          <div className="mt-2 max-h-24 space-y-1 overflow-y-auto pr-1">
+            {problemCourses.map((course) => (
+              <button
+                key={course.courseId}
+                type="button"
+                onClick={() => onOpenCourse(course.courseId)}
+                className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-left text-xs font-semibold transition hover:bg-[#eff8ff]"
+              >
+                <span className="min-w-0 truncate text-slate-700">{course.courseCode} - {course.courseName}</span>
+                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold', course.remainingHours < 0 ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700')}>
+                  {course.remainingHours < 0 ? `Fazla ${Math.abs(course.remainingHours)}` : `Eksik ${course.remainingHours}`}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+);
+
+const SummaryMetric = ({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warn' | 'ok' }) => (
+  <div className={cn(
+    'rounded-xl border px-3 py-2',
+    tone === 'warn' ? 'border-amber-100 bg-amber-50' : tone === 'ok' ? 'border-emerald-100 bg-emerald-50' : 'border-slate-100 bg-slate-50',
+  )}>
+    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+    <p className={cn('mt-0.5 text-base font-black', tone === 'warn' ? 'text-amber-700' : tone === 'ok' ? 'text-emerald-700' : 'text-slate-800')}>{value}</p>
+  </div>
+);
+
+const ScheduleDetailPanel = ({
+  detail,
+  course,
+  onEdit,
+  onDelete,
+}: {
+  detail: ScheduleDetailState;
+  course: CourseResponse | null;
+  onEdit: () => void;
+  onDelete: () => void;
+}) => {
+  const { schedule, groupMeta, hasConflict } = detail;
+  const rows = [
+    ['Ders', `${schedule.courseCode} - ${schedule.courseName}`],
+    ['Sınıf Seviyesi', course ? `${course.grade}. Sınıf` : '-'],
+    ['Akademisyen', schedule.academicianName],
+    ['Derslik', `${schedule.classroomCode} - ${schedule.classroomName}`],
+    ['Gün', dayLabel(schedule.dayOfWeek)],
+    ['Saat', groupMeta?.timeRange ?? formatSlot(schedule.timeSlot)],
+    ['Ders Saati', String(groupMeta?.slotCount ?? 1)],
+  ];
+
+  return (
+    <div className="space-y-4">
+      {hasConflict && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">
+          Bu program kaydında çakışma görünüyor.
+        </div>
+      )}
+      <div className="rounded-2xl border border-slate-200/70 bg-white">
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[120px_1fr] gap-3 border-b border-slate-100 px-3 py-2.5 last:border-b-0">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{label}</p>
+            <p className="min-w-0 text-sm font-semibold text-slate-700">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+        <SecondaryButton type="button" onClick={onDelete}>Programdan Sil</SecondaryButton>
+        <PrimaryButton type="button" onClick={onEdit}>Düzenle</PrimaryButton>
+      </div>
+    </div>
+  );
+};
+
 const ScheduleStatusOverview = ({
   status,
   isLoading,
@@ -1210,26 +1383,45 @@ const ScheduleCard = ({
   schedule,
   groupMeta,
   hasConflict,
+  onOpenDetails,
   onEdit,
   onDelete,
 }: {
   schedule: WeeklyScheduleResponse;
   groupMeta?: ScheduleGroupMeta;
   hasConflict: boolean;
+  onOpenDetails: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) => (
-  <article className={cn('flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm', hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]')}>
+}) => {
+  const shouldCenterContent = (groupMeta?.slotCount ?? 1) >= 3;
+  return (
+  <article
+    role="button"
+    tabIndex={0}
+    onClick={onOpenDetails}
+    onKeyDown={(event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onOpenDetails();
+      }
+    }}
+    className={cn(
+      'flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+      shouldCenterContent && 'justify-center',
+      hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]',
+    )}
+  >
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
         <p className="truncate text-xs font-extrabold text-slate-900">{schedule.courseCode}</p>
         <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-600">{schedule.courseName}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <button type="button" onClick={onEdit} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-[#006482]" aria-label="Düzenle">
+        <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-[#006482]" aria-label="Düzenle">
           <Edit2 className="h-3.5 w-3.5" />
         </button>
-        <button type="button" onClick={onDelete} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-red-600" aria-label="Sil">
+        <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-red-600" aria-label="Sil">
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -1241,4 +1433,5 @@ const ScheduleCard = ({
       {hasConflict && <p className="flex items-center gap-1.5 font-bold text-red-600"><XCircle className="h-3 w-3" /> Çakışma</p>}
     </div>
   </article>
-);
+  );
+};
