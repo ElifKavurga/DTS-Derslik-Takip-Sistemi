@@ -137,7 +137,7 @@ public class WeeklyScheduleService {
 
     @Transactional(readOnly = true)
     public ScheduleTimeConfigurationResponse getTimeConfiguration(User currentUser) {
-        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        Department department = resolveScheduleDepartment(currentUser);
         DepartmentScheduleConfig config = resolveConfig(department);
         return toTimeConfigurationResponse(department, config);
     }
@@ -246,6 +246,15 @@ public class WeeklyScheduleService {
     private DepartmentScheduleConfig resolveConfig(Department department) {
         return departmentScheduleConfigRepository.findByDepartmentId(department.getId())
                 .orElseGet(() -> defaultConfig(department));
+    }
+
+    private Department resolveScheduleDepartment(User currentUser) {
+        if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydÄ± bulunamadÄ±."));
+            return academician.getDepartment();
+        }
+        return accessScopeService.requireDepartmentScope(currentUser);
     }
 
     private DepartmentScheduleConfig defaultConfig(Department department) {

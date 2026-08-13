@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin, Plus, Settings, Trash2, User, XCircle } from 'lucide-react';
@@ -109,8 +110,10 @@ const slotEnd = (slot: string) => slot.split('-')[1]?.trim() ?? slot;
 
 export const SchedulePage = () => {
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const role = useAuthStore((state) => state.user?.role);
   const isReadOnly = role === 'ACADEMICIAN';
+  const highlightedCourseId = isReadOnly ? searchParams.get('courseId') : null;
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -123,7 +126,7 @@ export const SchedulePage = () => {
   const [backendValidation, setBackendValidation] = useState<ScheduleValidationAlert | null>(null);
   const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
 
-  const { data: schedules = [], isLoading, error } = useQuery({
+  const { data: schedules = [], isLoading, error, refetch } = useQuery({
     queryKey: ['weeklySchedules', selectedSemester],
     queryFn: () => scheduleService.getAll(selectedSemester || undefined),
   });
@@ -131,6 +134,7 @@ export const SchedulePage = () => {
   const { data: scheduleStatus, isLoading: isStatusLoading } = useQuery({
     queryKey: ['scheduleStatus', selectedSemester],
     queryFn: () => scheduleService.getStatus(selectedSemester || undefined),
+    enabled: role === 'DEPARTMENT_ADMIN',
   });
 
   const { data: timeConfiguration } = useQuery({
@@ -174,7 +178,7 @@ export const SchedulePage = () => {
     }
   }, [gradeOptions, selectedGrade]);
 
-  const selectedGradeNumber = selectedGrade ? Number(selectedGrade) : null;
+  const selectedGradeNumber = !isReadOnly && selectedGrade ? Number(selectedGrade) : null;
 
   const editingGroupSlotCount = useMemo(() => {
     if (!editingSchedule) return 0;
@@ -305,6 +309,15 @@ export const SchedulePage = () => {
       : schedules.filter((schedule) => courseById.get(schedule.courseId)?.grade === selectedGradeNumber),
     [courseById, schedules, selectedGradeNumber],
   );
+
+  const readOnlyScheduleSummary = useMemo(() => {
+    const uniqueBlocks = new Set(visibleSchedules.map((schedule) => schedule.scheduleGroupId ?? schedule.id));
+    return {
+      courseCount: new Set(visibleSchedules.map((schedule) => schedule.courseId)).size,
+      blockCount: uniqueBlocks.size,
+      scheduledHours: visibleSchedules.length,
+    };
+  }, [visibleSchedules]);
 
   const schedulesByCell = useMemo(() => {
     const map = new Map<string, WeeklyScheduleResponse[]>();
@@ -648,8 +661,10 @@ export const SchedulePage = () => {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">Ders Programı</h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">Bölüm derslerini haftalık takvime manuel yerleştirin.</p>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">{isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}</h1>
+          <p className="mt-0.5 text-[13px] text-slate-400">
+            {isReadOnly ? 'Size atanan derslerin haftalık programını görüntüleyin.' : 'Bölüm derslerini haftalık takvime manuel yerleştirin.'}
+          </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           {!isReadOnly && (
@@ -689,20 +704,32 @@ export const SchedulePage = () => {
         </div>
       )}
 
+      {isReadOnly && (
+        <section className="grid gap-3 sm:grid-cols-3">
+          <SummaryMetric label="Ders" value={readOnlyScheduleSummary.courseCount} />
+          <SummaryMetric label="Program Bloğu" value={readOnlyScheduleSummary.blockCount} />
+          <SummaryMetric label="Ders Saati" value={readOnlyScheduleSummary.scheduledHours} />
+        </section>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
-          <p className="mt-0.5 text-xs font-medium text-slate-400">Oluşturulmuş ders programı kayıtları takvimde gösterilir.</p>
+          <p className="mt-0.5 text-xs font-medium text-slate-400">
+            {isReadOnly ? 'Ders kartları salt okunurdur; düzenleme işlemleri bölüm admini tarafından yapılır.' : 'Oluşturulmuş ders programı kayıtları takvimde gösterilir.'}
+          </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="w-full sm:w-56">
-            <AppSelect
-              value={selectedGrade}
-              onChange={setSelectedGrade}
-              options={gradeOptions}
-              placeholder="Sınıf seçiniz"
-            />
-          </div>
+          {!isReadOnly && (
+            <div className="w-full sm:w-56">
+              <AppSelect
+                value={selectedGrade}
+                onChange={setSelectedGrade}
+                options={gradeOptions}
+                placeholder="Sınıf seçiniz"
+              />
+            </div>
+          )}
           {!isReadOnly && (
             <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
           )}
@@ -715,7 +742,14 @@ export const SchedulePage = () => {
         </div>
       ) : error ? (
         <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-8 text-center">
-          <p className="text-sm font-bold text-red-700">Haftalık ders programı yüklenirken bir hata oluştu.</p>
+          <p className="text-sm font-bold text-red-700">Ders programı yüklenemedi.</p>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50"
+          >
+            Tekrar Dene
+          </button>
         </div>
       ) : timeSlots.length === 0 ? (
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
@@ -724,8 +758,10 @@ export const SchedulePage = () => {
       ) : visibleSchedules.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
-          <h3 className="mt-3 text-base font-bold text-slate-700">Henüz haftalık ders programı oluşturulmadı.</h3>
-          {filteredScheduleStatus && filteredScheduleStatus.totalCourses > 0 && (
+          <h3 className="mt-3 text-base font-bold text-slate-700">
+            {isReadOnly ? 'Henüz oluşturulmuş bir ders programınız bulunmuyor.' : 'Henüz haftalık ders programı oluşturulmadı.'}
+          </h3>
+          {!isReadOnly && filteredScheduleStatus && filteredScheduleStatus.totalCourses > 0 && (
             <p className="mt-1 text-xs font-semibold text-slate-400">
               {selectedGradeLabel} için {filteredScheduleStatus.totalCourses} ders programlanmayı bekliyor.
             </p>
@@ -797,6 +833,7 @@ export const SchedulePage = () => {
                       schedule={item.schedule}
                       groupMeta={item.groupMeta}
                       hasConflict={hasConflict}
+                      highlighted={highlightedCourseId === item.schedule.courseId}
                       onOpenDetails={() => setScheduleDetail({ schedule: item.schedule, groupMeta: item.groupMeta, hasConflict })}
                       onEdit={() => openEdit(item.schedule)}
                       onDelete={() => setDeletingSchedule(item.schedule)}
@@ -923,6 +960,7 @@ export const SchedulePage = () => {
               setDeletingSchedule(scheduleDetail.schedule);
               setScheduleDetail(null);
             }}
+            isReadOnly={isReadOnly}
           />
         )}
       </FormModal>
@@ -1252,11 +1290,13 @@ const ScheduleDetailPanel = ({
   course,
   onEdit,
   onDelete,
+  isReadOnly = false,
 }: {
   detail: ScheduleDetailState;
   course: CourseResponse | null;
   onEdit: () => void;
   onDelete: () => void;
+  isReadOnly?: boolean;
 }) => {
   const { schedule, groupMeta, hasConflict } = detail;
   const rows = [
@@ -1284,10 +1324,12 @@ const ScheduleDetailPanel = ({
           </div>
         ))}
       </div>
-      <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-        <SecondaryButton type="button" onClick={onDelete}>Programdan Sil</SecondaryButton>
-        <PrimaryButton type="button" onClick={onEdit}>Düzenle</PrimaryButton>
-      </div>
+      {!isReadOnly && (
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <SecondaryButton type="button" onClick={onDelete}>Programdan Sil</SecondaryButton>
+          <PrimaryButton type="button" onClick={onEdit}>Düzenle</PrimaryButton>
+        </div>
+      )}
     </div>
   );
 };
@@ -1393,6 +1435,7 @@ const ScheduleCard = ({
   schedule,
   groupMeta,
   hasConflict,
+  highlighted = false,
   onOpenDetails,
   onEdit,
   onDelete,
@@ -1401,6 +1444,7 @@ const ScheduleCard = ({
   schedule: WeeklyScheduleResponse;
   groupMeta?: ScheduleGroupMeta;
   hasConflict: boolean;
+  highlighted?: boolean;
   onOpenDetails: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1422,6 +1466,7 @@ const ScheduleCard = ({
       'flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
       shouldCenterContent && 'justify-center',
       hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]',
+      highlighted && 'ring-2 ring-[#fabc07]/70',
     )}
   >
     <div className="flex items-start justify-between gap-2">

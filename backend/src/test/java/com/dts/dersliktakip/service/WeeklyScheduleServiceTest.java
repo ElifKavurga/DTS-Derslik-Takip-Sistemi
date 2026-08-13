@@ -18,6 +18,7 @@ import com.dts.dersliktakip.exception.ScheduleConflictException;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
+import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +54,9 @@ class WeeklyScheduleServiceTest {
 
     @Mock
     private AccessScopeService accessScopeService;
+
+    @Mock
+    private AcademicianRepository academicianRepository;
 
     @InjectMocks
     private WeeklyScheduleService weeklyScheduleService;

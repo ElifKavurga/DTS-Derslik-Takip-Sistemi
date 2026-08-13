@@ -203,7 +203,7 @@ const CourseDetailModal = ({
         <div className="border-t border-slate-100 px-6 py-4">
           <button
             type="button"
-            onClick={() => { onClose(); navigate('/academician/ders-programi'); }}
+            onClick={() => { onClose(); navigate(`/academician/ders-programi?courseId=${course.id}`); }}
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#006482]/20 bg-[#eff8ff] py-2.5 text-xs font-bold text-[#006482] shadow-sm transition hover:bg-[#ddf0fb] active:scale-95"
           >
             Ders Programında Gör

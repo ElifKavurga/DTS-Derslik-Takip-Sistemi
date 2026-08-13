@@ -68,7 +68,7 @@ public class WeeklyScheduleController {
     }
 
     @GetMapping("/time-configuration")
-    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<ScheduleTimeConfigurationResponse> getTimeConfiguration(
             @AuthenticationPrincipal UserPrincipal principal
     ) {
