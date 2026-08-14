@@ -269,10 +269,12 @@ public class CourseService {
 
         List<ScheduleSlotSummary> slots = schedules.stream()
                 .sorted(Comparator.comparing(WeeklySchedule::getDayOfWeek)
-                        .thenComparing(WeeklySchedule::getTimeSlot))
+                .thenComparing(WeeklySchedule::getTimeSlot))
                 .map(s -> new ScheduleSlotSummary(
+                        s.getId(),
                         s.getDayOfWeek(),
                         s.getTimeSlot(),
+                        s.getClassroom().getId(),
                         s.getClassroom().getCode(),
                         s.getClassroom().getName()
                 ))

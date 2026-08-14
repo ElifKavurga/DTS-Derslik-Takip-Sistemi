@@ -46,7 +46,7 @@ public class WeeklyScheduleController {
     }
 
     @GetMapping("/status")
-    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<ScheduleCompletionResponse> getScheduleCompletion(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Semester semester
@@ -55,7 +55,7 @@ public class WeeklyScheduleController {
     }
 
     @GetMapping("/available-classrooms")
-    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<List<AvailableClassroomResponse>> getAvailableClassrooms(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) UUID courseId,

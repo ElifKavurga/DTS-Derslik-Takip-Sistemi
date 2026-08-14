@@ -94,3 +94,4 @@ export * from './floor';
 export * from './floorLayout';
 export * from './course';
 export * from './schedule';
+export * from './scheduleException';

@@ -159,10 +159,17 @@ public class WeeklyScheduleService {
 
     @Transactional(readOnly = true)
     public List<AvailableClassroomResponse> getAvailableClassrooms(User currentUser, UUID courseId, String dayOfWeek, String timeSlot, Integer slotCount, UUID excludeScheduleId) {
-        Department department = accessScopeService.requireDepartmentScope(currentUser);
+        Department department = resolveScheduleDepartment(currentUser);
         String normalizedDay = normalizeDay(dayOfWeek);
         List<String> selectedSlots = resolveSelectedSlots(department, timeSlot, normalizeSlotCount(slotCount));
         Course course = courseId != null ? resolveCourse(courseId, department) : null;
+        if (course != null && currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+            if (course.getAcademician() == null || !course.getAcademician().getId().equals(academician.getId())) {
+                throw new AccessDeniedException("Bu ders için işlem yapma yetkiniz yok.");
+            }
+        }
         Set<UUID> excludedIds = resolveExcludedScheduleIds(excludeScheduleId, department);
 
         return classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).stream()
