@@ -258,7 +258,7 @@ public class WeeklyScheduleService {
     private Department resolveScheduleDepartment(User currentUser) {
         if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
             Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
-                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydÄ± bulunamadÄ±."));
+                    .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
             return academician.getDepartment();
         }
         return accessScopeService.requireDepartmentScope(currentUser);

@@ -17,7 +17,6 @@ import {
   Clock,
   CheckCircle2,
   MapPin,
-  User,
   ArrowRight,
   AlertCircle,
   Ban,
@@ -30,7 +29,7 @@ import { cn } from '@/utils/cn';
 import { dashboardService } from '@/services/dashboardService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Role, ScheduleExceptionResponse } from '@/types';
+import { CourseResponse, Role, ScheduleExceptionResponse } from '@/types';
 
 const roleLabels: Record<Role, string> = {
   SUPER_ADMIN: 'Süper Admin',
@@ -125,7 +124,7 @@ const DepartmentAdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <section className="dts-card relative overflow-hidden px-6 py-6">
+      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-6 py-6 shadow-md">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0 space-y-2 flex-1">
@@ -403,7 +402,7 @@ const SuperAdminDashboard = () => {
   return (
     <div className="space-y-6">
       {/* 1. Hoş Geldiniz & Sistem Bilgilendirme Kartı */}
-      <section className="dts-card relative overflow-hidden py-5 px-6">
+      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-6 py-5 shadow-md">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="space-y-1.5">
@@ -635,8 +634,7 @@ const SuperAdminDashboard = () => {
 };
 
 const AcademicianDashboard = () => {
-  const [selectedSemester, setSelectedSemester] = React.useState<string>('GUZ');
-  const user = useAuthStore((state) => state.user);
+  const [selectedSemester] = React.useState<string>('GUZ');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['academicianDashboard', selectedSemester],
@@ -719,6 +717,7 @@ const AcademicianDashboard = () => {
     <div className="space-y-6">
       {/* Dynamic greeting banner */}
       <div className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white p-6 shadow-md md:p-8">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
         <div className="absolute right-0 top-0 -mr-16 -mt-16 h-48 w-48 rounded-full bg-[#88d0f2]/10 blur-2xl" />
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1.5">
@@ -807,7 +806,9 @@ const AcademicianDashboard = () => {
                       const endMinutes = endHour * 60 + endMinute;
                       isFinished = nowMinutes > endMinutes;
                     }
-                  } catch (e) {}
+                  } catch {
+                    // Ignore malformed time slots from legacy records.
+                  }
 
                   return (
                     <div
@@ -918,7 +919,7 @@ const AcademicianDashboard = () => {
               {courses.length === 0 ? (
                 <div className="py-6 text-center text-xs text-slate-400 font-medium">Atanmış ders bulunmuyor.</div>
               ) : (
-                courses.slice(0, 3).map((course: any, idx: number) => (
+                courses.slice(0, 3).map((course: CourseResponse, idx: number) => (
                   <div key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-50 p-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 text-xs font-bold uppercase">
                       {course.code.substring(0, 2)}

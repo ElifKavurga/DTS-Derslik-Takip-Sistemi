@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, Ban, CalendarDays, Clock, MapPin, RefreshCw, Search, X, CalendarPlus } from 'lucide-react';
+import { AlertCircle, ArrowRight, Ban, CalendarDays, RefreshCw, Search, X, CalendarPlus } from 'lucide-react';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { FormModal } from '@/components/ui/FormModal';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';

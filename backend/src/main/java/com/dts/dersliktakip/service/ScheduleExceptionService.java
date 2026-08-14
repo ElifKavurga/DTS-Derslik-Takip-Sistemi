@@ -102,7 +102,8 @@ public class ScheduleExceptionService {
         Academician academician = resolveAcademician(currentUser);
         WeeklySchedule schedule = resolveOwnedSchedule(request.scheduleId(), academician);
         int slotCount = normalizeSlotCount(request.slotCount());
-        List<String> selectedSlots = resolveSelectedSlots(currentUser, request.timeSlot(), slotCount);
+        List<String> allSlots = resolveAllSlots(currentUser);
+        List<String> selectedSlots = resolveSelectedSlots(allSlots, request.timeSlot(), slotCount);
         Classroom classroom = resolveClassroom(request.classroomId(), academician.getDepartment());
 
         if (!matchesScheduleDay(request.originalDate(), schedule)) {
@@ -117,7 +118,7 @@ public class ScheduleExceptionService {
         }
 
         assertCapacitySufficient(schedule.getCourse(), classroom);
-        assertTargetAvailable(schedule.getCourse(), classroom, request.makeupDate(), selectedSlots, Set.of(schedule.getId()));
+        assertTargetAvailable(schedule.getCourse(), classroom, request.makeupDate(), selectedSlots, allSlots, Set.of(schedule.getId()));
 
         ScheduleException exception = new ScheduleException();
         exception.setType(ScheduleExceptionType.MAKEUP);
@@ -138,7 +139,8 @@ public class ScheduleExceptionService {
         Academician academician = resolveAcademician(currentUser);
         Course course = resolveOwnedCourse(request.courseId(), academician);
         int slotCount = normalizeSlotCount(request.slotCount());
-        List<String> selectedSlots = resolveSelectedSlots(currentUser, request.timeSlot(), slotCount);
+        List<String> allSlots = resolveAllSlots(currentUser);
+        List<String> selectedSlots = resolveSelectedSlots(allSlots, request.timeSlot(), slotCount);
         Classroom classroom = resolveClassroom(request.classroomId(), academician.getDepartment());
 
         if (scheduleExceptionRepository.existsByCourse_IdAndTargetDateAndTimeSlotAndType(course.getId(), request.date(), selectedSlots.get(0), ScheduleExceptionType.EXTRA)) {
@@ -146,7 +148,7 @@ public class ScheduleExceptionService {
         }
 
         assertCapacitySufficient(course, classroom);
-        assertTargetAvailable(course, classroom, request.date(), selectedSlots, Set.of());
+        assertTargetAvailable(course, classroom, request.date(), selectedSlots, allSlots, Set.of());
 
         ScheduleException exception = new ScheduleException();
         exception.setType(ScheduleExceptionType.EXTRA);
@@ -160,9 +162,13 @@ public class ScheduleExceptionService {
         return toResponse(scheduleExceptionRepository.save(exception));
     }
 
-    private void assertTargetAvailable(Course course, Classroom classroom, LocalDate date, List<String> selectedSlots, Set<UUID> excludedWeeklyScheduleIds) {
+    private void assertTargetAvailable(Course course, Classroom classroom, LocalDate date, List<String> selectedSlots, List<String> allSlots, Set<UUID> excludedWeeklyScheduleIds) {
         String dayOfWeek = toScheduleDay(date);
         List<ConflictItem> conflicts = new ArrayList<>();
+        List<ScheduleException> targetDateExceptions = scheduleExceptionRepository.findAllByTargetDate(date).stream()
+                .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                .filter(exception -> exceptionOverlapsSelectedSlots(exception, selectedSlots, allSlots))
+                .toList();
 
         for (String slot : selectedSlots) {
             weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, slot).stream()
@@ -177,19 +183,22 @@ public class ScheduleExceptionService {
 
             findGradeConflict(course, dayOfWeek, slot, excludedWeeklyScheduleIds)
                     .ifPresent(conflict -> conflicts.add(new ConflictItem(STUDENT_GROUP_CONFLICT, course.getGrade() + ". sınıf öğrencilerinin bu saatte başka bir dersi bulunmaktadır.")));
-
-            scheduleExceptionRepository.findAllByTargetDateAndTimeSlot(date, slot).stream()
-                    .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
-                    .filter(exception -> exception.getClassroom() != null && exception.getClassroom().getId().equals(classroom.getId()))
-                    .findFirst()
-                    .ifPresent(conflict -> conflicts.add(new ConflictItem(CLASSROOM_CONFLICT, classroom.getCode() + " dersliği bu saatte başka bir istisna dersi için kullanılıyor.")));
-
-            scheduleExceptionRepository.findAllByTargetDateAndTimeSlot(date, slot).stream()
-                    .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
-                    .filter(exception -> exception.getAcademician().getId().equals(course.getAcademician().getId()))
-                    .findFirst()
-                    .ifPresent(conflict -> conflicts.add(new ConflictItem(ACADEMICIAN_CONFLICT, "Bu akademisyenin bu saatte başka bir istisna dersi bulunmaktadır.")));
         }
+
+        targetDateExceptions.stream()
+                .filter(exception -> exception.getClassroom() != null && exception.getClassroom().getId().equals(classroom.getId()))
+                .findFirst()
+                .ifPresent(conflict -> conflicts.add(new ConflictItem(CLASSROOM_CONFLICT, classroom.getCode() + " dersliği bu saatte başka bir istisna dersi için kullanılıyor.")));
+
+        targetDateExceptions.stream()
+                .filter(exception -> exception.getAcademician().getId().equals(course.getAcademician().getId()))
+                .findFirst()
+                .ifPresent(conflict -> conflicts.add(new ConflictItem(ACADEMICIAN_CONFLICT, "Bu akademisyenin bu saatte başka bir istisna dersi bulunmaktadır.")));
+
+        targetDateExceptions.stream()
+                .filter(exception -> hasGradeConflict(course, exception.getCourse()))
+                .findFirst()
+                .ifPresent(conflict -> conflicts.add(new ConflictItem(STUDENT_GROUP_CONFLICT, course.getGrade() + ". sınıf öğrencilerinin bu saatte başka bir istisna dersi bulunmaktadır.")));
 
         if (!conflicts.isEmpty()) {
             throw new ScheduleConflictException(resolveConflictCode(conflicts), "Bu saate ders eklenemez.", conflicts.stream().map(ConflictItem::detail).distinct().toList());
@@ -216,9 +225,12 @@ public class ScheduleExceptionService {
         }
     }
 
-    private List<String> resolveSelectedSlots(User currentUser, String timeSlot, int slotCount) {
+    private List<String> resolveAllSlots(User currentUser) {
         ScheduleTimeConfigurationResponse config = weeklyScheduleService.getTimeConfiguration(currentUser);
-        List<String> slots = config.slots().stream().map(slot -> slot.value()).toList();
+        return config.slots().stream().map(slot -> slot.value()).toList();
+    }
+
+    private List<String> resolveSelectedSlots(List<String> slots, String timeSlot, int slotCount) {
         int startIndex = slots.indexOf(timeSlot.trim());
         if (startIndex < 0) {
             throw new IllegalArgumentException("Geçersiz zaman bloğu seçimi.");
@@ -227,6 +239,27 @@ public class ScheduleExceptionService {
             throw new IllegalArgumentException("Seçilen ders saati program bitişini aşıyor.");
         }
         return slots.subList(startIndex, startIndex + slotCount);
+    }
+
+    private boolean exceptionOverlapsSelectedSlots(ScheduleException exception, List<String> selectedSlots, List<String> allSlots) {
+        int startIndex = allSlots.indexOf(exception.getTimeSlot());
+        if (startIndex < 0) {
+            return selectedSlots.contains(exception.getTimeSlot());
+        }
+        int slotCount = Math.max(1, exception.getSlotCount());
+        List<String> occupiedSlots = allSlots.subList(startIndex, Math.min(allSlots.size(), startIndex + slotCount));
+        return occupiedSlots.stream().anyMatch(selectedSlots::contains);
+    }
+
+    private boolean hasGradeConflict(Course requestedCourse, Course existingCourse) {
+        return requestedCourse.getCourseType() == CourseType.ZORUNLU
+                && existingCourse != null
+                && existingCourse.getCourseType() == CourseType.ZORUNLU
+                && existingCourse.getDepartment() != null
+                && requestedCourse.getDepartment() != null
+                && existingCourse.getDepartment().getId().equals(requestedCourse.getDepartment().getId())
+                && existingCourse.getGrade() == requestedCourse.getGrade()
+                && !existingCourse.getId().equals(requestedCourse.getId());
     }
 
     private int normalizeSlotCount(Integer slotCount) {

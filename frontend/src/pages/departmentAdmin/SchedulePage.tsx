@@ -79,6 +79,13 @@ const initialTimeConfig: ScheduleTimeConfigurationRequest = {
   lunchBreakEnd: '13:30',
 };
 
+const mutationErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof AxiosError) {
+    return error.response?.data?.message || fallback;
+  }
+  return fallback;
+};
+
 const dayLabel = (day: string) => scheduleDays.find((item) => item.value === day)?.label ?? day;
 
 const formatSlot = (slot: string) => slot.replace('-', ' - ');
@@ -100,7 +107,6 @@ type ScheduleVisualItem = {
   exceptionType?: ScheduleExceptionType;
 };
 
-const CALENDAR_HEADER_HEIGHT = 44;
 const CALENDAR_MINUTE_HEIGHT = 1.45;
 const MIN_EVENT_HEIGHT = 56;
 
@@ -357,31 +363,6 @@ export const SchedulePage = () => {
     return map;
   }, [visibleSchedules]);
 
-  const scheduleGroupMetaById = useMemo(() => {
-    const groups = new Map<string, WeeklyScheduleResponse[]>();
-    schedules.forEach((schedule) => {
-      const groupKey = schedule.scheduleGroupId ?? schedule.id;
-      groups.set(groupKey, [...(groups.get(groupKey) ?? []), schedule]);
-    });
-
-    const metaById = new Map<string, ScheduleGroupMeta>();
-    groups.forEach((groupSchedules) => {
-      const sortedSchedules = [...groupSchedules].sort((a, b) => timeSlots.indexOf(a.timeSlot) - timeSlots.indexOf(b.timeSlot));
-      const firstSchedule = sortedSchedules[0];
-      const lastSchedule = sortedSchedules[sortedSchedules.length - 1];
-      if (!firstSchedule || !lastSchedule) return;
-      const startTime = firstSchedule.timeSlot.split('-')[0]?.trim() ?? firstSchedule.timeSlot;
-      const endTime = lastSchedule.timeSlot.split('-')[1]?.trim() ?? lastSchedule.timeSlot;
-      const meta = {
-        firstScheduleId: firstSchedule.id,
-        slotCount: sortedSchedules.length,
-        timeRange: `${startTime} - ${endTime}`,
-      };
-      sortedSchedules.forEach((schedule) => metaById.set(schedule.id, meta));
-    });
-    return metaById;
-  }, [schedules, timeSlots]);
-
   const visualScheduleItems = useMemo(() => {
     const groups = new Map<string, WeeklyScheduleResponse[]>();
     visibleSchedules.forEach((schedule) => {
@@ -495,27 +476,6 @@ export const SchedulePage = () => {
       })
       .map((course) => ({ label: `${course.code} - ${course.name}`, value: course.id })),
     [courses, editingSchedule, scheduleStatus, selectedGradeNumber, selectedSemester],
-  );
-
-  const calendarClassroomOptions = useMemo(
-    () => [
-      { label: 'Tüm Sınıflar', value: '' },
-      ...[].map((classroom: AvailableClassroomResponse) => ({
-        label: `${classroom.code} - ${classroom.capacity} kişi`,
-        value: classroom.id,
-      })),
-    ],
-    [],
-  );
-
-  const incompleteCourses = useMemo(
-    () => scheduleStatus?.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED') ?? [],
-    [scheduleStatus],
-  );
-
-  const notScheduledCourses = useMemo(
-    () => scheduleStatus?.courses.filter((course) => course.status === 'NOT_SCHEDULED') ?? [],
-    [scheduleStatus],
   );
 
   const filteredScheduleStatus = useMemo(() => {
@@ -668,7 +628,7 @@ export const SchedulePage = () => {
       queryClient.invalidateQueries({ queryKey: ['scheduleStatus'] });
       setDeletingSchedule(null);
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders programı kaldırılamadı.'),
+    onError: (error: unknown) => toast.error(mutationErrorMessage(error, 'Ders programı kaldırılamadı.')),
   });
 
   const updateTimeConfigMutation = useMutation({
@@ -682,7 +642,7 @@ export const SchedulePage = () => {
       queryClient.invalidateQueries({ queryKey: ['availableClassrooms'] });
       setIsTimeConfigModalOpen(false);
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders saatleri güncellenemedi.'),
+    onError: (error: unknown) => toast.error(mutationErrorMessage(error, 'Ders saatleri güncellenemedi.')),
   });
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -767,8 +727,6 @@ export const SchedulePage = () => {
           <ScheduleStatusOverview
             status={filteredScheduleStatus}
             isLoading={isStatusLoading}
-            incompleteCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED')}
-            notScheduledCourses={filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED')}
             onShowDetails={() => setIsStatusModalOpen(true)}
           />
           {gradeScheduleSummary && (
@@ -832,7 +790,7 @@ export const SchedulePage = () => {
         </div>
       ) : timeSlots.length === 0 ? (
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
-          <p className="text-sm font-bold text-amber-800">Ders saatleri oluÅŸturulamadÄ±. Saat ayarlarÄ±nÄ± kontrol edin.</p>
+          <p className="text-sm font-bold text-amber-800">Ders saatleri oluşturulamadı. Saat ayarlarını kontrol edin.</p>
         </div>
       ) : visibleSchedules.length === 0 && visualScheduleItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
@@ -1417,14 +1375,10 @@ const ScheduleDetailPanel = ({
 const ScheduleStatusOverview = ({
   status,
   isLoading,
-  incompleteCourses,
-  notScheduledCourses,
   onShowDetails,
 }: {
   status: ScheduleCompletionResponse;
   isLoading: boolean;
-  incompleteCourses: CourseScheduleStatusItemResponse[];
-  notScheduledCourses: CourseScheduleStatusItemResponse[];
   onShowDetails: () => void;
 }) => {
   const hasWarnings = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
@@ -1588,7 +1542,7 @@ const ScheduleCard = ({
       <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> <span className="truncate">{schedule.academicianName}</span></p>
       <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> <span className="truncate">{schedule.classroomCode} · {schedule.classroomName}</span></p>
       <p className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {groupMeta && groupMeta.slotCount > 1 ? `${groupMeta.slotCount} ders saati · ${groupMeta.timeRange}` : formatSlot(schedule.timeSlot)}</p>
-      {exceptionType === 'CANCELLED' && <p className="flex items-center gap-1.5 font-bold text-red-700"><XCircle className="h-3 w-3" /> IPTAL EDILDI</p>}
+      {exceptionType === 'CANCELLED' && <p className="flex items-center gap-1.5 font-bold text-red-700"><XCircle className="h-3 w-3" /> İPTAL EDİLDİ</p>}
       {hasConflict && <p className="flex items-center gap-1.5 font-bold text-red-600"><XCircle className="h-3 w-3" /> Çakışma</p>}
     </div>}
   </article>

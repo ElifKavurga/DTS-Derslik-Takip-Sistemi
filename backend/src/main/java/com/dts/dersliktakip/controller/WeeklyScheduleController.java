@@ -46,7 +46,7 @@ public class WeeklyScheduleController {
     }
 
     @GetMapping("/status")
-    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
+    @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
     public ResponseEntity<ScheduleCompletionResponse> getScheduleCompletion(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) Semester semester
