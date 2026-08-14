@@ -20,13 +20,17 @@ import {
   User,
   ArrowRight,
   AlertCircle,
+  Ban,
+  CalendarPlus,
+  RefreshCw,
 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
 import { cn } from '@/utils/cn';
 import { dashboardService } from '@/services/dashboardService';
+import { scheduleExceptionService } from '@/services/scheduleExceptionService';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Role } from '@/types';
+import { Role, ScheduleExceptionResponse } from '@/types';
 
 const roleLabels: Record<Role, string> = {
   SUPER_ADMIN: 'Süper Admin',
@@ -639,6 +643,11 @@ const AcademicianDashboard = () => {
     queryFn: () => dashboardService.getAcademicianDashboard(selectedSemester),
   });
 
+  const { data: exceptions = [] } = useQuery({
+    queryKey: ['scheduleExceptions', 'dashboard'],
+    queryFn: () => scheduleExceptionService.getMine(),
+  });
+
   const getDayLabel = (day: string) => {
     const labels: Record<string, string> = {
       MONDAY: 'Pazartesi',
@@ -693,6 +702,12 @@ const AcademicianDashboard = () => {
   }
 
   const { academician, academicTerm, todayCourses = [], nextCourse, courses = [], weeklySummary = {} } = data || {};
+  const upcomingExceptions = (exceptions as ScheduleExceptionResponse[]).filter((item) => new Date(`${item.targetDate}T12:00:00`) >= new Date(new Date().setHours(0, 0, 0, 0)));
+  const exceptionSummary = {
+    cancelled: upcomingExceptions.filter((item) => item.type === 'CANCELLED').length,
+    makeup: upcomingExceptions.filter((item) => item.type === 'MAKEUP').length,
+    extra: upcomingExceptions.filter((item) => item.type === 'EXTRA').length,
+  };
 
   const todayLabel = new Date().toLocaleDateString('tr-TR', {
     weekday: 'long',
@@ -841,6 +856,28 @@ const AcademicianDashboard = () => {
 
         {/* Right Side: Weekly Summary & Course list */}
         <div className="space-y-6 md:col-span-4">
+          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Yaklaşan Ders Değişiklikleri</h2>
+                <p className="mt-0.5 text-xs font-medium text-slate-400">İptal, telafi ve ek ders kayıtlarınız.</p>
+              </div>
+              <RefreshCw className="h-5 w-5 shrink-0 text-[#006482]" />
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <DashboardExceptionMetric label="İptal" value={exceptionSummary.cancelled} icon={<Ban className="h-4 w-4" />} tone="red" />
+              <DashboardExceptionMetric label="Telafi" value={exceptionSummary.makeup} icon={<RefreshCw className="h-4 w-4" />} tone="amber" />
+              <DashboardExceptionMetric label="Ek Ders" value={exceptionSummary.extra} icon={<CalendarPlus className="h-4 w-4" />} tone="emerald" />
+            </div>
+            <Link
+              to="/academician/istisnalar"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+            >
+              Tümünü Gör
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
           {/* Weekly Summary Widget */}
           <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Haftalık Ders Özeti</h2>
@@ -915,3 +952,26 @@ const AcademicianDashboard = () => {
     </div>
   );
 };
+
+const DashboardExceptionMetric = ({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+  tone: 'red' | 'amber' | 'emerald';
+}) => (
+  <div className={cn(
+    'rounded-2xl border px-3 py-2',
+    tone === 'red' ? 'border-red-100 bg-red-50 text-red-700' : tone === 'amber' ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  )}>
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[10px] font-extrabold uppercase tracking-wider">{label}</span>
+      {icon}
+    </div>
+    <p className="mt-1 text-lg font-black">{value}</p>
+  </div>
+);

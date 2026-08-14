@@ -10,6 +10,9 @@ export type ScheduleExceptionResponse = {
   academicianId: string;
   academicianName: string;
   originalDate?: string | null;
+  originalTimeSlot?: string | null;
+  originalClassroomCode?: string | null;
+  originalClassroomName?: string | null;
   targetDate: string;
   dayOfWeek: string;
   timeSlot: string;

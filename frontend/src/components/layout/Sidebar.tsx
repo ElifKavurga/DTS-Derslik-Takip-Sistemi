@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  RefreshCw,
   User,
   Users,
   X,
@@ -89,6 +90,12 @@ export const Sidebar = ({
       path: role === 'ACADEMICIAN' ? '/academician/ders-programi' : '/department-admin/ders-programi',
       icon: CalendarDays,
       roles: ['DEPARTMENT_ADMIN', 'ACADEMICIAN'],
+    },
+    {
+      label: 'Ders Değişikliklerim',
+      path: '/academician/istisnalar',
+      icon: RefreshCw,
+      roles: ['ACADEMICIAN'],
     },
   ];
   const navigation = navigationItems.filter((item) => canShowItem(item, role));

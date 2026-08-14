@@ -292,16 +292,21 @@ public class ScheduleExceptionService {
         Course course = exception.getCourse();
         Academician academician = exception.getAcademician();
         Classroom classroom = exception.getClassroom();
+        WeeklySchedule originalSchedule = exception.getOriginalSchedule();
+        Classroom originalClassroom = originalSchedule == null ? null : originalSchedule.getClassroom();
         return new ScheduleExceptionResponse(
                 exception.getId(),
                 exception.getType(),
-                exception.getOriginalSchedule() == null ? null : exception.getOriginalSchedule().getId(),
+                originalSchedule == null ? null : originalSchedule.getId(),
                 course.getId(),
                 course.getCode(),
                 course.getName(),
                 academician.getId(),
                 (academician.getTitle() + " " + academician.getFirstName() + " " + academician.getLastName()).trim(),
                 exception.getOriginalDate(),
+                originalSchedule == null ? null : originalSchedule.getTimeSlot(),
+                originalClassroom == null ? null : originalClassroom.getCode(),
+                originalClassroom == null ? null : originalClassroom.getName(),
                 exception.getTargetDate(),
                 exception.getTargetDate().getDayOfWeek().name().toUpperCase(Locale.ROOT),
                 exception.getTimeSlot(),
