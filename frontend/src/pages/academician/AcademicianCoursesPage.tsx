@@ -92,12 +92,14 @@ const DAY_LABELS: Record<string, string> = {
 const todayValue = () => new Date().toISOString().slice(0, 10);
 
 const DATE_DAY_TO_SCHEDULE_DAY = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+const scheduleDayFromDate = (date: string) => date ? DATE_DAY_TO_SCHEDULE_DAY[new Date(`${date}T12:00:00`).getDay()] : '';
 
 type LessonAction = 'cancel' | 'makeup' | 'extra';
 
 type ExceptionFormState = {
   action: LessonAction | null;
   scheduleId: string;
+  scheduleIds: string[];
   originalDate: string;
   targetDate: string;
   timeSlot: string;
@@ -108,6 +110,7 @@ type ExceptionFormState = {
 const initialExceptionForm = (course: AcademicianCourseDetailResponse): ExceptionFormState => ({
   action: null,
   scheduleId: course.scheduleSlots[0]?.scheduleId ?? '',
+  scheduleIds: course.scheduleSlots[0]?.scheduleId ? [course.scheduleSlots[0].scheduleId] : [],
   originalDate: todayValue(),
   targetDate: todayValue(),
   timeSlot: '',
@@ -145,7 +148,9 @@ const CourseDetailModal = ({
     selectedAction && selectedAction !== 'cancel' && course.id && form.targetDate && form.timeSlot && form.slotCount,
   );
 
-  const targetDay = form.targetDate ? DATE_DAY_TO_SCHEDULE_DAY[new Date(`${form.targetDate}T12:00:00`).getDay()] : '';
+  const targetDay = scheduleDayFromDate(form.targetDate);
+  const cancelDay = scheduleDayFromDate(form.originalDate);
+  const cancellationSlots = course.scheduleSlots.filter((slot) => slot.dayOfWeek === cancelDay);
 
   const { data: classrooms = [], isFetching: isClassroomsLoading, error: classroomsError } = useQuery({
     queryKey: ['academicianExceptionClassrooms', course.id, targetDay, form.timeSlot, form.slotCount],
@@ -176,6 +181,7 @@ const CourseDetailModal = ({
     toast.success(message);
     queryClient.invalidateQueries({ queryKey: ['academicianCourses'] });
     queryClient.invalidateQueries({ queryKey: ['weeklySchedules'] });
+    queryClient.invalidateQueries({ queryKey: ['scheduleExceptions'] });
     resetAction();
   };
 
@@ -186,7 +192,6 @@ const CourseDetailModal = ({
 
   const cancelMutation = useMutation({
     mutationFn: scheduleExceptionService.cancelLesson,
-    onSuccess: () => handleSuccess('Ders seçilen tarih için iptal edildi.'),
     onError: (error) => toast.error(errorMessage(error)),
   });
 
@@ -202,9 +207,10 @@ const CourseDetailModal = ({
     onError: (error) => toast.error(errorMessage(error)),
   });
 
-  const submitAction = () => {
+  const submitAction = async () => {
     if (selectedAction === 'cancel') {
-      cancelMutation.mutate({ scheduleId: form.scheduleId, date: form.originalDate });
+      await Promise.all(form.scheduleIds.map((scheduleId) => cancelMutation.mutateAsync({ scheduleId, date: form.originalDate })));
+      handleSuccess(`${form.scheduleIds.length} ders saati seçilen tarih için iptal edildi.`);
     }
     if (selectedAction === 'makeup') {
       makeupMutation.mutate({
@@ -313,7 +319,16 @@ const CourseDetailModal = ({
           <div className="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-500">Ders İşlemleri</p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <SecondaryButton type="button" className="min-h-12 w-full justify-center" disabled={!selectedSchedule} onClick={() => setForm((current) => ({ ...current, action: 'cancel' }))} icon={<Ban className="h-4 w-4" />}>
+              <SecondaryButton
+                type="button"
+                className="min-h-12 w-full justify-center"
+                disabled={!selectedSchedule}
+                onClick={() => setForm((current) => {
+                  const daySlots = course.scheduleSlots.filter((slot) => slot.dayOfWeek === scheduleDayFromDate(current.originalDate));
+                  return { ...current, action: 'cancel', scheduleIds: daySlots.map((slot) => slot.scheduleId), scheduleId: daySlots[0]?.scheduleId ?? current.scheduleId };
+                })}
+                icon={<Ban className="h-4 w-4" />}
+              >
                 Dersi İptal Et
               </SecondaryButton>
               <SecondaryButton type="button" className="min-h-12 w-full justify-center" disabled={!selectedSchedule} onClick={() => setForm((current) => ({ ...current, action: 'makeup' }))} icon={<RefreshCw className="h-4 w-4" />}>
@@ -342,17 +357,62 @@ const CourseDetailModal = ({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="min-w-0 space-y-1">
                       <label className="dts-input-label">Program Slotu</label>
-                      <AppSelect
-                        value={form.scheduleId}
-                        onChange={(scheduleId) => setForm((current) => ({ ...current, scheduleId }))}
-                        options={course.scheduleSlots.map((slot) => ({ label: `${DAY_LABELS[slot.dayOfWeek] ?? slot.dayOfWeek} · ${slot.timeSlot} · ${slot.classroomCode}`, value: slot.scheduleId }))}
-                        placeholder="Slot seçiniz"
-                        className="h-12"
-                      />
+                      {selectedAction === 'cancel' ? (
+                        <div className="max-h-40 space-y-1 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2">
+                          {cancellationSlots.length === 0 && (
+                            <p className="px-2 py-2 text-xs font-semibold text-amber-700">Seçilen tarihte bu dersin program slotu yok.</p>
+                          )}
+                          {cancellationSlots.map((slot) => {
+                            const checked = form.scheduleIds.includes(slot.scheduleId);
+                            return (
+                              <label key={slot.scheduleId} className="flex cursor-pointer items-center gap-2 rounded-xl px-2 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={(event) => setForm((current) => ({
+                                    ...current,
+                                    scheduleIds: event.target.checked
+                                      ? [...current.scheduleIds, slot.scheduleId]
+                                      : current.scheduleIds.filter((id) => id !== slot.scheduleId),
+                                    scheduleId: event.target.checked ? slot.scheduleId : current.scheduleId,
+                                  }))}
+                                  className="h-4 w-4 rounded border-slate-300 text-[#006482] focus:ring-[#006482]"
+                                />
+                                <span className="min-w-0 truncate">{DAY_LABELS[slot.dayOfWeek] ?? slot.dayOfWeek} · {slot.timeSlot} · {slot.classroomCode}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <AppSelect
+                          value={form.scheduleId}
+                          onChange={(scheduleId) => setForm((current) => ({ ...current, scheduleId, scheduleIds: [scheduleId] }))}
+                          options={course.scheduleSlots.map((slot) => ({ label: `${DAY_LABELS[slot.dayOfWeek] ?? slot.dayOfWeek} · ${slot.timeSlot} · ${slot.classroomCode}`, value: slot.scheduleId }))}
+                          placeholder="Slot seçiniz"
+                          className="h-12"
+                        />
+                      )}
                     </div>
                     <div className="min-w-0 space-y-1">
                       <label className="dts-input-label">{selectedAction === 'cancel' ? 'İptal Tarihi' : 'İptal Edilecek Tarih'}</label>
-                      <input type="date" value={form.originalDate} onChange={(event) => setForm((current) => ({ ...current, originalDate: event.target.value }))} className="dts-input h-12 w-full min-w-0" />
+                      <input
+                        type="date"
+                        value={form.originalDate}
+                        onChange={(event) => setForm((current) => {
+                          const nextDate = event.target.value;
+                          if (selectedAction !== 'cancel') {
+                            return { ...current, originalDate: nextDate };
+                          }
+                          const daySlots = course.scheduleSlots.filter((slot) => slot.dayOfWeek === scheduleDayFromDate(nextDate));
+                          return {
+                            ...current,
+                            originalDate: nextDate,
+                            scheduleIds: daySlots.map((slot) => slot.scheduleId),
+                            scheduleId: daySlots[0]?.scheduleId ?? '',
+                          };
+                        })}
+                        className="dts-input h-12 w-full min-w-0"
+                      />
                     </div>
                   </div>
                 )}
@@ -430,8 +490,8 @@ const CourseDetailModal = ({
                     onClick={submitAction}
                     loading={cancelMutation.isPending || makeupMutation.isPending || extraMutation.isPending}
                     disabled={
-                      (selectedAction !== 'extra' && !form.scheduleId)
-                      || (selectedAction === 'cancel' && !form.originalDate)
+                      (selectedAction === 'makeup' && !form.scheduleId)
+                      || (selectedAction === 'cancel' && (!form.originalDate || form.scheduleIds.length === 0))
                       || (selectedAction === 'makeup' && (!form.originalDate || !form.targetDate || !form.timeSlot || !form.classroomId))
                       || (selectedAction === 'extra' && (!form.targetDate || !form.timeSlot || !form.classroomId))
                     }

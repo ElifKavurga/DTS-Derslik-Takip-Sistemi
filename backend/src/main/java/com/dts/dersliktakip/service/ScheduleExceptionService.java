@@ -14,6 +14,7 @@ import com.dts.dersliktakip.entity.ScheduleException;
 import com.dts.dersliktakip.entity.ScheduleExceptionType;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.entity.WeeklySchedule;
+import com.dts.dersliktakip.entity.Role;
 import com.dts.dersliktakip.exception.ScheduleConflictException;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
@@ -51,9 +52,18 @@ public class ScheduleExceptionService {
     private final ClassroomRepository classroomRepository;
     private final AcademicianRepository academicianRepository;
     private final WeeklyScheduleService weeklyScheduleService;
+    private final AccessScopeService accessScopeService;
 
     @Transactional(readOnly = true)
     public List<ScheduleExceptionResponse> getMyExceptions(User currentUser, LocalDate weekStart, LocalDate weekEnd) {
+        if (currentUser.getRoles() == null || !currentUser.getRoles().contains(Role.ACADEMICIAN)) {
+            Department department = accessScopeService.requireDepartmentScope(currentUser);
+            List<ScheduleException> exceptions = weekStart != null && weekEnd != null
+                    ? scheduleExceptionRepository.findAllByCourse_Department_IdAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(department.getId(), weekStart, weekEnd)
+                    : scheduleExceptionRepository.findAllByCourse_Department_IdOrderByTargetDateDescTimeSlotAsc(department.getId());
+            return exceptions.stream().map(this::toResponse).toList();
+        }
+
         Academician academician = resolveAcademician(currentUser);
         List<ScheduleException> exceptions = weekStart != null && weekEnd != null
                 ? scheduleExceptionRepository.findAllByAcademician_IdAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(academician.getId(), weekStart, weekEnd)

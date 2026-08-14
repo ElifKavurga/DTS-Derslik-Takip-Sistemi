@@ -30,7 +30,7 @@ public class ScheduleExceptionController {
     private final ScheduleExceptionService scheduleExceptionService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ACADEMICIAN')")
+    @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<List<ScheduleExceptionResponse>> getMyExceptions(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) LocalDate weekStart,

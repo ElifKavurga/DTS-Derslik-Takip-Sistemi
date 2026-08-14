@@ -11,12 +11,15 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { courseService } from '@/services/courseService';
 import { scheduleService } from '@/services/scheduleService';
+import { scheduleExceptionService } from '@/services/scheduleExceptionService';
 import {
   AvailableClassroomResponse,
   CourseScheduleStatusItemResponse,
   CourseResponse,
   ScheduleDay,
   ScheduleCompletionResponse,
+  ScheduleExceptionResponse,
+  ScheduleExceptionType,
   ScheduleTimeConfigurationRequest,
   Semester,
   WeeklyScheduleResponse,
@@ -94,6 +97,7 @@ type ScheduleVisualItem = {
   groupMeta: ScheduleGroupMeta;
   top: number;
   height: number;
+  exceptionType?: ScheduleExceptionType;
 };
 
 const CALENDAR_HEADER_HEIGHT = 44;
@@ -129,6 +133,12 @@ export const SchedulePage = () => {
   const { data: schedules = [], isLoading, error, refetch } = useQuery({
     queryKey: ['weeklySchedules', selectedSemester],
     queryFn: () => scheduleService.getAll(selectedSemester || undefined),
+  });
+
+  const { data: scheduleExceptions = [] } = useQuery({
+    queryKey: ['scheduleExceptions', role],
+    queryFn: () => scheduleExceptionService.getMine(),
+    enabled: role === 'ACADEMICIAN' || role === 'DEPARTMENT_ADMIN',
   });
 
   const { data: scheduleStatus, isLoading: isStatusLoading } = useQuery({
@@ -310,6 +320,25 @@ export const SchedulePage = () => {
     [courseById, schedules, selectedGradeNumber],
   );
 
+  const visibleExceptions = useMemo(
+    () => (role === 'ACADEMICIAN' || role === 'DEPARTMENT_ADMIN')
+      ? scheduleExceptions.filter((exception) => {
+        const course = courseById.get(exception.courseId);
+        if (selectedGradeNumber !== null && course?.grade !== selectedGradeNumber) return false;
+        return !selectedSemester || !course || course.semester === selectedSemester;
+      })
+      : [],
+    [courseById, role, scheduleExceptions, selectedGradeNumber, selectedSemester],
+  );
+
+  const cancellationByScheduleId = useMemo(() => {
+    const map = new Map<string, ScheduleExceptionResponse>();
+    visibleExceptions
+      .filter((exception) => exception.type === 'CANCELLED' && exception.originalScheduleId)
+      .forEach((exception) => map.set(exception.originalScheduleId!, exception));
+    return map;
+  }, [visibleExceptions]);
+
   const readOnlyScheduleSummary = useMemo(() => {
     const uniqueBlocks = new Set(visibleSchedules.map((schedule) => schedule.scheduleGroupId ?? schedule.id));
     return {
@@ -388,6 +417,7 @@ export const SchedulePage = () => {
           },
           top,
           height,
+          exceptionType: cancellationByScheduleId.has(first.schedule.id) ? 'CANCELLED' : undefined,
         });
         segment = [];
       };
@@ -401,8 +431,57 @@ export const SchedulePage = () => {
       });
       flushSegment();
     });
+    visibleExceptions
+      .filter((exception) => exception.type === 'MAKEUP' || exception.type === 'EXTRA')
+      .forEach((exception) => {
+        const startIndex = timeSlots.indexOf(exception.timeSlot);
+        if (startIndex < 0) return;
+        const dayOfWeek = exception.dayOfWeek as ScheduleDay;
+        if (!scheduleDays.some((day) => day.value === dayOfWeek)) return;
+
+        const slotCount = Math.max(1, exception.slotCount);
+        const lastSlot = timeSlots[Math.min(timeSlots.length - 1, startIndex + slotCount - 1)] ?? exception.timeSlot;
+        const startTime = slotStart(exception.timeSlot);
+        const endTime = slotEnd(lastSlot);
+        const top = (parseTimeToMinutes(startTime) - calendarStartMinute) * CALENDAR_MINUTE_HEIGHT;
+        const height = Math.max(MIN_EVENT_HEIGHT, (parseTimeToMinutes(endTime) - parseTimeToMinutes(startTime)) * CALENDAR_MINUTE_HEIGHT);
+        const course = courseById.get(exception.courseId);
+
+        items.push({
+          id: `exception:${exception.id}`,
+          dayOfWeek,
+          startSlot: exception.timeSlot,
+          schedule: {
+            id: exception.id,
+            courseId: exception.courseId,
+            courseCode: exception.courseCode,
+            courseName: exception.courseName,
+            academicianId: exception.academicianId,
+            academicianName: exception.academicianName,
+            classroomId: exception.classroomId ?? '',
+            classroomCode: exception.classroomCode ?? '-',
+            classroomName: exception.classroomName ?? '-',
+            classroomCapacity: 0,
+            classroomType: 'CLASSROOM',
+            departmentId: course?.departmentId ?? '',
+            departmentName: course?.departmentName ?? '',
+            dayOfWeek,
+            timeSlot: exception.timeSlot,
+            semester: course?.semester ?? 'GUZ',
+            scheduleGroupId: exception.id,
+          },
+          groupMeta: {
+            firstScheduleId: exception.id,
+            slotCount,
+            timeRange: `${startTime} - ${endTime}`,
+          },
+          top,
+          height,
+          exceptionType: exception.type,
+        });
+      });
     return items;
-  }, [calendarStartMinute, timeSlots, visibleSchedules]);
+  }, [calendarStartMinute, cancellationByScheduleId, courseById, timeSlots, visibleExceptions, visibleSchedules]);
 
   const courseOptions = useMemo(
     () => courses
@@ -595,15 +674,15 @@ export const SchedulePage = () => {
   const updateTimeConfigMutation = useMutation({
     mutationFn: scheduleService.updateTimeConfiguration,
     onSuccess: (config) => {
-      toast.success('Ders saatleri gÃ¼ncellendi.');
+      toast.success('Ders saatleri güncellendi.');
       if (config.affectedScheduleCount > 0) {
-        toast.error(`${config.affectedScheduleCount} mevcut program kaydÄ± yeni saat aralÄ±klarÄ±nÄ±n dÄ±ÅŸÄ±nda kaldÄ±.`);
+        toast.error(`${config.affectedScheduleCount} mevcut program kaydı yeni saat aralıklarının dışında kaldı.`);
       }
       queryClient.invalidateQueries({ queryKey: ['scheduleTimeConfiguration'] });
       queryClient.invalidateQueries({ queryKey: ['availableClassrooms'] });
       setIsTimeConfigModalOpen(false);
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders saatleri gÃ¼ncellenemedi.'),
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Ders saatleri güncellenemedi.'),
   });
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -755,7 +834,7 @@ export const SchedulePage = () => {
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
           <p className="text-sm font-bold text-amber-800">Ders saatleri oluÅŸturulamadÄ±. Saat ayarlarÄ±nÄ± kontrol edin.</p>
         </div>
-      ) : visibleSchedules.length === 0 ? (
+      ) : visibleSchedules.length === 0 && visualScheduleItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">
@@ -834,6 +913,7 @@ export const SchedulePage = () => {
                       groupMeta={item.groupMeta}
                       hasConflict={hasConflict}
                       highlighted={highlightedCourseId === item.schedule.courseId}
+                      exceptionType={item.exceptionType}
                       onOpenDetails={() => setScheduleDetail({ schedule: item.schedule, groupMeta: item.groupMeta, hasConflict })}
                       onEdit={() => openEdit(item.schedule)}
                       onDelete={() => setDeletingSchedule(item.schedule)}
@@ -1436,6 +1516,7 @@ const ScheduleCard = ({
   groupMeta,
   hasConflict,
   highlighted = false,
+  exceptionType,
   onOpenDetails,
   onEdit,
   onDelete,
@@ -1445,12 +1526,21 @@ const ScheduleCard = ({
   groupMeta?: ScheduleGroupMeta;
   hasConflict: boolean;
   highlighted?: boolean;
+  exceptionType?: ScheduleExceptionType;
   onOpenDetails: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isReadOnly?: boolean;
 }) => {
   const shouldCenterContent = (groupMeta?.slotCount ?? 1) >= 3;
+  const compactCard = (groupMeta?.slotCount ?? 1) <= 2;
+  const exceptionMeta = exceptionType
+    ? {
+      CANCELLED: { label: 'İPTAL', cls: 'border-red-200 bg-red-50 text-red-700', cardCls: 'border-red-200 bg-red-50' },
+      MAKEUP: { label: 'TELAFİ', cls: 'border-amber-200 bg-amber-50 text-amber-700', cardCls: 'border-amber-200 bg-amber-50' },
+      EXTRA: { label: 'EK DERS', cls: 'border-emerald-200 bg-emerald-50 text-emerald-700', cardCls: 'border-emerald-200 bg-emerald-50' },
+    }[exceptionType]
+    : null;
   return (
   <article
     role="button"
@@ -1465,14 +1555,23 @@ const ScheduleCard = ({
     className={cn(
       'flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
       shouldCenterContent && 'justify-center',
-      hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]',
+      exceptionMeta ? exceptionMeta.cardCls : hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]',
       highlighted && 'ring-2 ring-[#fabc07]/70',
     )}
   >
     <div className="flex items-start justify-between gap-2">
-      <div className="min-w-0">
-        <p className="truncate text-xs font-extrabold text-slate-900">{schedule.courseCode}</p>
-        <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-600">{schedule.courseName}</p>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <p className={cn('truncate text-xs font-extrabold text-slate-900', exceptionType === 'CANCELLED' && 'text-red-800')}>
+              {compactCard ? schedule.courseName : schedule.courseCode}
+            </p>
+            {exceptionMeta && (
+              <span className={cn('shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black tracking-wide', exceptionMeta.cls)}>
+                {exceptionMeta.label}
+              </span>
+            )}
+          </div>
+        {!compactCard && <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-600">{schedule.courseName}</p>}
       </div>
       {!isReadOnly && (
         <div className="flex shrink-0 items-center gap-1">
@@ -1485,12 +1584,13 @@ const ScheduleCard = ({
         </div>
       )}
     </div>
-    <div className="mt-2 space-y-1 text-[10px] font-semibold text-slate-500">
+    {!compactCard && <div className="mt-2 space-y-1 text-[10px] font-semibold text-slate-500">
       <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> <span className="truncate">{schedule.academicianName}</span></p>
       <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> <span className="truncate">{schedule.classroomCode} · {schedule.classroomName}</span></p>
       <p className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {groupMeta && groupMeta.slotCount > 1 ? `${groupMeta.slotCount} ders saati · ${groupMeta.timeRange}` : formatSlot(schedule.timeSlot)}</p>
+      {exceptionType === 'CANCELLED' && <p className="flex items-center gap-1.5 font-bold text-red-700"><XCircle className="h-3 w-3" /> IPTAL EDILDI</p>}
       {hasConflict && <p className="flex items-center gap-1.5 font-bold text-red-600"><XCircle className="h-3 w-3" /> Çakışma</p>}
-    </div>
+    </div>}
   </article>
   );
 };
