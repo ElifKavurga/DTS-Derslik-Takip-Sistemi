@@ -134,6 +134,10 @@ export const SchedulePage = () => {
   const highlightedCourseId = isReadOnly ? searchParams.get('courseId') : null;
   const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
   const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedAcademicianId, setSelectedAcademicianId] = useState('');
+  const [selectedClassroomId, setSelectedClassroomId] = useState('');
+  const [selectedScheduleCourseId, setSelectedScheduleCourseId] = useState('');
+  const [selectedDayFilter, setSelectedDayFilter] = useState<ScheduleDay | ''>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isTimeConfigModalOpen, setIsTimeConfigModalOpen] = useState(false);
@@ -194,12 +198,8 @@ export const SchedulePage = () => {
   }, [courses, selectedSemester]);
 
   useEffect(() => {
-    if (gradeOptions.length === 0) {
-      if (selectedGrade) setSelectedGrade('');
-      return;
-    }
-    if (!gradeOptions.some((option) => option.value === selectedGrade)) {
-      setSelectedGrade(gradeOptions[0].value);
+    if (selectedGrade && !gradeOptions.some((option) => option.value === selectedGrade)) {
+      setSelectedGrade('');
     }
   }, [gradeOptions, selectedGrade]);
 
@@ -347,11 +347,54 @@ export const SchedulePage = () => {
     [courses],
   );
 
+  const scheduleFilterOptions = useMemo(() => {
+    const courseOptionsById = new Map<string, { label: string; value: string }>();
+    const academicianOptionsById = new Map<string, { label: string; value: string }>();
+    const classroomOptionsById = new Map<string, { label: string; value: string }>();
+
+    schedules.forEach((schedule) => {
+      courseOptionsById.set(schedule.courseId, {
+        label: `${schedule.courseCode} - ${schedule.courseName}`,
+        value: schedule.courseId,
+      });
+      academicianOptionsById.set(schedule.academicianId, {
+        label: schedule.academicianName,
+        value: schedule.academicianId,
+      });
+      classroomOptionsById.set(schedule.classroomId, {
+        label: `${schedule.classroomCode} - ${schedule.classroomName}`,
+        value: schedule.classroomId,
+      });
+    });
+
+    const sortByLabel = (a: { label: string }, b: { label: string }) => a.label.localeCompare(b.label, 'tr');
+    return {
+      courses: Array.from(courseOptionsById.values()).sort(sortByLabel),
+      academicians: Array.from(academicianOptionsById.values()).sort(sortByLabel),
+      classrooms: Array.from(classroomOptionsById.values()).sort(sortByLabel),
+    };
+  }, [schedules]);
+
+  const hasScheduleFilters = Boolean(selectedGrade || selectedAcademicianId || selectedClassroomId || selectedScheduleCourseId || selectedDayFilter);
+
+  const clearScheduleFilters = () => {
+    setSelectedGrade('');
+    setSelectedAcademicianId('');
+    setSelectedClassroomId('');
+    setSelectedScheduleCourseId('');
+    setSelectedDayFilter('');
+  };
+
   const visibleSchedules = useMemo(
-    () => selectedGradeNumber === null
-      ? schedules
-      : schedules.filter((schedule) => courseById.get(schedule.courseId)?.grade === selectedGradeNumber),
-    [courseById, schedules, selectedGradeNumber],
+    () => schedules.filter((schedule) => {
+      if (selectedGradeNumber !== null && courseById.get(schedule.courseId)?.grade !== selectedGradeNumber) return false;
+      if (selectedAcademicianId && schedule.academicianId !== selectedAcademicianId) return false;
+      if (selectedClassroomId && schedule.classroomId !== selectedClassroomId) return false;
+      if (selectedScheduleCourseId && schedule.courseId !== selectedScheduleCourseId) return false;
+      if (selectedDayFilter && schedule.dayOfWeek !== selectedDayFilter) return false;
+      return true;
+    }),
+    [courseById, schedules, selectedAcademicianId, selectedClassroomId, selectedDayFilter, selectedGradeNumber, selectedScheduleCourseId],
   );
 
   const visibleExceptions = useMemo(
@@ -359,10 +402,13 @@ export const SchedulePage = () => {
       ? scheduleExceptions.filter((exception) => {
         const course = courseById.get(exception.courseId);
         if (selectedGradeNumber !== null && course?.grade !== selectedGradeNumber) return false;
+        if (selectedAcademicianId && exception.academicianId !== selectedAcademicianId) return false;
+        if (selectedClassroomId && exception.classroomId !== selectedClassroomId) return false;
+        if (selectedScheduleCourseId && exception.courseId !== selectedScheduleCourseId) return false;
         return !selectedSemester || !course || course.semester === selectedSemester;
       })
       : [],
-    [courseById, role, scheduleExceptions, selectedGradeNumber, selectedSemester],
+    [courseById, role, scheduleExceptions, selectedAcademicianId, selectedClassroomId, selectedGradeNumber, selectedScheduleCourseId, selectedSemester],
   );
 
   const cancellationByScheduleId = useMemo(() => {
@@ -447,6 +493,7 @@ export const SchedulePage = () => {
         if (startIndex < 0) return;
         const dayOfWeek = exception.dayOfWeek as ScheduleDay;
         if (!scheduleDays.some((day) => day.value === dayOfWeek)) return;
+        if (selectedDayFilter && dayOfWeek !== selectedDayFilter) return;
 
         const slotCount = Math.max(1, exception.slotCount);
         const lastSlot = timeSlots[Math.min(timeSlots.length - 1, startIndex + slotCount - 1)] ?? exception.timeSlot;
@@ -490,7 +537,7 @@ export const SchedulePage = () => {
         });
       });
     return items;
-  }, [calendarStartMinute, cancellationByScheduleId, courseById, timeSlots, visibleExceptions, visibleSchedules]);
+  }, [calendarStartMinute, cancellationByScheduleId, courseById, selectedDayFilter, timeSlots, visibleExceptions, visibleSchedules]);
 
   const courseOptions = useMemo(
     () => courses
@@ -535,7 +582,9 @@ export const SchedulePage = () => {
     };
   }, [scheduleStatus, selectedGradeNumber]);
 
-  const selectedGradeLabel = gradeOptions.find((option) => option.value === selectedGrade)?.label ?? 'Sınıf';
+  const selectedGradeLabel = selectedGrade
+    ? gradeOptions.find((option) => option.value === selectedGrade)?.label ?? 'Sınıf'
+    : 'Tüm Sınıflar';
 
   const gradeScheduleSummary = useMemo(() => {
     if (!filteredScheduleStatus) return null;
@@ -804,20 +853,61 @@ export const SchedulePage = () => {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {!isReadOnly && (
-            <div className="w-full sm:w-56">
-              <AppSelect
-                value={selectedGrade}
-                onChange={setSelectedGrade}
-                options={gradeOptions}
-                placeholder="Sınıf seçiniz"
-              />
-            </div>
-          )}
-          {!isReadOnly && (
             <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
           )}
         </div>
       </div>
+
+      {!isReadOnly && (
+        <section className="rounded-2xl border border-slate-200/70 bg-white p-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
+            <AppSelect
+              value={selectedGrade}
+              onChange={setSelectedGrade}
+              options={gradeOptions}
+              placeholder="Tüm sınıflar"
+            />
+            <AppSelect
+              value={selectedAcademicianId}
+              onChange={setSelectedAcademicianId}
+              options={scheduleFilterOptions.academicians}
+              searchable
+              placeholder="Tüm akademisyenler"
+              emptyText="Programda akademisyen bulunamadı"
+            />
+            <AppSelect
+              value={selectedClassroomId}
+              onChange={setSelectedClassroomId}
+              options={scheduleFilterOptions.classrooms}
+              searchable
+              placeholder="Tüm derslikler"
+              emptyText="Programda derslik bulunamadı"
+            />
+            <AppSelect
+              value={selectedScheduleCourseId}
+              onChange={setSelectedScheduleCourseId}
+              options={scheduleFilterOptions.courses}
+              searchable
+              placeholder="Tüm dersler"
+              emptyText="Programda ders bulunamadı"
+            />
+            <AppSelect
+              value={selectedDayFilter}
+              onChange={(value) => setSelectedDayFilter(value as ScheduleDay | '')}
+              options={scheduleDays.map((day) => ({ label: day.label, value: day.value }))}
+              placeholder="Tüm günler"
+            />
+            <SecondaryButton
+              type="button"
+              onClick={clearScheduleFilters}
+              disabled={!hasScheduleFilters}
+              className="h-12"
+            >
+              Filtreleri Temizle
+            </SecondaryButton>
+          </div>
+        </section>
+      )}
 
       {isLoading ? (
         <div className="grid gap-2">
@@ -842,12 +932,17 @@ export const SchedulePage = () => {
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
           <CalendarDays className="h-10 w-10 text-slate-300" />
           <h3 className="mt-3 text-base font-bold text-slate-700">
-            {isReadOnly ? 'Henüz oluşturulmuş bir ders programınız bulunmuyor.' : 'Henüz haftalık ders programı oluşturulmadı.'}
+            {hasScheduleFilters
+              ? 'Bu filtrelerle eşleşen ders programı bulunamadı.'
+              : isReadOnly ? 'Henüz oluşturulmuş bir ders programınız bulunmuyor.' : 'Henüz haftalık ders programı oluşturulmadı.'}
           </h3>
-          {!isReadOnly && filteredScheduleStatus && filteredScheduleStatus.totalCourses > 0 && (
+          {!isReadOnly && !hasScheduleFilters && filteredScheduleStatus && filteredScheduleStatus.totalCourses > 0 && (
             <p className="mt-1 text-xs font-semibold text-slate-400">
               {selectedGradeLabel} için {filteredScheduleStatus.totalCourses} ders programlanmayı bekliyor.
             </p>
+          )}
+          {!isReadOnly && hasScheduleFilters && (
+            <SecondaryButton type="button" onClick={clearScheduleFilters} className="mt-5">Filtreleri Temizle</SecondaryButton>
           )}
           {!isReadOnly && (
             <PrimaryButton onClick={() => openCreate()} className="mt-5" icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
