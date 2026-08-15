@@ -515,6 +515,9 @@ export const SchedulePage = () => {
     const overScheduledCourses = coursesForGrade.filter((course) => course.status === 'OVER_SCHEDULED').length;
     const totalCourses = coursesForGrade.length;
     const requiredHours = coursesForGrade.reduce((total, course) => total + course.requiredHours, 0);
+    const scheduledHours = coursesForGrade.reduce((total, course) => total + course.scheduledHours, 0);
+    const missingHours = coursesForGrade.reduce((total, course) => total + Math.max(course.remainingHours, 0), 0);
+    const excessHours = coursesForGrade.reduce((total, course) => total + Math.max(-course.remainingHours, 0), 0);
     const completedHours = coursesForGrade.reduce((total, course) => total + Math.min(course.scheduledHours, course.requiredHours), 0);
     return {
       ...scheduleStatus,
@@ -523,6 +526,10 @@ export const SchedulePage = () => {
       incompleteCourses: incompleteCount,
       notScheduledCourses: notScheduledCount,
       overScheduledCourses,
+      requiredHours,
+      scheduledHours,
+      missingHours,
+      excessHours,
       completionPercentage: requiredHours === 0 ? 0 : Math.round((completedHours * 100) / requiredHours),
       courses: coursesForGrade,
     };
@@ -532,14 +539,12 @@ export const SchedulePage = () => {
 
   const gradeScheduleSummary = useMemo(() => {
     if (!filteredScheduleStatus) return null;
-    const requiredHours = filteredScheduleStatus.courses.reduce((total, course) => total + course.requiredHours, 0);
-    const scheduledHours = filteredScheduleStatus.courses.reduce((total, course) => total + course.scheduledHours, 0);
-    const missingHours = filteredScheduleStatus.courses.reduce((total, course) => total + Math.max(course.remainingHours, 0), 0);
     return {
       courseCount: filteredScheduleStatus.totalCourses,
-      requiredHours,
-      scheduledHours,
-      missingHours,
+      requiredHours: filteredScheduleStatus.requiredHours,
+      scheduledHours: filteredScheduleStatus.scheduledHours,
+      missingHours: filteredScheduleStatus.missingHours,
+      excessHours: filteredScheduleStatus.excessHours,
     };
   }, [filteredScheduleStatus]);
 
@@ -767,6 +772,7 @@ export const SchedulePage = () => {
           <ScheduleStatusOverview
             status={filteredScheduleStatus}
             isLoading={isStatusLoading}
+            showCapacityWarnings={selectedGradeNumber === null}
             onShowDetails={() => setIsStatusModalOpen(true)}
           />
           {gradeScheduleSummary && (
@@ -1361,7 +1367,7 @@ const GradeScheduleSummary = ({
   onShowDetails,
 }: {
   gradeLabel: string;
-  summary: { courseCount: number; requiredHours: number; scheduledHours: number; missingHours: number };
+  summary: { courseCount: number; requiredHours: number; scheduledHours: number; missingHours: number; excessHours: number };
   problemCourses: CourseScheduleStatusItemResponse[];
   onOpenCourse: (courseId: string) => void;
   onShowDetails: () => void;
@@ -1370,11 +1376,12 @@ const GradeScheduleSummary = ({
     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0">
         <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
-        <div className="mt-2 grid grid-cols-4 gap-2">
+        <div className="mt-2 grid grid-cols-3 gap-2 xl:grid-cols-5">
           <SummaryMetric label="Ders" value={summary.courseCount} />
           <SummaryMetric label="Saat" value={summary.requiredHours} />
           <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
           <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
+          <SummaryMetric label="Fazla" value={summary.excessHours} tone={summary.excessHours > 0 ? 'warn' : 'ok'} />
         </div>
       </div>
       <div className="min-w-0 flex-1 lg:max-w-[58%]">
@@ -1468,17 +1475,23 @@ const ScheduleDetailPanel = ({
 const ScheduleStatusOverview = ({
   status,
   isLoading,
+  showCapacityWarnings,
   onShowDetails,
 }: {
   status: ScheduleCompletionResponse;
   isLoading: boolean;
+  showCapacityWarnings: boolean;
   onShowDetails: () => void;
 }) => {
   const hasCourses = status.totalCourses > 0;
-  const hasWarnings = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
+  const hasScheduleProblems = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
+  const visibleCapacityWarningCount = showCapacityWarnings ? status.capacityWarningCount : 0;
+  const hasWarnings = hasScheduleProblems || visibleCapacityWarningCount > 0;
   const isComplete = hasCourses && !hasWarnings;
   const title = !hasCourses
     ? 'Programlanacak ders bulunmuyor'
+    : !hasScheduleProblems && visibleCapacityWarningCount > 0
+      ? 'Programda kapasite uyarıları var'
     : isComplete
       ? 'Ders programı tamamlandı'
       : 'Ders programı tamamlanmadı';
@@ -1501,8 +1514,13 @@ const ScheduleStatusOverview = ({
                 ? 'Program durumu hesaplanıyor...'
                 : !hasCourses
                   ? 'Bu seçim için programlanacak ders bulunmuyor.'
-                  : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat`}
+                  : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat${showCapacityWarnings ? ` · ${status.capacityWarningCount} kapasite uyarısı` : ''}`}
             </p>
+            {hasCourses && (
+              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
+                {status.scheduledHours} / {status.requiredHours} saat · Eksik {status.missingHours} · Fazla {status.excessHours}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">

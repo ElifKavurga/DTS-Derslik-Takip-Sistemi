@@ -119,6 +119,11 @@ public class WeeklyScheduleService {
                 .collect(Collectors.groupingBy(CourseScheduleStatusItemResponse::status, Collectors.counting()));
         int totalCourses = items.size();
         int completedCourses = counts.getOrDefault("COMPLETE", 0L).intValue();
+        int requiredHours = items.stream().mapToInt(CourseScheduleStatusItemResponse::requiredHours).sum();
+        int scheduledHours = items.stream().mapToInt(CourseScheduleStatusItemResponse::scheduledHours).sum();
+        int missingHours = items.stream().mapToInt(item -> Math.max(item.remainingHours(), 0)).sum();
+        int excessHours = items.stream().mapToInt(item -> Math.max(-item.remainingHours(), 0)).sum();
+        int capacityWarningCount = calculateCapacityWarningCount(schedules);
         int completionPercentage = calculateCompletionPercentage(items);
 
         return new ScheduleCompletionResponse(
@@ -130,9 +135,25 @@ public class WeeklyScheduleService {
                 counts.getOrDefault("INCOMPLETE", 0L).intValue(),
                 counts.getOrDefault("NOT_SCHEDULED", 0L).intValue(),
                 counts.getOrDefault("OVER_SCHEDULED", 0L).intValue(),
+                requiredHours,
+                scheduledHours,
+                missingHours,
+                excessHours,
+                capacityWarningCount,
                 completionPercentage,
                 items
         );
+    }
+
+    private int calculateCapacityWarningCount(List<WeeklySchedule> schedules) {
+        return (int) schedules.stream()
+                .filter(schedule -> schedule.getCourse() != null)
+                .filter(schedule -> schedule.getClassroom() != null)
+                .filter(schedule -> schedule.getClassroom().getCapacity() != null)
+                .filter(schedule -> schedule.getClassroom().getCapacity() < schedule.getCourse().getStudentCount())
+                .map(schedule -> schedule.getCourse().getId() + ":" + schedule.getDayOfWeek() + ":" + schedule.getTimeSlot() + ":" + schedule.getClassroom().getId())
+                .distinct()
+                .count();
     }
 
     private int calculateCompletionPercentage(List<CourseScheduleStatusItemResponse> items) {

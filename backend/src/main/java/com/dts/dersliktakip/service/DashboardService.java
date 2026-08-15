@@ -132,6 +132,9 @@ public class DashboardService {
         if (scheduleSummary.overScheduledCourses() > 0) {
             warnings.add(scheduleSummary.overScheduledCourses() + " dersin haftalık saat ihtiyacı aşılmış.");
         }
+        if (scheduleSummary.capacityWarningCount() > 0) {
+            warnings.add(scheduleSummary.capacityWarningCount() + " program kaydında kapasite uyarısı var.");
+        }
 
         return DepartmentAdminDashboardResponse.builder()
                 .departmentId(department.getId())

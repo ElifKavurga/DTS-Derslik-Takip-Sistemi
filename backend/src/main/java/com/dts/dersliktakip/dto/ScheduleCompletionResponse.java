@@ -14,6 +14,11 @@ public record ScheduleCompletionResponse(
         int incompleteCourses,
         int notScheduledCourses,
         int overScheduledCourses,
+        int requiredHours,
+        int scheduledHours,
+        int missingHours,
+        int excessHours,
+        int capacityWarningCount,
         int completionPercentage,
         List<CourseScheduleStatusItemResponse> courses
 ) {

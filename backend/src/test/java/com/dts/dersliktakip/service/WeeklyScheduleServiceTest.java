@@ -866,6 +866,11 @@ class WeeklyScheduleServiceTest {
         assertThat(response.incompleteCourses()).isEqualTo(1);
         assertThat(response.notScheduledCourses()).isEqualTo(1);
         assertThat(response.overScheduledCourses()).isEqualTo(1);
+        assertThat(response.requiredHours()).isEqualTo(12);
+        assertThat(response.scheduledHours()).isEqualTo(9);
+        assertThat(response.missingHours()).isEqualTo(4);
+        assertThat(response.excessHours()).isEqualTo(1);
+        assertThat(response.capacityWarningCount()).isZero();
         assertThat(response.completionPercentage()).isEqualTo(67);
         assertThat(response.courses()).anySatisfy(item -> {
             assertThat(item.courseId()).isEqualTo(complete.getId());
@@ -910,6 +915,31 @@ class WeeklyScheduleServiceTest {
         assertThat(response.completedCourses()).isZero();
         assertThat(response.completionPercentage()).isZero();
         assertThat(response.courses()).isEmpty();
+    }
+
+    @Test
+    void getScheduleCompletionCountsCapacityWarningsSeparatelyFromCompleteness() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department, "CENG101", 2);
+        course.setStudentCount(72);
+        Classroom insufficientClassroom = classroom(UUID.randomUUID(), department.getFaculty(), "D060", 60);
+        List<Course> courses = List.of(course);
+        List<WeeklySchedule> schedules = List.of(
+                schedule(course, insufficientClassroom, "MONDAY", "09:00-10:00"),
+                schedule(course, insufficientClassroom, "TUESDAY", "09:00-10:00")
+        );
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(courses);
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(schedules);
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+
+        assertThat(response.completedCourses()).isEqualTo(1);
+        assertThat(response.capacityWarningCount()).isEqualTo(2);
+        assertThat(response.completionPercentage()).isEqualTo(100);
     }
 
     private void mockAvailableClassroomQuery(User currentUser, Department department, Course course, List<Classroom> classrooms) {

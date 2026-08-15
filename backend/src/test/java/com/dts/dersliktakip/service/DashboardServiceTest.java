@@ -88,7 +88,7 @@ class DashboardServiceTest {
         when(classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(facultyId)).thenReturn(mockClassrooms);
         
         com.dts.dersliktakip.dto.ScheduleCompletionResponse mockScheduleResponse = new com.dts.dersliktakip.dto.ScheduleCompletionResponse(
-                departmentId, "Bilgisayar Muhendisligi", semester, 20, 15, 3, 2, 0, 75, java.util.Collections.emptyList()
+                departmentId, "Bilgisayar Muhendisligi", semester, 20, 15, 3, 2, 0, 60, 45, 9, 0, 0, 75, java.util.Collections.emptyList()
         );
         when(weeklyScheduleService.getScheduleCompletion(currentUser, semester)).thenReturn(mockScheduleResponse);
 

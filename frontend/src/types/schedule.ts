@@ -99,6 +99,11 @@ export type ScheduleCompletionResponse = {
   incompleteCourses: number;
   notScheduledCourses: number;
   overScheduledCourses: number;
+  requiredHours: number;
+  scheduledHours: number;
+  missingHours: number;
+  excessHours: number;
+  capacityWarningCount: number;
   completionPercentage: number;
   courses: CourseScheduleStatusItemResponse[];
 };
