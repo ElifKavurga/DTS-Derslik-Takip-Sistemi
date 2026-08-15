@@ -263,7 +263,7 @@ export const SchedulePage = () => {
 
   const canQueryClassrooms = Boolean(form.courseId && form.dayOfWeek && form.timeSlot && form.slotCount && maxSlotCount > 0);
 
-  const { data: classrooms = [], isFetching: isClassroomsLoading } = useQuery({
+  const { data: classrooms = [], isFetching: isClassroomsLoading, isError: isClassroomsError } = useQuery({
     queryKey: ['availableClassrooms', form.courseId, form.dayOfWeek, form.timeSlot, form.slotCount, editingSchedule?.id],
     queryFn: () => scheduleService.getAvailableClassrooms({
       dayOfWeek: form.dayOfWeek,
@@ -994,6 +994,7 @@ export const SchedulePage = () => {
             alternativeClassrooms={alternativeClassrooms}
             unavailableClassrooms={busyClassrooms}
             loading={isClassroomsLoading}
+            hasError={isClassroomsError}
             canQuery={canQueryClassrooms}
             onSelect={(classroomId) => updateForm({ classroomId })}
           />
@@ -1220,6 +1221,7 @@ const ClassroomPicker = ({
   alternativeClassrooms,
   unavailableClassrooms,
   loading,
+  hasError,
   canQuery,
   onSelect,
 }: {
@@ -1228,6 +1230,7 @@ const ClassroomPicker = ({
   alternativeClassrooms: AvailableClassroomResponse[];
   unavailableClassrooms: AvailableClassroomResponse[];
   loading: boolean;
+  hasError: boolean;
   canQuery: boolean;
   onSelect: (classroomId: string) => void;
 }) => {
@@ -1244,6 +1247,10 @@ const ClassroomPicker = ({
       ) : loading ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-400">
           Sınıflar kontrol ediliyor...
+        </div>
+      ) : hasError ? (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-3 py-3 text-xs font-semibold text-red-600">
+          Derslikler yüklenirken bir hata oluştu.
         </div>
       ) : (
         <div className="max-h-[22rem] space-y-3 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white p-3">

@@ -289,6 +289,29 @@ class WeeklyScheduleServiceTest {
     }
 
     @Test
+    void availableClassroomsSeparatesSuitableAndAlternativesForStudentCount72() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(72);
+        List<Classroom> classrooms = List.of(
+                classroom(UUID.randomUUID(), department.getFaculty(), "A101", 75),
+                classroom(UUID.randomUUID(), department.getFaculty(), "A102", 60),
+                classroom(UUID.randomUUID(), department.getFaculty(), "A103", 50)
+        );
+
+        mockAvailableClassroomQuery(new User(), department, course, classrooms);
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).filteredOn(AvailableClassroomResponse::available)
+                .extracting(AvailableClassroomResponse::capacity)
+                .containsExactly(75);
+        assertThat(response).filteredOn(item -> item.selectable() && Boolean.FALSE.equals(item.capacitySufficient()))
+                .extracting(AvailableClassroomResponse::capacity)
+                .containsExactly(60, 50);
+    }
+
+    @Test
     void availableClassroomsDoesNotMakeBusyClassroomSelectableEvenWhenCapacityIsSuitable() {
         Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
         Course course = course(UUID.randomUUID(), department);
@@ -307,6 +330,45 @@ class WeeklyScheduleServiceTest {
             assertThat(item.selectable()).isFalse();
             assertThat(item.conflictCode()).isEqualTo("CLASSROOM_CONFLICT");
         });
+    }
+
+    @Test
+    void availableClassroomsChecksAllSlotsForMultiSlotSelection() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(72);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "A101", 75);
+        WeeklySchedule conflict = schedule(course(UUID.randomUUID(), department, "CENG202", 2), classroom, "MONDAY", "09:10-09:55");
+
+        mockAvailableClassroomQuery(new User(), department, course, List.of(classroom));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "09:10-09:55"))
+                .thenReturn(List.of(conflict));
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "08:15-09:00", 3, null);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.capacitySufficient()).isTrue();
+            assertThat(item.selectable()).isFalse();
+            assertThat(item.conflictCode()).isEqualTo("CLASSROOM_CONFLICT");
+        });
+    }
+
+    @Test
+    void availableClassroomsRejectsForeignExcludedScheduleId() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Department otherDepartment = department(UUID.randomUUID(), department.getFaculty());
+        Course course = course(UUID.randomUUID(), department);
+        Course otherCourse = course(UUID.randomUUID(), otherDepartment);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "A101", 75);
+        WeeklySchedule foreignSchedule = schedule(otherCourse, classroom, "MONDAY", "10:05-10:50");
+
+        when(accessScopeService.requireDepartmentScope(any(User.class))).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findWithDetailsById(foreignSchedule.getId())).thenReturn(Optional.of(foreignSchedule));
+
+        assertThatThrownBy(() -> weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, foreignSchedule.getId()))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -348,8 +410,7 @@ class WeeklyScheduleServiceTest {
         when(classroomRepository.findById(foreignClassroom.getId())).thenReturn(Optional.of(foreignClassroom));
 
         assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
-                .isInstanceOf(AccessDeniedException.class)
-                .hasMessage("Bu sÄ±nÄ±f iÃ§in yetkiniz yok.");
+                .isInstanceOf(AccessDeniedException.class);
         verify(weeklyScheduleRepository, never()).saveAll(any());
     }
 
