@@ -83,6 +83,44 @@ class WeeklyScheduleServiceTest {
     }
 
     @Test
+    void createScheduleRejectsInactiveCourse() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course inactiveCourse = course(UUID.randomUUID(), department);
+        inactiveCourse.setActive(false);
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(inactiveCourse.getId(), UUID.randomUUID(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(inactiveCourse.getId())).thenReturn(Optional.of(inactiveCourse));
+
+        assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Pasif ders programa eklenemez.");
+        verify(classroomRepository, never()).findById(request.classroomId());
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void createScheduleRejectsCourseWhenAcademicianBelongsToAnotherDepartment() {
+        User currentUser = new User();
+        Faculty faculty = faculty(UUID.randomUUID());
+        Department department = department(UUID.randomUUID(), faculty);
+        Department otherDepartment = department(UUID.randomUUID(), faculty);
+        Course course = course(UUID.randomUUID(), department);
+        course.getAcademician().setDepartment(otherDepartment);
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), UUID.randomUUID(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Dersin akademisyen atamasi bolum ile uyumlu degil.");
+        verify(classroomRepository, never()).findById(request.classroomId());
+        verify(weeklyScheduleRepository, never()).saveAll(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void createScheduleRejectsClassroomConflictAcrossDepartments() {
         User currentUser = new User();
         Faculty faculty = faculty(UUID.randomUUID());
@@ -528,6 +566,7 @@ class WeeklyScheduleServiceTest {
         course.setSemester(Semester.GUZ);
         course.setTheoreticalHours(weeklyHours);
         course.setPracticalHours(0);
+        course.setActive(true);
         return course;
     }
 

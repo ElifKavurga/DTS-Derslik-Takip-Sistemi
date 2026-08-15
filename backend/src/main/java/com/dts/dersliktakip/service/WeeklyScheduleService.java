@@ -388,7 +388,19 @@ public class WeeklyScheduleService {
         if (course.getDepartment() == null || !course.getDepartment().getId().equals(department.getId())) {
             throw new AccessDeniedException("Bu ders için program oluşturma yetkiniz yok.");
         }
+        assertCourseReadyForScheduling(course, department);
         return course;
+    }
+
+    private void assertCourseReadyForScheduling(Course course, Department department) {
+        if (!course.isActive()) {
+            throw new IllegalArgumentException("Pasif ders programa eklenemez.");
+        }
+        if (course.getAcademician() == null
+                || course.getAcademician().getDepartment() == null
+                || !course.getAcademician().getDepartment().getId().equals(department.getId())) {
+            throw new IllegalArgumentException("Dersin akademisyen atamasi bolum ile uyumlu degil.");
+        }
     }
 
     private Classroom resolveClassroom(UUID classroomId, Department department) {

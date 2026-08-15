@@ -101,6 +101,7 @@ public class ScheduleExceptionService {
     public ScheduleExceptionResponse createMakeup(CreateScheduleMakeupRequest request, User currentUser) {
         Academician academician = resolveAcademician(currentUser);
         WeeklySchedule schedule = resolveOwnedSchedule(request.scheduleId(), academician);
+        assertCourseReadyForException(schedule.getCourse(), academician);
         int slotCount = normalizeSlotCount(request.slotCount());
         List<String> allSlots = resolveAllSlots(currentUser);
         List<String> selectedSlots = resolveSelectedSlots(allSlots, request.timeSlot(), slotCount);
@@ -138,6 +139,7 @@ public class ScheduleExceptionService {
     public ScheduleExceptionResponse createExtraLesson(CreateExtraLessonRequest request, User currentUser) {
         Academician academician = resolveAcademician(currentUser);
         Course course = resolveOwnedCourse(request.courseId(), academician);
+        assertCourseReadyForException(course, academician);
         int slotCount = normalizeSlotCount(request.slotCount());
         List<String> allSlots = resolveAllSlots(currentUser);
         List<String> selectedSlots = resolveSelectedSlots(allSlots, request.timeSlot(), slotCount);
@@ -284,6 +286,17 @@ public class ScheduleExceptionService {
             throw new AccessDeniedException("Bu ders için işlem yapma yetkiniz yok.");
         }
         return course;
+    }
+
+    private void assertCourseReadyForException(Course course, Academician academician) {
+        if (!course.isActive()) {
+            throw new IllegalArgumentException("Pasif ders icin istisna olusturulamaz.");
+        }
+        if (course.getDepartment() == null
+                || academician.getDepartment() == null
+                || !course.getDepartment().getId().equals(academician.getDepartment().getId())) {
+            throw new AccessDeniedException("Bu ders icin islem yapma yetkiniz yok.");
+        }
     }
 
     private Classroom resolveClassroom(UUID classroomId, Department department) {
