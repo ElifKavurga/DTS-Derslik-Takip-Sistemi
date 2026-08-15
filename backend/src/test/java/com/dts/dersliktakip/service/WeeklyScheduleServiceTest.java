@@ -1,6 +1,7 @@
 package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.CreateWeeklyScheduleRequest;
+import com.dts.dersliktakip.dto.AvailableClassroomResponse;
 import com.dts.dersliktakip.dto.ScheduleCompletionResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Building;
@@ -36,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 
 @ExtendWith(MockitoExtension.class)
 class WeeklyScheduleServiceTest {
@@ -188,6 +191,169 @@ class WeeklyScheduleServiceTest {
     }
 
     @Test
+    void availableClassroomsMarksEqualCapacityAsSuitable() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D050", 50);
+
+        mockAvailableClassroomQuery(new User(), department, course, List.of(classroom));
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.capacitySufficient()).isTrue();
+            assertThat(item.available()).isTrue();
+            assertThat(item.selectable()).isTrue();
+        });
+    }
+
+    @Test
+    void availableClassroomsMarksHigherCapacityAsSuitable() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D060", 60);
+
+        mockAvailableClassroomQuery(new User(), department, course, List.of(classroom));
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.capacitySufficient()).isTrue();
+            assertThat(item.available()).isTrue();
+            assertThat(item.selectable()).isTrue();
+        });
+    }
+
+    @Test
+    void availableClassroomsMarksLowerCapacityAsSelectableAlternative() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D040", 40);
+
+        mockAvailableClassroomQuery(new User(), department, course, List.of(classroom));
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.capacitySufficient()).isFalse();
+            assertThat(item.available()).isFalse();
+            assertThat(item.selectable()).isTrue();
+            assertThat(item.conflictCode()).isEqualTo("CAPACITY_CONFLICT");
+        });
+    }
+
+    @Test
+    void availableClassroomsSortsSuitableThenAlternativesByCapacityDistance() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        List<Classroom> classrooms = List.of(
+                classroom(UUID.randomUUID(), department.getFaculty(), "D040", 40),
+                classroom(UUID.randomUUID(), department.getFaculty(), "D050", 50),
+                classroom(UUID.randomUUID(), department.getFaculty(), "D060", 60),
+                classroom(UUID.randomUUID(), department.getFaculty(), "D100", 100)
+        );
+
+        mockAvailableClassroomQuery(new User(), department, course, classrooms);
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).extracting(AvailableClassroomResponse::capacity)
+                .containsExactly(50, 60, 100, 40);
+    }
+
+    @Test
+    void availableClassroomsShowsAlternativesWhenNoSuitableCapacityExists() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        List<Classroom> classrooms = List.of(
+                classroom(UUID.randomUUID(), department.getFaculty(), "D030", 30),
+                classroom(UUID.randomUUID(), department.getFaculty(), "D040", 40),
+                classroom(UUID.randomUUID(), department.getFaculty(), "D045", 45)
+        );
+
+        mockAvailableClassroomQuery(new User(), department, course, classrooms);
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).allSatisfy(item -> {
+            assertThat(item.capacitySufficient()).isFalse();
+            assertThat(item.selectable()).isTrue();
+        });
+        assertThat(response).extracting(AvailableClassroomResponse::capacity)
+                .containsExactly(45, 40, 30);
+    }
+
+    @Test
+    void availableClassroomsDoesNotMakeBusyClassroomSelectableEvenWhenCapacityIsSuitable() {
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D060", 60);
+        WeeklySchedule conflict = schedule(course(UUID.randomUUID(), department, "CENG202", 2), classroom, "MONDAY", "10:05-10:50");
+
+        mockAvailableClassroomQuery(new User(), department, course, List.of(classroom));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
+
+        List<AvailableClassroomResponse> response = weeklyScheduleService.getAvailableClassrooms(new User(), course.getId(), "MONDAY", "10:05-10:50", 1, null);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.capacitySufficient()).isTrue();
+            assertThat(item.selectable()).isFalse();
+            assertThat(item.conflictCode()).isEqualTo("CLASSROOM_CONFLICT");
+        });
+    }
+
+    @Test
+    void createScheduleAllowsInsufficientCapacityAlternativeWhenOtherRulesPass() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(50);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D040", 40);
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThat(weeklyScheduleService.createSchedule(request, currentUser)).hasSize(1);
+    }
+
+    @Test
+    void createScheduleRejectsClassroomOutsideFacultyScope() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        Classroom foreignClassroom = classroom(UUID.randomUUID(), faculty(UUID.randomUUID()), "X101", 100);
+        CreateWeeklyScheduleRequest request = new CreateWeeklyScheduleRequest(course.getId(), foreignClassroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(foreignClassroom.getId())).thenReturn(Optional.of(foreignClassroom));
+
+        assertThatThrownBy(() -> weeklyScheduleService.createSchedule(request, currentUser))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Bu sÄ±nÄ±f iÃ§in yetkiniz yok.");
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
     void getScheduleCompletionReturnsAllCourseStatusesForSelectedSemester() {
         User currentUser = new User();
         Faculty faculty = faculty(UUID.randomUUID());
@@ -251,6 +417,16 @@ class WeeklyScheduleServiceTest {
         });
     }
 
+    private void mockAvailableClassroomQuery(User currentUser, Department department, Course course, List<Classroom> classrooms) {
+        when(accessScopeService.requireDepartmentScope(any(User.class))).thenReturn(department);
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId())).thenReturn(classrooms);
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), any(), any(), any())).thenReturn(List.of());
+    }
+
     private static Faculty faculty(UUID id) {
         Faculty faculty = new Faculty();
         faculty.setId(id);
@@ -305,6 +481,10 @@ class WeeklyScheduleServiceTest {
     }
 
     private static Classroom classroom(UUID id, Faculty faculty) {
+        return classroom(id, faculty, "D101", 60);
+    }
+
+    private static Classroom classroom(UUID id, Faculty faculty, String code, int capacity) {
         Building building = new Building();
         building.setId(UUID.randomUUID());
         building.setFaculty(faculty);
@@ -315,9 +495,9 @@ class WeeklyScheduleServiceTest {
 
         Classroom classroom = new Classroom();
         classroom.setId(id);
-        classroom.setCode("D101");
-        classroom.setName("D-101");
-        classroom.setCapacity(60);
+        classroom.setCode(code);
+        classroom.setName(code);
+        classroom.setCapacity(capacity);
         classroom.setType(ClassroomType.CLASSROOM);
         classroom.setFloor(floor);
         return classroom;

@@ -55,6 +55,14 @@ type ScheduleValidationAlert = {
   details: string[];
 };
 
+type PendingScheduleSubmit = {
+  courseId: string;
+  classroomId: string;
+  dayOfWeek: ScheduleDay;
+  timeSlot: string;
+  slotCount: number;
+};
+
 type ScheduleDetailState = {
   schedule: WeeklyScheduleResponse;
   groupMeta?: ScheduleGroupMeta;
@@ -134,6 +142,7 @@ export const SchedulePage = () => {
   const [scheduleDetail, setScheduleDetail] = useState<ScheduleDetailState | null>(null);
   const [form, setForm] = useState<ScheduleFormState>(initialForm);
   const [backendValidation, setBackendValidation] = useState<ScheduleValidationAlert | null>(null);
+  const [pendingCapacitySubmit, setPendingCapacitySubmit] = useState<PendingScheduleSubmit | null>(null);
   const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
 
   const { data: schedules = [], isLoading, error, refetch } = useQuery({
@@ -266,8 +275,13 @@ export const SchedulePage = () => {
     enabled: canQueryClassrooms,
   });
 
-  const availableClassrooms = useMemo(
-    () => classrooms.filter((classroom) => classroom.selectable),
+  const suitableClassrooms = useMemo(
+    () => classrooms.filter((classroom) => classroom.selectable && classroom.capacitySufficient !== false),
+    [classrooms],
+  );
+
+  const alternativeClassrooms = useMemo(
+    () => classrooms.filter((classroom) => classroom.selectable && classroom.capacitySufficient === false),
     [classrooms],
   );
 
@@ -298,7 +312,21 @@ export const SchedulePage = () => {
       };
     }
 
-    if (canQueryClassrooms && !isClassroomsLoading && classrooms.length > 0 && availableClassrooms.length === 0) {
+    if (selectedClassroomOption?.capacitySufficient === false) {
+      return {
+        title: 'Kapasite uyarısı',
+        details: validationDetails(selectedClassroomOption),
+      };
+    }
+
+    if (canQueryClassrooms && !isClassroomsLoading && classrooms.length > 0 && suitableClassrooms.length === 0 && alternativeClassrooms.length > 0) {
+      return {
+        title: 'Yeterli kapasitede derslik bulunamadı.',
+        details: ['Alternatif derslikler kapasite açısından yetersizdir, ancak seçilebilir.'],
+      };
+    }
+
+    if (canQueryClassrooms && !isClassroomsLoading && classrooms.length > 0 && suitableClassrooms.length === 0 && alternativeClassrooms.length === 0) {
       const firstConflict = classrooms[0];
       return {
         title: 'Bu saate ders koyulamaz.',
@@ -310,7 +338,7 @@ export const SchedulePage = () => {
     }
 
     return null;
-  }, [availableClassrooms.length, canQueryClassrooms, classrooms, form.courseId, form.timeSlot, isClassroomsLoading, selectedClassroomOption, slotCountOptions.length]);
+  }, [alternativeClassrooms.length, canQueryClassrooms, classrooms, form.courseId, form.timeSlot, isClassroomsLoading, selectedClassroomOption, slotCountOptions.length, suitableClassrooms.length]);
 
   const activeValidationAlert = backendValidation ?? formValidationAlert;
 
@@ -563,6 +591,7 @@ export const SchedulePage = () => {
     setIsModalOpen(false);
     setEditingSchedule(null);
     setBackendValidation(null);
+    setPendingCapacitySubmit(null);
     setForm(initialForm);
   };
 
@@ -645,6 +674,11 @@ export const SchedulePage = () => {
     onError: (error: unknown) => toast.error(mutationErrorMessage(error, 'Ders saatleri güncellenemedi.')),
   });
 
+  const saveSchedule = (payload: PendingScheduleSubmit) => {
+    if (editingSchedule) updateMutation.mutate({ id: editingSchedule.id, payload });
+    else createMutation.mutate(payload);
+  };
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.courseId || !form.dayOfWeek || !form.timeSlot || !form.slotCount || !form.classroomId) {
@@ -667,7 +701,7 @@ export const SchedulePage = () => {
       return;
     }
 
-    const payload = {
+    const payload: PendingScheduleSubmit = {
       courseId: form.courseId,
       classroomId: form.classroomId,
       dayOfWeek: form.dayOfWeek,
@@ -675,8 +709,12 @@ export const SchedulePage = () => {
       slotCount: form.slotCount,
     };
 
-    if (editingSchedule) updateMutation.mutate({ id: editingSchedule.id, payload });
-    else createMutation.mutate(payload);
+    if (selectedClassroomOption?.capacitySufficient === false) {
+      setPendingCapacitySubmit(payload);
+      return;
+    }
+
+    saveSchedule(payload);
   };
 
   const submitTimeConfig = (event: FormEvent<HTMLFormElement>) => {
@@ -952,7 +990,8 @@ export const SchedulePage = () => {
 
           <ClassroomPicker
             selectedClassroomId={form.classroomId}
-            availableClassrooms={availableClassrooms}
+            availableClassrooms={suitableClassrooms}
+            alternativeClassrooms={alternativeClassrooms}
             unavailableClassrooms={busyClassrooms}
             loading={isClassroomsLoading}
             canQuery={canQueryClassrooms}
@@ -983,6 +1022,23 @@ export const SchedulePage = () => {
         confirmText="Programdan Sil"
         cancelText="Vazgeç"
         confirmLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingCapacitySubmit}
+        onClose={() => setPendingCapacitySubmit(null)}
+        onConfirm={() => {
+          if (!pendingCapacitySubmit) return;
+          saveSchedule(pendingCapacitySubmit);
+          setPendingCapacitySubmit(null);
+        }}
+        title="Kapasite Uyarısı"
+        message={selectedClassroomOption
+          ? `Ders mevcudu ${selectedClassroomOption.studentCount ?? 0} kişi, seçilen derslik kapasitesi ${selectedClassroomOption.capacity} kişi. Bu derslik ders mevcudu için yetersizdir. Yine de kullanmak istiyor musunuz?`
+          : 'Seçilen derslik ders mevcudu için yetersizdir. Yine de kullanmak istiyor musunuz?'}
+        confirmText="Yine de Kullan"
+        cancelText="Vazgeç"
+        confirmLoading={createMutation.isPending || updateMutation.isPending}
       />
 
       <FormModal isOpen={!!scheduleDetail} onClose={() => setScheduleDetail(null)} title="Ders Programı Detayı">
@@ -1152,7 +1208,7 @@ const CourseSummary = ({ course }: { course: CourseResponse | null }) => {
       </div>
       <div>
         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Öğrenci</p>
-        <p className="mt-1 text-slate-500">Veri yok</p>
+        <p className="mt-1 text-slate-800">{course.studentCount} kişi</p>
       </div>
     </div>
   );
@@ -1161,6 +1217,7 @@ const CourseSummary = ({ course }: { course: CourseResponse | null }) => {
 const ClassroomPicker = ({
   selectedClassroomId,
   availableClassrooms,
+  alternativeClassrooms,
   unavailableClassrooms,
   loading,
   canQuery,
@@ -1168,12 +1225,15 @@ const ClassroomPicker = ({
 }: {
   selectedClassroomId: string;
   availableClassrooms: AvailableClassroomResponse[];
+  alternativeClassrooms: AvailableClassroomResponse[];
   unavailableClassrooms: AvailableClassroomResponse[];
   loading: boolean;
   canQuery: boolean;
   onSelect: (classroomId: string) => void;
 }) => {
-  const selectedClassroom = [...availableClassrooms, ...unavailableClassrooms].find((classroom) => classroom.id === selectedClassroomId);
+  const allClassrooms = [...availableClassrooms, ...alternativeClassrooms, ...unavailableClassrooms];
+  const selectedClassroom = allClassrooms.find((classroom) => classroom.id === selectedClassroomId);
+  const studentCount = allClassrooms.find((classroom) => classroom.studentCount !== null && classroom.studentCount !== undefined)?.studentCount;
   return (
     <div className="space-y-2">
       <label className="dts-input-label">Sınıf</label>
@@ -1188,15 +1248,32 @@ const ClassroomPicker = ({
       ) : (
         <div className="max-h-[22rem] space-y-3 overflow-y-auto rounded-2xl border border-slate-200/70 bg-white p-3">
           <p className="rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">
-            Öğrenci sayısı bulunamadığı için kapasite kontrolü yapılamıyor.
+            {studentCount !== undefined ? `Ders mevcudu: ${studentCount} kişi` : 'Ders mevcudu bulunamadı.'}
           </p>
-          <ClassroomGroup title="Uygun Sınıflar" classrooms={availableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} />
-          <ClassroomGroup title="Uygun Olmayan Sınıflar" classrooms={unavailableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} disabled />
+          {allClassrooms.length === 0 ? (
+            <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-400">Kullanılabilir derslik bulunamadı.</p>
+          ) : (
+            <>
+              <ClassroomGroup title="Uygun Sınıflar" classrooms={availableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} />
+              {availableClassrooms.length === 0 && alternativeClassrooms.length > 0 && (
+                <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-700">
+                  Yeterli kapasitede derslik bulunamadı.
+                </p>
+              )}
+              <ClassroomGroup title="Alternatif Derslikler" classrooms={alternativeClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} variant="warning" />
+              <ClassroomGroup title="Uygun Olmayan Sınıflar" classrooms={unavailableClassrooms} selectedClassroomId={selectedClassroomId} onSelect={onSelect} disabled />
+            </>
+          )}
         </div>
       )}
       {selectedClassroom?.selectable && (
-        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs font-semibold text-emerald-700">
-          {selectedClassroom.code} seçildi · Kapasite: {selectedClassroom.capacity} kişi · Zaman dilimi uygun
+        <div className={cn(
+          'rounded-2xl border px-3 py-2 text-xs font-semibold',
+          selectedClassroom.capacitySufficient === false
+            ? 'border-amber-100 bg-amber-50/70 text-amber-700'
+            : 'border-emerald-100 bg-emerald-50/70 text-emerald-700',
+        )}>
+          {selectedClassroom.code} seçildi · Kapasite: {selectedClassroom.capacity} kişi · {selectedClassroom.capacitySufficient === false ? 'Kapasite yetersiz' : 'Zaman dilimi uygun'}
         </div>
       )}
     </div>
@@ -1208,12 +1285,14 @@ const ClassroomGroup = ({
   classrooms,
   selectedClassroomId,
   disabled = false,
+  variant = 'default',
   onSelect,
 }: {
   title: string;
   classrooms: AvailableClassroomResponse[];
   selectedClassroomId: string;
   disabled?: boolean;
+  variant?: 'default' | 'warning';
   onSelect: (classroomId: string) => void;
 }) => (
   <div className="space-y-2">
@@ -1232,7 +1311,7 @@ const ClassroomGroup = ({
           onClick={() => onSelect(classroom.id)}
           className={cn(
             'flex min-h-24 w-full items-start justify-between gap-2 rounded-xl border px-3 py-2 text-left transition',
-            selected ? 'border-[#006482] bg-[#eff8ff] ring-2 ring-[#006482]/10' : 'border-slate-200 bg-white',
+            selected ? 'border-[#006482] bg-[#eff8ff] ring-2 ring-[#006482]/10' : variant === 'warning' ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white',
             disabled ? 'cursor-not-allowed opacity-75' : 'hover:border-[#006482]/30 hover:bg-[#eff8ff]',
           )}
         >
@@ -1241,6 +1320,11 @@ const ClassroomGroup = ({
             <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">
               {classroom.capacity} kişi · {classroomTypeLabels[classroom.type] ?? classroom.type}
             </span>
+            {variant === 'warning' && classroom.studentCount !== null && classroom.studentCount !== undefined && (
+              <span className="mt-1 block text-[11px] font-semibold text-amber-700">
+                {classroom.studentCount - classroom.capacity} kişi kapasite eksik
+              </span>
+            )}
             {disabled && (
               <span className="mt-1 block space-y-0.5 text-[11px] font-semibold text-amber-700">
                 {validationDetails(classroom).slice(0, 2).map((detail) => (

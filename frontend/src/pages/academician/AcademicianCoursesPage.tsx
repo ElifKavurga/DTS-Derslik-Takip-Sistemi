@@ -165,7 +165,7 @@ const CourseDetailModal = ({
   });
 
   const availableClassroomOptions = classrooms
-    .filter((classroom) => classroom.selectable)
+    .filter((classroom) => classroom.selectable && classroom.capacitySufficient !== false)
     .map((classroom) => ({ label: `${classroom.code} - ${classroom.name} (${classroom.capacity} kişi)`, value: classroom.id }));
   const blockedClassroomDetails = classrooms
     .filter((classroom) => !classroom.selectable)
