@@ -20,6 +20,7 @@ public record UpdateCourseRequest(
         @Min(0) int practicalHours,
         @Min(1) int ects,
         @Min(0) int credits,
+        @Min(value = 0, message = "Ders mevcudu 0'dan küçük olamaz.") int studentCount,
         @NotNull CourseType courseType,
         @NotNull Semester semester,
         @Min(1) @Max(6) int grade,

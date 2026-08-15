@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  BookOpen, Clock, Calendar, Tag, GraduationCap,
+  BookOpen, Clock, Calendar, Tag, GraduationCap, Users,
   Search, X, CheckCircle2, AlertCircle, Circle,
   AlertTriangle, ChevronRight, MapPin, ArrowRight, Ban, CalendarPlus, RefreshCw
 } from 'lucide-react';
@@ -37,6 +37,7 @@ interface AcademicianCourseDetailResponse {
   practicalHours: number;
   ects: number;
   credits: number;
+  studentCount: number;
   courseType: CourseType;
   semester: Semester;
   grade: number;
@@ -269,6 +270,10 @@ const CourseDetailModal = ({
                 T: {course.theoreticalHours} · U: {course.practicalHours}
               </p>
               <p className="text-[10px] text-slate-400">AKTS: {course.ects} · Kredi: {course.credits}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Öğrenci Mevcudu</p>
+              <p className="mt-1 text-sm font-bold text-slate-800">{course.studentCount} kişi</p>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sınıf & Durum</p>
@@ -666,6 +671,10 @@ const CourseRow = ({
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
           <Clock className="h-3 w-3 shrink-0 text-slate-400" />
           <span>T: {course.theoreticalHours} · U: {course.practicalHours} · AKTS: {course.ects}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
+          <Users className="h-3 w-3 shrink-0 text-slate-400" />
+          <span>Mevcut: {course.studentCount} kişi</span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
           <Calendar className="h-3 w-3 shrink-0 text-slate-400" />

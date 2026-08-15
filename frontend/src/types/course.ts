@@ -15,6 +15,7 @@ export type CourseResponse = {
   practicalHours: number;
   ects: number;
   credits: number;
+  studentCount: number;
   courseType: CourseType;
   semester: Semester;
   grade: number;
@@ -35,6 +36,7 @@ export type CreateCourseRequest = {
   practicalHours: number;
   ects: number;
   credits: number;
+  studentCount: number;
   courseType: CourseType;
   semester: Semester;
   grade: number;

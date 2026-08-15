@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {
   Plus, Edit2, Trash2,
   ChevronUp, ChevronDown, ChevronsUpDown,
-  SlidersHorizontal, X, User as UserIcon, Building2, BookOpen, Clock, Tag, Calendar,
+  SlidersHorizontal, X, User as UserIcon, Users, Building2, BookOpen, Clock, Tag, Calendar,
   MoreVertical, Copy, Eye, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { AxiosError } from 'axios';
@@ -49,6 +49,7 @@ const courseSchema = z.object({
   practicalHours: z.coerce.number().min(0, 'En az 0 olabilir.'),
   ects: z.coerce.number().min(1, 'En az 1 olabilir.'),
   credits: z.coerce.number().min(0, 'En az 0 olabilir.'),
+  studentCount: z.coerce.number().int('Tam sayı giriniz.').min(0, "Ders mevcudu 0'dan küçük olamaz."),
   courseType: z.enum(['ZORUNLU', 'SECMELI']),
   semester: z.enum(['GUZ', 'BAHAR', 'YAZ_OKULU']),
   grade: z.coerce.number().min(1, 'En az 1 olabilir.').max(6, 'En fazla 6 olabilir.'),
@@ -184,6 +185,7 @@ const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, 
         <InfoRow icon={<Building2 className="h-3 w-3" />} text={course.facultyName} />
         <InfoRow icon={<BookOpen className="h-3 w-3" />} text={course.departmentName} />
         <InfoRow icon={<Clock className="h-3 w-3" />} text={`T: ${course.theoreticalHours} U: ${course.practicalHours} (AKTS: ${course.ects})`} />
+        <InfoRow icon={<Users className="h-3 w-3" />} text={`Mevcut: ${course.studentCount} kişi`} />
       </div>
 
       {/* Sağ: Badge'ler + Aksiyonlar */}
@@ -371,6 +373,10 @@ const CourseViewModal = ({ course, onClose }: { course: any; onClose: () => void
             <div className="mt-0.5 text-[13px] font-medium text-slate-700">{course.ects} / {course.credits}</div>
           </div>
           <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Öğrenci Mevcudu</p>
+            <div className="mt-0.5 text-[13px] font-medium text-slate-700">{course.studentCount} kişi</div>
+          </div>
+          <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sınıf</p>
             <div className="mt-0.5 text-[13px] font-medium text-slate-700">{course.grade}. Sınıf</div>
           </div>
@@ -439,7 +445,7 @@ export const CoursesPage = () => {
   // Form
   const { register, handleSubmit, reset, watch, setValue, control, formState: { errors } } = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
-    defaultValues: { code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true },
+    defaultValues: { code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, studentCount: 0, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true },
   });
 
   const watchFacultyId = watch('facultyId');
@@ -497,7 +503,7 @@ export const CoursesPage = () => {
 
   const handleOpenCreate = () => {
     setEditingCourse(null);
-    reset({ code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true });
+    reset({ code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, studentCount: 0, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true });
     setIsModalOpen(true);
   };
   
@@ -505,7 +511,7 @@ export const CoursesPage = () => {
     setEditingCourse(course);
     reset({
       code: course.code, name: course.name, facultyId: course.facultyId, departmentId: course.departmentId, academicianId: course.academicianId,
-      theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits,
+      theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits, studentCount: course.studentCount,
       courseType: course.courseType, semester: course.semester, grade: course.grade, active: course.active
     });
     setIsModalOpen(true);
@@ -522,7 +528,7 @@ export const CoursesPage = () => {
     setEditingCourse(null); // Create mode
     reset({
       code: `${course.code}-KOPYA`, name: course.name, facultyId: course.facultyId, departmentId: course.departmentId, academicianId: course.academicianId,
-      theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits,
+      theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits, studentCount: course.studentCount,
       courseType: course.courseType, semester: course.semester, grade: course.grade, active: true
     });
     setIsModalOpen(true);
@@ -729,6 +735,12 @@ export const CoursesPage = () => {
               <label className="dts-input-label">Kredi</label>
               <input type="number" {...register('credits')} className="dts-input" />
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="dts-input-label">Ders Mevcudu</label>
+            <input type="number" min={0} step={1} {...register('studentCount')} className={`dts-input ${errors.studentCount ? 'border-red-300' : ''}`} placeholder="Örn. 72" />
+            {errors.studentCount && <p className="text-[10px] text-red-500">{errors.studentCount.message}</p>}
           </div>
 
           <div className="grid grid-cols-3 gap-3">

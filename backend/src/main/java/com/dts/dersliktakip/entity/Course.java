@@ -47,6 +47,9 @@ public class Course {
     @Column(nullable = false)
     private int credits = 2;
 
+    @Column(name = "student_count", nullable = false)
+    private int studentCount = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "course_type", nullable = false, length = 20)
     private CourseType courseType = CourseType.ZORUNLU;

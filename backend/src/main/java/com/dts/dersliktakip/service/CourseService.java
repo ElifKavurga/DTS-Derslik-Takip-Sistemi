@@ -100,6 +100,7 @@ public class CourseService {
         course.setPracticalHours(request.practicalHours());
         course.setEcts(request.ects());
         course.setCredits(request.credits());
+        course.setStudentCount(request.studentCount());
         course.setCourseType(request.courseType());
         course.setSemester(request.semester());
         course.setGrade(request.grade());
@@ -144,6 +145,7 @@ public class CourseService {
         course.setPracticalHours(request.practicalHours());
         course.setEcts(request.ects());
         course.setCredits(request.credits());
+        course.setStudentCount(request.studentCount());
         course.setCourseType(request.courseType());
         course.setSemester(request.semester());
         course.setGrade(request.grade());
@@ -290,6 +292,7 @@ public class CourseService {
                 course.getPracticalHours(),
                 course.getEcts(),
                 course.getCredits(),
+                course.getStudentCount(),
                 course.getCourseType(),
                 course.getSemester(),
                 course.getGrade(),

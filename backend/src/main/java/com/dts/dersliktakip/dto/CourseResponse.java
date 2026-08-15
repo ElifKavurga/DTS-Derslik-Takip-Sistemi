@@ -19,6 +19,7 @@ public record CourseResponse(
         int practicalHours,
         int ects,
         int credits,
+        int studentCount,
         CourseType courseType,
         Semester semester,
         int grade,

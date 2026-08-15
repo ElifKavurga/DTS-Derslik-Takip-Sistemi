@@ -2,11 +2,14 @@ package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.CourseResponse;
 import com.dts.dersliktakip.dto.CreateCourseRequest;
+import com.dts.dersliktakip.dto.UpdateCourseRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.CourseType;
 import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Faculty;
+import com.dts.dersliktakip.entity.Role;
 import com.dts.dersliktakip.entity.Semester;
 import com.dts.dersliktakip.entity.User;
 import com.dts.dersliktakip.mapper.CourseMapper;
@@ -14,14 +17,21 @@ import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
+import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +55,9 @@ class CourseServiceTest {
 
     @Mock
     private AcademicianRepository academicianRepository;
+
+    @Mock
+    private WeeklyScheduleRepository weeklyScheduleRepository;
 
     @Mock
     private CourseMapper courseMapper;
@@ -81,6 +94,7 @@ class CourseServiceTest {
         assertThat(savedCourse.getCode()).isEqualTo("BLM101");
         assertThat(savedCourse.getFaculty()).isSameAs(scopedFaculty);
         assertThat(savedCourse.getDepartment()).isSameAs(scopedDepartment);
+        assertThat(savedCourse.getStudentCount()).isEqualTo(72);
         verify(facultyRepository, never()).findById(any());
         verify(departmentRepository, never()).findById(any());
     }
@@ -104,7 +118,100 @@ class CourseServiceTest {
         verify(academicianRepository, never()).findById(any());
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 72, 300})
+    void createCourseRequestAcceptsNonNegativeStudentCount(int studentCount) {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        CreateCourseRequest request = createRequest(null, null, UUID.randomUUID(), "blm101", studentCount);
+
+        assertThat(validator.validate(request))
+                .noneMatch(violation -> violation.getPropertyPath().toString().equals("studentCount"));
+    }
+
+    @Test
+    void createCourseRequestRejectsNegativeStudentCount() {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        CreateCourseRequest request = createRequest(null, null, UUID.randomUUID(), "blm101", -1);
+
+        assertThat(validator.validate(request))
+                .anyMatch(violation -> violation.getPropertyPath().toString().equals("studentCount")
+                        && violation.getMessage().equals("Ders mevcudu 0'dan küçük olamaz."));
+    }
+
+    @Test
+    void createCourseRequestRejectsDecimalStudentCount() {
+        String json = """
+                {
+                  "code": "blm101",
+                  "name": "Programlamaya Giris",
+                  "academicianId": "%s",
+                  "theoreticalHours": 2,
+                  "practicalHours": 1,
+                  "ects": 4,
+                  "credits": 3,
+                  "studentCount": 72.5,
+                  "courseType": "ZORUNLU",
+                  "semester": "GUZ",
+                  "grade": 1,
+                  "active": true
+                }
+                """.formatted(UUID.randomUUID());
+
+        assertThatThrownBy(() -> new ObjectMapper().readValue(json, CreateCourseRequest.class))
+                .isInstanceOf(Exception.class);
+    }
+
+    @Test
+    void updateCoursePersistsStudentCount() {
+        User currentUser = new User();
+        Faculty scopedFaculty = faculty(UUID.randomUUID(), "Muhendislik Fakultesi");
+        Department scopedDepartment = department(UUID.randomUUID(), "Bilgisayar Muhendisligi", scopedFaculty);
+        Academician academician = academician(UUID.randomUUID(), scopedDepartment);
+        Course course = course(scopedFaculty, scopedDepartment, academician);
+        course.setStudentCount(72);
+        UpdateCourseRequest request = updateRequest(null, null, academician.getId(), "blm101", 80);
+
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(accessScopeService.isSuperAdmin(currentUser)).thenReturn(false);
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(scopedDepartment);
+        when(courseRepository.existsByCodeIgnoreCaseAndIdNot("BLM101", course.getId())).thenReturn(false);
+        when(academicianRepository.findById(academician.getId())).thenReturn(Optional.of(academician));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(courseMapper.toResponse(any(Course.class))).thenReturn(courseResponse(scopedFaculty, scopedDepartment, academician));
+
+        courseService.updateCourse(course.getId(), request, currentUser);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        assertThat(courseCaptor.getValue().getStudentCount()).isEqualTo(80);
+    }
+
+    @Test
+    void departmentAdminCannotUpdateCourseOutsideDepartmentScope() {
+        User currentUser = new User();
+        currentUser.setRoles(Set.of(Role.DEPARTMENT_ADMIN));
+        Faculty faculty = faculty(UUID.randomUUID(), "Muhendislik Fakultesi");
+        Department ownDepartment = department(UUID.randomUUID(), "Bilgisayar Muhendisligi", faculty);
+        Department otherDepartment = department(UUID.randomUUID(), "Elektrik Elektronik Muhendisligi", faculty);
+        Academician academician = academician(UUID.randomUUID(), otherDepartment);
+        Course course = course(faculty, otherDepartment, academician);
+        UpdateCourseRequest request = updateRequest(null, null, academician.getId(), "blm101", 80);
+
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(accessScopeService.isSuperAdmin(currentUser)).thenReturn(false);
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(ownDepartment);
+
+        assertThatThrownBy(() -> courseService.updateCourse(course.getId(), request, currentUser))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessage("Bu ders icin yetkiniz yok.");
+        verify(courseRepository, never()).save(any());
+    }
+
     private static CreateCourseRequest createRequest(UUID facultyId, UUID departmentId, UUID academicianId, String code) {
+        return createRequest(facultyId, departmentId, academicianId, code, 72);
+    }
+
+    private static CreateCourseRequest createRequest(UUID facultyId, UUID departmentId, UUID academicianId, String code, int studentCount) {
         return new CreateCourseRequest(
                 code,
                 "Programlamaya Giris",
@@ -115,6 +222,26 @@ class CourseServiceTest {
                 1,
                 4,
                 3,
+                studentCount,
+                CourseType.ZORUNLU,
+                Semester.GUZ,
+                1,
+                true
+        );
+    }
+
+    private static UpdateCourseRequest updateRequest(UUID facultyId, UUID departmentId, UUID academicianId, String code, int studentCount) {
+        return new UpdateCourseRequest(
+                code,
+                "Programlamaya Giris",
+                facultyId,
+                departmentId,
+                academicianId,
+                2,
+                1,
+                4,
+                3,
+                studentCount,
                 CourseType.ZORUNLU,
                 Semester.GUZ,
                 1,
@@ -144,6 +271,17 @@ class CourseServiceTest {
         return academician;
     }
 
+    private static Course course(Faculty faculty, Department department, Academician academician) {
+        Course course = new Course();
+        course.setId(UUID.randomUUID());
+        course.setCode("BLM101");
+        course.setName("Programlamaya Giris");
+        course.setFaculty(faculty);
+        course.setDepartment(department);
+        course.setAcademician(academician);
+        return course;
+    }
+
     private static CourseResponse courseResponse(Faculty faculty, Department department, Academician academician) {
         return new CourseResponse(
                 UUID.randomUUID(),
@@ -159,6 +297,7 @@ class CourseServiceTest {
                 1,
                 4,
                 3,
+                72,
                 CourseType.ZORUNLU,
                 Semester.GUZ,
                 1,
