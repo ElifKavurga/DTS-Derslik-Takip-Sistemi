@@ -574,6 +574,9 @@ class WeeklyScheduleServiceTest {
         when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
         when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
                 .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), any(), any(), any())).thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "09:10-09:55"))
                 .thenReturn(List.of(conflict));
         when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "09:10-09:55"))
@@ -589,6 +592,224 @@ class WeeklyScheduleServiceTest {
                     assertThat(conflictException.getCode()).isEqualTo("CLASSROOM_CONFLICT");
                     assertThat(conflictException.getDetails()).anyMatch(detail -> detail.contains(conflict.getCourse().getCode()));
                 });
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateScheduleAllowsChangingOnlyClassroomWhenTargetIsAvailable() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        Classroom oldClassroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        Classroom newClassroom = classroom(UUID.randomUUID(), department.getFaculty(), "D102", 80);
+        WeeklySchedule existingSchedule = schedule(course, oldClassroom, "MONDAY", "10:05-10:50");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), newClassroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(newClassroom.getId())).thenReturn(Optional.of(newClassroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(newClassroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        List<?> response = weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser);
+
+        assertThat(response).hasSize(1);
+        verify(weeklyScheduleRepository).deleteAll(List.of(existingSchedule));
+    }
+
+    @Test
+    void updateScheduleAllowsChangingOnlyTimeWhenTargetIsAvailable() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        WeeklySchedule existingSchedule = schedule(course, classroom, "MONDAY", "08:15-09:00");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThat(weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser)).hasSize(1);
+    }
+
+    @Test
+    void updateScheduleRejectsAcademicianConflictAtNewTime() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        WeeklySchedule existingSchedule = schedule(course, classroom, "MONDAY", "08:15-09:00");
+        Course conflictingCourse = course(UUID.randomUUID(), department, "CENG202", 2);
+        conflictingCourse.setAcademician(course.getAcademician());
+        WeeklySchedule conflict = schedule(conflictingCourse, classroom(UUID.randomUUID(), department.getFaculty(), "D102", 80), "MONDAY", "10:05-10:50");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+
+        assertThatThrownBy(() -> weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser))
+                .isInstanceOf(ScheduleConflictException.class)
+                .satisfies(exception -> assertThat(((ScheduleConflictException) exception).getCode()).isEqualTo("ACADEMICIAN_CONFLICT"));
+        verify(weeklyScheduleRepository, never()).deleteAll(any());
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateScheduleRejectsGradeConflictAtNewTime() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department, "CENG303", 3);
+        course.setGrade(3);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        WeeklySchedule existingSchedule = schedule(course, classroom, "MONDAY", "08:15-09:00");
+        Course conflictingCourse = course(UUID.randomUUID(), department, "CENG301", 3);
+        conflictingCourse.setGrade(3);
+        WeeklySchedule conflict = schedule(conflictingCourse, classroom(UUID.randomUUID(), department.getFaculty(), "D102", 80), "MONDAY", "10:05-10:50");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(conflict));
+
+        assertThatThrownBy(() -> weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser))
+                .isInstanceOf(ScheduleConflictException.class)
+                .satisfies(exception -> assertThat(((ScheduleConflictException) exception).getCode()).isEqualTo("STUDENT_GROUP_CONFLICT"));
+        verify(weeklyScheduleRepository, never()).deleteAll(any());
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateScheduleRejectsMultiSlotClassroomConflictAtNewTime() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department, "CENG303", 3);
+        Classroom classroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        WeeklySchedule existingSchedule = schedule(course, classroom, "MONDAY", "13:30-14:15");
+        WeeklySchedule conflict = schedule(course(UUID.randomUUID(), department, "CENG202", 2), classroom, "MONDAY", "09:10-09:55");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), classroom.getId(), "MONDAY", "08:15-09:00", 3);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(classroom.getId())).thenReturn(Optional.of(classroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "09:10-09:55"))
+                .thenReturn(List.of(conflict));
+
+        assertThatThrownBy(() -> weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser))
+                .isInstanceOf(ScheduleConflictException.class)
+                .satisfies(exception -> assertThat(((ScheduleConflictException) exception).getCode()).isEqualTo("CLASSROOM_CONFLICT"));
+        verify(weeklyScheduleRepository, never()).deleteAll(any());
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateScheduleAllowsInsufficientCapacityAlternativeWhenOtherRulesPass() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        Course course = course(UUID.randomUUID(), department);
+        course.setStudentCount(70);
+        Classroom oldClassroom = classroom(UUID.randomUUID(), department.getFaculty(), "D101", 80);
+        Classroom insufficientClassroom = classroom(UUID.randomUUID(), department.getFaculty(), "D060", 60);
+        WeeklySchedule existingSchedule = schedule(course, oldClassroom, "MONDAY", "10:05-10:50");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(course.getId(), insufficientClassroom.getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(existingSchedule.getId())).thenReturn(Optional.of(existingSchedule));
+        when(courseRepository.findById(course.getId())).thenReturn(Optional.of(course));
+        when(classroomRepository.findById(insufficientClassroom.getId())).thenReturn(Optional.of(insufficientClassroom));
+        when(departmentScheduleConfigRepository.findByDepartmentId(department.getId())).thenReturn(Optional.empty());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(insufficientClassroom.getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(department.getId(), course.getGrade(), "MONDAY", "10:05-10:50"))
+                .thenReturn(List.of(existingSchedule));
+        when(weeklyScheduleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThat(weeklyScheduleService.updateSchedule(existingSchedule.getId(), request, currentUser)).hasSize(1);
+    }
+
+    @Test
+    void updateScheduleRejectsScheduleOutsideAuthenticatedDepartment() {
+        User currentUser = new User();
+        Faculty faculty = faculty(UUID.randomUUID());
+        Department department = department(UUID.randomUUID(), faculty);
+        Department otherDepartment = department(UUID.randomUUID(), faculty);
+        WeeklySchedule foreignSchedule = schedule(course(UUID.randomUUID(), otherDepartment), classroom(UUID.randomUUID(), faculty), "MONDAY", "10:05-10:50");
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(foreignSchedule.getCourse().getId(), foreignSchedule.getClassroom().getId(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(foreignSchedule.getId())).thenReturn(Optional.of(foreignSchedule));
+
+        assertThatThrownBy(() -> weeklyScheduleService.updateSchedule(foreignSchedule.getId(), request, currentUser))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(courseRepository, never()).findById(any());
+        verify(weeklyScheduleRepository, never()).deleteAll(any());
+        verify(weeklyScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void updateScheduleRejectsMissingSchedule() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+        UUID missingScheduleId = UUID.randomUUID();
+        UpdateWeeklyScheduleRequest request = new UpdateWeeklyScheduleRequest(UUID.randomUUID(), UUID.randomUUID(), "MONDAY", "10:05-10:50", 1);
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(weeklyScheduleRepository.findWithDetailsById(missingScheduleId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> weeklyScheduleService.updateSchedule(missingScheduleId, request, currentUser))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ders program");
+        verify(courseRepository, never()).findById(any());
+        verify(weeklyScheduleRepository, never()).deleteAll(any());
         verify(weeklyScheduleRepository, never()).saveAll(any());
     }
 
