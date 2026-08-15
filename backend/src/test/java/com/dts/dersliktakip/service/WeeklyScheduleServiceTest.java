@@ -866,7 +866,7 @@ class WeeklyScheduleServiceTest {
         assertThat(response.incompleteCourses()).isEqualTo(1);
         assertThat(response.notScheduledCourses()).isEqualTo(1);
         assertThat(response.overScheduledCourses()).isEqualTo(1);
-        assertThat(response.completionPercentage()).isEqualTo(25);
+        assertThat(response.completionPercentage()).isEqualTo(67);
         assertThat(response.courses()).anySatisfy(item -> {
             assertThat(item.courseId()).isEqualTo(complete.getId());
             assertThat(item.requiredHours()).isEqualTo(3);
@@ -892,6 +892,24 @@ class WeeklyScheduleServiceTest {
             assertThat(item.remainingHours()).isEqualTo(-1);
             assertThat(item.status()).isEqualTo("OVER_SCHEDULED");
         });
+    }
+
+    @Test
+    void getScheduleCompletionReturnsZeroPercentageWhenNoCoursesExist() {
+        User currentUser = new User();
+        Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
+
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
+                .thenReturn(List.of());
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+
+        assertThat(response.totalCourses()).isZero();
+        assertThat(response.completedCourses()).isZero();
+        assertThat(response.completionPercentage()).isZero();
+        assertThat(response.courses()).isEmpty();
     }
 
     private void mockAvailableClassroomQuery(User currentUser, Department department, Course course, List<Classroom> classrooms) {

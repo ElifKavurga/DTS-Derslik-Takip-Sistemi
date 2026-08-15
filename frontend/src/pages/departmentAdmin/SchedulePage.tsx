@@ -514,6 +514,8 @@ export const SchedulePage = () => {
     const notScheduledCount = coursesForGrade.filter((course) => course.status === 'NOT_SCHEDULED').length;
     const overScheduledCourses = coursesForGrade.filter((course) => course.status === 'OVER_SCHEDULED').length;
     const totalCourses = coursesForGrade.length;
+    const requiredHours = coursesForGrade.reduce((total, course) => total + course.requiredHours, 0);
+    const completedHours = coursesForGrade.reduce((total, course) => total + Math.min(course.scheduledHours, course.requiredHours), 0);
     return {
       ...scheduleStatus,
       totalCourses,
@@ -521,7 +523,7 @@ export const SchedulePage = () => {
       incompleteCourses: incompleteCount,
       notScheduledCourses: notScheduledCount,
       overScheduledCourses,
-      completionPercentage: totalCourses === 0 ? 100 : Math.round((completedCourses * 100) / totalCourses),
+      completionPercentage: requiredHours === 0 ? 0 : Math.round((completedHours * 100) / requiredHours),
       courses: coursesForGrade,
     };
   }, [scheduleStatus, selectedGradeNumber]);
@@ -1472,19 +1474,34 @@ const ScheduleStatusOverview = ({
   isLoading: boolean;
   onShowDetails: () => void;
 }) => {
+  const hasCourses = status.totalCourses > 0;
   const hasWarnings = status.incompleteCourses > 0 || status.notScheduledCourses > 0 || status.overScheduledCourses > 0;
+  const isComplete = hasCourses && !hasWarnings;
+  const title = !hasCourses
+    ? 'Programlanacak ders bulunmuyor'
+    : isComplete
+      ? 'Ders programı tamamlandı'
+      : 'Ders programı tamamlanmadı';
+  const Icon = !hasCourses ? Circle : isComplete ? CheckCircle2 : AlertTriangle;
 
   return (
-    <section className={cn('rounded-2xl border px-4 py-3', hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70')}>
+    <section className={cn(
+      'rounded-2xl border px-4 py-3',
+      !hasCourses ? 'border-slate-200 bg-white' : hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70',
+    )}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          {hasWarnings ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" /> : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />}
+          <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', !hasCourses ? 'text-slate-400' : hasWarnings ? 'text-amber-600' : 'text-emerald-600')} />
           <div className="min-w-0">
-            <p className={cn('text-sm font-bold', hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
-              {hasWarnings ? 'Ders programı tamamlanmadı' : 'Ders programı tamamlandı'}
+            <p className={cn('text-sm font-bold', !hasCourses ? 'text-slate-700' : hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
+              {title}
             </p>
             <p className="mt-0.5 text-xs font-medium text-slate-500">
-              {isLoading ? 'Program durumu hesaplanıyor...' : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat`}
+              {isLoading
+                ? 'Program durumu hesaplanıyor...'
+                : !hasCourses
+                  ? 'Bu seçim için programlanacak ders bulunmuyor.'
+                  : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat`}
             </p>
           </div>
         </div>

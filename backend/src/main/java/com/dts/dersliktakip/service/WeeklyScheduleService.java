@@ -119,7 +119,7 @@ public class WeeklyScheduleService {
                 .collect(Collectors.groupingBy(CourseScheduleStatusItemResponse::status, Collectors.counting()));
         int totalCourses = items.size();
         int completedCourses = counts.getOrDefault("COMPLETE", 0L).intValue();
-        int completionPercentage = totalCourses == 0 ? 100 : Math.round((completedCourses * 100f) / totalCourses);
+        int completionPercentage = calculateCompletionPercentage(items);
 
         return new ScheduleCompletionResponse(
                 department.getId(),
@@ -133,6 +133,17 @@ public class WeeklyScheduleService {
                 completionPercentage,
                 items
         );
+    }
+
+    private int calculateCompletionPercentage(List<CourseScheduleStatusItemResponse> items) {
+        int requiredHours = items.stream().mapToInt(CourseScheduleStatusItemResponse::requiredHours).sum();
+        if (requiredHours == 0) {
+            return 0;
+        }
+        int completedHours = items.stream()
+                .mapToInt(item -> Math.min(item.scheduledHours(), item.requiredHours()))
+                .sum();
+        return Math.round((completedHours * 100f) / requiredHours);
     }
 
     @Transactional(readOnly = true)
