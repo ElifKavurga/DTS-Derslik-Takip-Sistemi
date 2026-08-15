@@ -1199,6 +1199,11 @@ export const SchedulePage = () => {
       {filteredScheduleStatus && (
         <FormModal isOpen={isStatusModalOpen} onClose={() => setIsStatusModalOpen(false)} title="Program Durumu">
           <div className="space-y-3">
+            {selectedGradeNumber === null && filteredScheduleStatus.capacityWarningCount > 0 && (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                {filteredScheduleStatus.capacityWarningCount} program kaydında kapasite uyarısı var. Bu uyarılar eksik ders olarak değerlendirilmez.
+              </div>
+            )}
             {filteredScheduleStatus.courses.filter((course) => course.status === 'INCOMPLETE' || course.status === 'OVER_SCHEDULED').length === 0 && filteredScheduleStatus.courses.filter((course) => course.status === 'NOT_SCHEDULED').length === 0 ? (
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700">
                 Seçili dönemde programı eksik ders bulunmuyor.
