@@ -4,6 +4,9 @@ import com.dts.dersliktakip.dto.PublicBuildingListResponse;
 import com.dts.dersliktakip.dto.PublicBuildingResponse;
 import com.dts.dersliktakip.dto.PublicFacultyListResponse;
 import com.dts.dersliktakip.dto.PublicFacultyResponse;
+import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
+import com.dts.dersliktakip.dto.PublicFloorListResponse;
+import com.dts.dersliktakip.dto.PublicFloorResponse;
 import com.dts.dersliktakip.service.PublicCampusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,5 +43,19 @@ public class PublicCampusController {
             @PathVariable UUID buildingId
     ) {
         return ResponseEntity.ok(publicCampusService.getBuildingByFacultyId(facultyId, buildingId));
+    }
+
+    @GetMapping("/buildings/{buildingId}/floors")
+    public ResponseEntity<PublicFloorListResponse> getFloorsByBuildingId(@PathVariable UUID buildingId) {
+        List<PublicFloorResponse> floors = publicCampusService.getFloorsByBuildingId(buildingId);
+        return ResponseEntity.ok(new PublicFloorListResponse(floors));
+    }
+
+    @GetMapping("/buildings/{buildingId}/floors/{floorId}")
+    public ResponseEntity<PublicFloorDetailResponse> getFloorView(
+            @PathVariable UUID buildingId,
+            @PathVariable UUID floorId
+    ) {
+        return ResponseEntity.ok(publicCampusService.getFloorView(buildingId, floorId));
     }
 }

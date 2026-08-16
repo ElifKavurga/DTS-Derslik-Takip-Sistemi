@@ -1,5 +1,11 @@
 import { apiClient } from '@/services/axios';
-import { PublicBuildingListResponse, PublicBuildingResponse, PublicFacultyListResponse } from '@/types';
+import {
+  PublicBuildingListResponse,
+  PublicBuildingResponse,
+  PublicFacultyListResponse,
+  PublicFloorDetailResponse,
+  PublicFloorListResponse,
+} from '@/types';
 
 export const publicCampusService = {
   getFaculties: async () => {
@@ -12,6 +18,14 @@ export const publicCampusService = {
   },
   getBuildingByFacultyId: async (facultyId: string, buildingId: string) => {
     const response = await apiClient.get<PublicBuildingResponse>(`/public/faculties/${facultyId}/buildings/${buildingId}`);
+    return response.data;
+  },
+  getFloorsByBuildingId: async (buildingId: string) => {
+    const response = await apiClient.get<PublicFloorListResponse>(`/public/buildings/${buildingId}/floors`);
+    return response.data;
+  },
+  getFloorView: async (buildingId: string, floorId: string) => {
+    const response = await apiClient.get<PublicFloorDetailResponse>(`/public/buildings/${buildingId}/floors/${floorId}`);
     return response.data;
   },
 };

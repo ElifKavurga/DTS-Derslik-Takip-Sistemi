@@ -26,7 +26,7 @@ import { PublicRoute } from '@/router/PublicRoute';
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/giris" replace />,
+    element: <ClassroomExplorerPage />,
   },
   {
     path: '/classrooms',
