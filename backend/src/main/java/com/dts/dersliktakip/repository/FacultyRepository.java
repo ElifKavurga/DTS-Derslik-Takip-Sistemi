@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface FacultyRepository extends JpaRepository<Faculty, UUID> {
+    List<Faculty> findAllByOrderByNameAsc();
+
     List<Faculty> findTop5ByOrderByCreatedAtDesc();
 
     boolean existsByName(String name);

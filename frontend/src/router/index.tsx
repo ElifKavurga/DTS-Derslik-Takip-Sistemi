@@ -18,6 +18,7 @@ import { AcademiciansPage } from '@/pages/departmentAdmin/AcademiciansPage';
 import { SchedulePage } from '@/pages/departmentAdmin/SchedulePage';
 import { AcademicianCoursesPage } from '@/pages/academician/AcademicianCoursesPage';
 import { AcademicianExceptionsPage } from '@/pages/academician/AcademicianExceptionsPage';
+import { ClassroomExplorerPage } from '@/pages/public/ClassroomExplorerPage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -26,6 +27,10 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Navigate to="/giris" replace />,
+  },
+  {
+    path: '/classrooms',
+    element: <ClassroomExplorerPage />,
   },
   {
     element: <PublicRoute />,

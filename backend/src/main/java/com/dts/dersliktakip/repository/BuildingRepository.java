@@ -3,6 +3,7 @@ package com.dts.dersliktakip.repository;
 import com.dts.dersliktakip.entity.Building;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface BuildingRepository extends JpaRepository<Building, UUID> {
@@ -13,6 +14,10 @@ public interface BuildingRepository extends JpaRepository<Building, UUID> {
     long countByFacultyId(UUID facultyId);
 
     List<Building> findAllByFacultyId(UUID facultyId);
+
+    List<Building> findAllByFacultyIdOrderByNameAsc(UUID facultyId);
+
+    Optional<Building> findByIdAndFacultyId(UUID id, UUID facultyId);
 
     boolean existsByNameAndFacultyId(String name, UUID facultyId);
 
