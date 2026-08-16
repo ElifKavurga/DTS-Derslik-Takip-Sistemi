@@ -4,6 +4,7 @@ import { Building2, FlaskConical, Landmark, Loader2, LogIn, MapPinned, Presentat
 import { Link } from 'react-router-dom';
 
 import { EmptyState } from '@/components/ui/EmptyState';
+import { FormModal } from '@/components/ui/FormModal';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { publicCampusService } from '@/services/publicCampusService';
@@ -167,6 +168,78 @@ const AvailabilityLegend = () => (
     })}
   </div>
 );
+
+const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
+  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+    <p className="mt-1 truncate text-sm font-bold text-slate-900">{value ?? '-'}</p>
+  </div>
+);
+
+const ClassroomDetailContent = ({
+  classroom,
+  facultyName,
+  buildingName,
+  floorName,
+}: {
+  classroom?: PublicSpaceObjectResponse;
+  facultyName?: string;
+  buildingName?: string;
+  floorName?: string;
+}) => {
+  if (!classroom) {
+    return <EmptyState title="Derslik bilgileri yüklenemedi." />;
+  }
+
+  if (!classroom.classroomId) {
+    return <EmptyState title="Bu slot için görüntülenecek derslik bilgisi bulunamadı." />;
+  }
+
+  const availability = classroom.availabilityStatus ?? 'AVAILABLE';
+  const availabilityStyle = AVAILABILITY_STYLES[availability] ?? AVAILABILITY_STYLES.AVAILABLE;
+  const availabilityLabel = AVAILABILITY_LABELS[availability] ?? classroom.availabilityLabel ?? 'Boş';
+  const typeLabel = TEACHING_TYPE_LABELS[classroom.type] ?? classroom.type;
+  const statusDescription =
+    availability === 'OCCUPIED'
+      ? [classroom.currentCourseName, classroom.currentTimeSlot].filter(Boolean).join(' · ')
+      : availability === 'STARTING_SOON'
+        ? [classroom.nextCourseName, classroom.nextStartTime ? `${classroom.nextStartTime} başlangıç` : undefined].filter(Boolean).join(' · ')
+        : 'Şu anda ders görünmüyor.';
+
+  return (
+    <div className="space-y-5">
+      <div className={cn('rounded-2xl border p-4', availabilityStyle.card)}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Derslik</p>
+            <h2 className="mt-1 truncate text-2xl font-bold text-slate-950">{classroom.code || classroom.label}</h2>
+            <p className="mt-1 text-sm text-slate-600">{classroom.label && classroom.label !== classroom.code ? classroom.label : typeLabel}</p>
+          </div>
+          <span className={cn('inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold', availabilityStyle.badge)}>
+            <span className={cn('h-2.5 w-2.5 rounded-full', availabilityStyle.dot)} />
+            {availabilityLabel}
+          </span>
+        </div>
+        <p className="mt-3 text-sm font-medium text-slate-700">{statusDescription}</p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <DetailItem label="Derslik Türü" value={typeLabel} />
+        <DetailItem label="Kapasite" value={classroom.capacity != null ? `${classroom.capacity} kişi` : null} />
+        <DetailItem label="Fakülte" value={facultyName} />
+        <DetailItem label="Blok" value={buildingName} />
+        <DetailItem label="Kat" value={floorName} />
+        <DetailItem label="Yerleşim" value={classroom.placed === false ? 'Kat planında yerleşim yok' : 'Kat planında yerleşik'} />
+      </div>
+
+      <div className="flex justify-end border-t border-slate-100 pt-4">
+        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500">
+          Program görünümü sonraki sprint kapsamında
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const SelectionSkeleton = () => (
   <div className="grid gap-4 md:grid-cols-2">
@@ -578,7 +651,20 @@ export const ClassroomExplorerPage = () => {
                 </section>
               )}
 
-              {selectedClassroom && (
+              <FormModal
+                isOpen={!!selectedClassroomId}
+                onClose={() => setSelectedClassroomId('')}
+                title="Derslik Detayı"
+                maxWidthClassName="max-w-2xl"
+              >
+                <ClassroomDetailContent
+                  classroom={selectedClassroom}
+                  facultyName={selectedFaculty?.name}
+                  buildingName={selectedBuilding?.name}
+                  floorName={selectedFloor?.name}
+                />
+              </FormModal>
+              {/*
                 <section className="dts-card flex flex-col gap-2 p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Seçilen Sınıf</p>
                   <h2 className="text-base font-bold text-slate-950">{selectedClassroom.code || selectedClassroom.label}</h2>
@@ -597,7 +683,7 @@ export const ClassroomExplorerPage = () => {
                     </p>
                   )}
                 </section>
-              )}
+              */}
             </>
           )}
         </div>
