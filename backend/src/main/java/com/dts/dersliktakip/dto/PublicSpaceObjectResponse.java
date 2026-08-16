@@ -29,4 +29,10 @@ public class PublicSpaceObjectResponse {
     private Integer slotRow;
     private Integer slotColumn;
     private Boolean placed;
+    private ClassroomAvailabilityStatus availabilityStatus;
+    private String availabilityLabel;
+    private String currentCourseName;
+    private String currentTimeSlot;
+    private String nextCourseName;
+    private String nextStartTime;
 }

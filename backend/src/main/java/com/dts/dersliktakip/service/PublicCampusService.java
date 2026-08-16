@@ -1,5 +1,6 @@
 package com.dts.dersliktakip.service;
 
+import com.dts.dersliktakip.dto.ClassroomAvailabilityStatus;
 import com.dts.dersliktakip.dto.PublicBuildingResponse;
 import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
@@ -11,21 +12,37 @@ import com.dts.dersliktakip.entity.ClassroomType;
 import com.dts.dersliktakip.entity.Faculty;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.FloorLayout;
+import com.dts.dersliktakip.entity.ScheduleException;
+import com.dts.dersliktakip.entity.ScheduleExceptionType;
 import com.dts.dersliktakip.entity.SpaceObject;
 import com.dts.dersliktakip.entity.SpaceObjectStatus;
 import com.dts.dersliktakip.entity.SpaceObjectType;
+import com.dts.dersliktakip.entity.WeeklySchedule;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.repository.BuildingRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
+import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorLayoutRepository;
 import com.dts.dersliktakip.repository.FloorRepository;
+import com.dts.dersliktakip.repository.ScheduleExceptionRepository;
 import com.dts.dersliktakip.repository.SpaceObjectRepository;
+import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -34,12 +51,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PublicCampusService {
 
+    private static final ZoneId APPLICATION_ZONE = ZoneId.of("Europe/Istanbul");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
     private final FacultyRepository facultyRepository;
     private final BuildingRepository buildingRepository;
     private final FloorRepository floorRepository;
     private final FloorLayoutRepository floorLayoutRepository;
     private final SpaceObjectRepository spaceObjectRepository;
     private final ClassroomRepository classroomRepository;
+    private final WeeklyScheduleRepository weeklyScheduleRepository;
+    private final ScheduleExceptionRepository scheduleExceptionRepository;
+    private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
 
     @Transactional(readOnly = true)
     public List<PublicFacultyResponse> getFaculties() {
@@ -51,7 +74,7 @@ public class PublicCampusService {
     @Transactional(readOnly = true)
     public List<PublicBuildingResponse> getBuildingsByFacultyId(UUID facultyId) {
         if (!facultyRepository.existsById(facultyId)) {
-            throw new ResourceNotFoundException("Fakülte bulunamadı.");
+            throw new ResourceNotFoundException("Fakulte bulunamadi.");
         }
 
         return buildingRepository.findAllByFacultyIdOrderByNameAsc(facultyId).stream()
@@ -62,18 +85,18 @@ public class PublicCampusService {
     @Transactional(readOnly = true)
     public PublicBuildingResponse getBuildingByFacultyId(UUID facultyId, UUID buildingId) {
         if (!facultyRepository.existsById(facultyId)) {
-            throw new ResourceNotFoundException("Fakülte bulunamadı.");
+            throw new ResourceNotFoundException("Fakulte bulunamadi.");
         }
 
         Building building = buildingRepository.findByIdAndFacultyId(buildingId, facultyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadı."));
+                .orElseThrow(() -> new ResourceNotFoundException("Bina bulunamadi."));
         return toBuildingResponse(building);
     }
 
     @Transactional(readOnly = true)
     public List<PublicFloorResponse> getFloorsByBuildingId(UUID buildingId) {
         if (!buildingRepository.existsById(buildingId)) {
-            throw new ResourceNotFoundException("Bina bulunamadı.");
+            throw new ResourceNotFoundException("Bina bulunamadi.");
         }
 
         return floorRepository.findAllByBuildingIdOrderByLevelAsc(buildingId).stream()
@@ -84,14 +107,15 @@ public class PublicCampusService {
     @Transactional(readOnly = true)
     public PublicFloorDetailResponse getFloorView(UUID buildingId, UUID floorId) {
         Floor floor = floorRepository.findByIdAndBuildingId(floorId, buildingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadı."));
+                .orElseThrow(() -> new ResourceNotFoundException("Kat bulunamadi."));
 
         FloorLayout layout = floorLayoutRepository.findByFloorId(floorId).orElse(null);
+        Map<UUID, ClassroomStatusSnapshot> classroomStatuses = resolveClassroomStatuses(floorId);
         List<PublicSpaceObjectResponse> placedObjects = spaceObjectRepository
                 .findAllByFloorIdOrderBySlotRowAscSlotColumnAscPositionYAscPositionXAsc(floorId)
                 .stream()
                 .filter(spaceObject -> isTeachingSpace(spaceObject.getType()))
-                .map(this::toSpaceObjectResponse)
+                .map(spaceObject -> toSpaceObjectResponse(spaceObject, classroomStatuses))
                 .toList();
         Set<UUID> placedClassroomIds = placedObjects.stream()
                 .map(PublicSpaceObjectResponse::getClassroomId)
@@ -100,7 +124,7 @@ public class PublicCampusService {
         List<PublicSpaceObjectResponse> unplacedClassrooms = classroomRepository.findAllByFloorIdOrderByCodeAsc(floorId)
                 .stream()
                 .filter(classroom -> !placedClassroomIds.contains(classroom.getId()))
-                .map(this::toUnplacedClassroomResponse)
+                .map(classroom -> toUnplacedClassroomResponse(classroom, classroomStatuses))
                 .toList();
         List<PublicSpaceObjectResponse> objects = java.util.stream.Stream
                 .concat(placedObjects.stream(), unplacedClassrooms.stream())
@@ -151,8 +175,8 @@ public class PublicCampusService {
                 .build();
     }
 
-    private PublicSpaceObjectResponse toSpaceObjectResponse(SpaceObject spaceObject) {
-        return PublicSpaceObjectResponse.builder()
+    private PublicSpaceObjectResponse toSpaceObjectResponse(SpaceObject spaceObject, Map<UUID, ClassroomStatusSnapshot> statuses) {
+        PublicSpaceObjectResponse response = PublicSpaceObjectResponse.builder()
                 .id(spaceObject.getId())
                 .classroomId(spaceObject.getClassroom() != null ? spaceObject.getClassroom().getId() : null)
                 .type(spaceObject.getType())
@@ -169,10 +193,13 @@ public class PublicCampusService {
                 .slotColumn(spaceObject.getSlotColumn())
                 .placed(true)
                 .build();
+        UUID classroomId = response.getClassroomId();
+        applyStatus(response, classroomId != null ? statuses.get(classroomId) : ClassroomStatusSnapshot.available());
+        return response;
     }
 
-    private PublicSpaceObjectResponse toUnplacedClassroomResponse(Classroom classroom) {
-        return PublicSpaceObjectResponse.builder()
+    private PublicSpaceObjectResponse toUnplacedClassroomResponse(Classroom classroom, Map<UUID, ClassroomStatusSnapshot> statuses) {
+        PublicSpaceObjectResponse response = PublicSpaceObjectResponse.builder()
                 .id(classroom.getId())
                 .classroomId(classroom.getId())
                 .type(toSpaceObjectType(classroom.getType()))
@@ -187,6 +214,154 @@ public class PublicCampusService {
                 .rotation(0.0)
                 .placed(false)
                 .build();
+        applyStatus(response, statuses.get(classroom.getId()));
+        return response;
+    }
+
+    private Map<UUID, ClassroomStatusSnapshot> resolveClassroomStatuses(UUID floorId) {
+        LocalDate today = LocalDate.now(APPLICATION_ZONE);
+        LocalTime now = LocalTime.now(APPLICATION_ZONE);
+        String dayOfWeek = today.getDayOfWeek().name();
+
+        Map<UUID, List<ClassroomEvent>> eventsByClassroom = new HashMap<>();
+        Set<UUID> cancelledScheduleIds = scheduleExceptionRepository
+                .findAllByOriginalDateAndOriginalSchedule_Classroom_Floor_Id(today, floorId)
+                .stream()
+                .filter(exception -> exception.getType() == ScheduleExceptionType.CANCELLED)
+                .filter(exception -> exception.getOriginalSchedule() != null)
+                .map(exception -> exception.getOriginalSchedule().getId())
+                .collect(Collectors.toSet());
+
+        weeklyScheduleRepository.findAllByClassroom_Floor_IdAndDayOfWeekOrderByTimeSlotAsc(floorId, dayOfWeek)
+                .stream()
+                .filter(schedule -> !cancelledScheduleIds.contains(schedule.getId()))
+                .map(this::toClassroomEvent)
+                .forEach(event -> eventsByClassroom.computeIfAbsent(event.classroomId(), id -> new ArrayList<>()).add(event));
+
+        scheduleExceptionRepository.findAllByTargetDateAndClassroom_Floor_Id(today, floorId)
+                .stream()
+                .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                .filter(exception -> exception.getClassroom() != null)
+                .filter(exception -> exception.getCourse() != null && exception.getCourse().getDepartment() != null)
+                .map(this::toClassroomEvent)
+                .forEach(event -> eventsByClassroom.computeIfAbsent(event.classroomId(), id -> new ArrayList<>()).add(event));
+
+        Map<UUID, ClassroomStatusSnapshot> statuses = new HashMap<>();
+        for (Map.Entry<UUID, List<ClassroomEvent>> entry : eventsByClassroom.entrySet()) {
+            statuses.put(entry.getKey(), resolveStatus(entry.getValue(), now));
+        }
+        return statuses;
+    }
+
+    private ClassroomStatusSnapshot resolveStatus(List<ClassroomEvent> events, LocalTime now) {
+        List<ClassroomEvent> sortedEvents = events.stream()
+                .sorted(Comparator.comparing(ClassroomEvent::start))
+                .toList();
+
+        ClassroomEvent current = sortedEvents.stream()
+                .filter(event -> !now.isBefore(event.start()) && now.isBefore(event.end()))
+                .findFirst()
+                .orElse(null);
+        if (current != null) {
+            return ClassroomStatusSnapshot.occupied(current);
+        }
+
+        ClassroomEvent next = sortedEvents.stream()
+                .filter(event -> now.isBefore(event.start()))
+                .findFirst()
+                .orElse(null);
+        if (next != null && Duration.between(now, next.start()).toMinutes() <= 30) {
+            return ClassroomStatusSnapshot.startingSoon(next);
+        }
+
+        return ClassroomStatusSnapshot.available();
+    }
+
+    private ClassroomEvent toClassroomEvent(WeeklySchedule schedule) {
+        TimeRange range = parseTimeRange(schedule.getTimeSlot());
+        return new ClassroomEvent(
+                schedule.getClassroom().getId(),
+                schedule.getCourse().getName(),
+                range.start(),
+                range.end(),
+                schedule.getTimeSlot()
+        );
+    }
+
+    private ClassroomEvent toClassroomEvent(ScheduleException exception) {
+        List<TimeRange> slots = generateSlots(exception.getCourse().getDepartment().getId());
+        TimeRange range = resolveExceptionRange(exception, slots);
+        return new ClassroomEvent(
+                exception.getClassroom().getId(),
+                exception.getCourse().getName(),
+                range.start(),
+                range.end(),
+                range.start().format(TIME_FORMATTER) + "-" + range.end().format(TIME_FORMATTER)
+        );
+    }
+
+    private TimeRange resolveExceptionRange(ScheduleException exception, List<TimeRange> slots) {
+        TimeRange parsed = parseTimeRange(exception.getTimeSlot());
+        int startIndex = slots.indexOf(parsed);
+        if (startIndex < 0) {
+            return parsed;
+        }
+        int endIndex = Math.min(slots.size() - 1, startIndex + Math.max(1, exception.getSlotCount()) - 1);
+        return new TimeRange(slots.get(startIndex).start(), slots.get(endIndex).end());
+    }
+
+    private List<TimeRange> generateSlots(UUID departmentId) {
+        var config = departmentScheduleConfigRepository.findByDepartmentId(departmentId).orElse(null);
+        LocalTime start = parseTime(config != null ? config.getStartTime() : "08:15");
+        LocalTime end = parseTime(config != null ? config.getEndTime() : "17:00");
+        LocalTime lunchStart = parseTime(config != null ? config.getLunchBreakStart() : "12:40");
+        LocalTime lunchEnd = parseTime(config != null ? config.getLunchBreakEnd() : "13:30");
+        int lessonMinutes = config != null ? config.getLessonDurationMinutes() : 45;
+        int breakMinutes = config != null ? config.getBreakDurationMinutes() : 10;
+        boolean lunchEnabled = config == null || Boolean.TRUE.equals(config.getLunchBreakEnabled());
+
+        List<TimeRange> slots = new ArrayList<>();
+        LocalTime cursor = start;
+        while (!cursor.plusMinutes(lessonMinutes).isAfter(end)) {
+            LocalTime slotEnd = cursor.plusMinutes(lessonMinutes);
+            if (lunchEnabled && overlaps(cursor, slotEnd, lunchStart, lunchEnd)) {
+                cursor = lunchEnd;
+                continue;
+            }
+            slots.add(new TimeRange(cursor, slotEnd));
+            cursor = slotEnd.plusMinutes(breakMinutes);
+        }
+        return slots;
+    }
+
+    private boolean overlaps(LocalTime start, LocalTime end, LocalTime blockedStart, LocalTime blockedEnd) {
+        return start.isBefore(blockedEnd) && end.isAfter(blockedStart);
+    }
+
+    private TimeRange parseTimeRange(String timeSlot) {
+        String[] parts = timeSlot.trim().split("-");
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Gecersiz zaman blogu.");
+        }
+        return new TimeRange(parseTime(parts[0]), parseTime(parts[1]));
+    }
+
+    private LocalTime parseTime(String time) {
+        try {
+            return LocalTime.parse(time.trim(), TIME_FORMATTER);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException("Saat bilgisi HH:mm formatinda olmalidir.");
+        }
+    }
+
+    private void applyStatus(PublicSpaceObjectResponse response, ClassroomStatusSnapshot snapshot) {
+        ClassroomStatusSnapshot resolved = snapshot != null ? snapshot : ClassroomStatusSnapshot.available();
+        response.setAvailabilityStatus(resolved.status());
+        response.setAvailabilityLabel(resolved.label());
+        response.setCurrentCourseName(resolved.currentCourseName());
+        response.setCurrentTimeSlot(resolved.currentTimeSlot());
+        response.setNextCourseName(resolved.nextCourseName());
+        response.setNextStartTime(resolved.nextStartTime());
     }
 
     private boolean isTeachingSpace(SpaceObjectType type) {
@@ -201,5 +376,32 @@ public class PublicCampusService {
             case LABORATORY -> SpaceObjectType.LABORATORY;
             case AMPHITHEATER -> SpaceObjectType.AMPHITHEATER;
         };
+    }
+
+    private record TimeRange(LocalTime start, LocalTime end) {
+    }
+
+    private record ClassroomEvent(UUID classroomId, String courseName, LocalTime start, LocalTime end, String timeSlot) {
+    }
+
+    private record ClassroomStatusSnapshot(
+            ClassroomAvailabilityStatus status,
+            String label,
+            String currentCourseName,
+            String currentTimeSlot,
+            String nextCourseName,
+            String nextStartTime
+    ) {
+        private static ClassroomStatusSnapshot available() {
+            return new ClassroomStatusSnapshot(ClassroomAvailabilityStatus.AVAILABLE, "Bos", null, null, null, null);
+        }
+
+        private static ClassroomStatusSnapshot occupied(ClassroomEvent event) {
+            return new ClassroomStatusSnapshot(ClassroomAvailabilityStatus.OCCUPIED, "Dolu", event.courseName(), event.timeSlot(), null, null);
+        }
+
+        private static ClassroomStatusSnapshot startingSoon(ClassroomEvent event) {
+            return new ClassroomStatusSnapshot(ClassroomAvailabilityStatus.STARTING_SOON, "Yakinda dolacak", null, null, event.courseName(), event.start().format(TIME_FORMATTER));
+        }
     }
 }

@@ -23,6 +23,28 @@ const TEACHING_TYPE_LABELS: Record<string, string> = {
   LABORATORY: 'Laboratuvar',
   AMPHITHEATER: 'Amfi',
 };
+const AVAILABILITY_LABELS: Record<string, string> = {
+  AVAILABLE: 'Boş',
+  STARTING_SOON: 'Yakında dolacak',
+  OCCUPIED: 'Dolu',
+};
+const AVAILABILITY_STYLES: Record<string, { card: string; badge: string; dot: string }> = {
+  AVAILABLE: {
+    card: 'border-emerald-300 bg-emerald-50/90 text-emerald-950',
+    badge: 'bg-emerald-100 text-emerald-700',
+    dot: 'bg-emerald-500',
+  },
+  STARTING_SOON: {
+    card: 'border-amber-300 bg-amber-50/90 text-amber-950',
+    badge: 'bg-amber-100 text-amber-700',
+    dot: 'bg-amber-500',
+  },
+  OCCUPIED: {
+    card: 'border-red-300 bg-red-50/90 text-red-950',
+    badge: 'bg-red-100 text-red-700',
+    dot: 'bg-red-500',
+  },
+};
 
 const normalize = (value: string) =>
   value
@@ -76,14 +98,24 @@ const ClassroomSlot = ({
   const Icon = getObjectIcon(object.type);
   const label = object.code || object.label || 'Derslik';
   const detail = TEACHING_TYPE_LABELS[object.type] ?? object.type;
+  const availability = object.availabilityStatus ?? 'AVAILABLE';
+  const availabilityStyle = AVAILABILITY_STYLES[availability] ?? AVAILABILITY_STYLES.AVAILABLE;
+  const availabilityLabel = AVAILABILITY_LABELS[availability] ?? object.availabilityLabel ?? 'Boş';
+  const statusDetail =
+    availability === 'OCCUPIED'
+      ? [object.currentCourseName, object.currentTimeSlot].filter(Boolean).join(' · ')
+      : availability === 'STARTING_SOON'
+        ? [object.nextCourseName, object.nextStartTime ? `${object.nextStartTime} başlangıç` : undefined].filter(Boolean).join(' · ')
+        : '';
 
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex min-h-24 min-w-32 flex-col items-start justify-between rounded-xl border bg-white p-3 text-left shadow-sm transition hover:border-[#006482]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
-        selected ? 'border-[#006482] ring-2 ring-[#006482]/15' : 'border-slate-200',
+        'flex min-h-28 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:border-[#006482]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+        availabilityStyle.card,
+        selected && 'border-[#006482] ring-2 ring-[#006482]/15',
         absolute && 'absolute overflow-hidden',
       )}
       style={
@@ -98,23 +130,43 @@ const ClassroomSlot = ({
             }
           : undefined
       }
+      title={[label, availabilityLabel, statusDetail].filter(Boolean).join(' - ')}
     >
       <span className="flex w-full items-center justify-between gap-2">
         <Icon className="h-4 w-4 shrink-0 text-[#006482]" />
-        {object.placed === false && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-            Yerleşim yok
-          </span>
-        )}
+        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', availabilityStyle.badge)}>
+          <span className={cn('h-2 w-2 rounded-full', availabilityStyle.dot)} />
+          {availabilityLabel}
+        </span>
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-bold text-slate-900">{label}</span>
         <span className="mt-1 block truncate text-xs text-slate-500">{detail}</span>
         {object.capacity != null && <span className="mt-1 block text-[11px] text-slate-400">{object.capacity} kişi</span>}
+        {statusDetail && <span className="mt-1 block truncate text-[11px] font-medium text-slate-600">{statusDetail}</span>}
+        {object.placed === false && <span className="mt-1 block text-[10px] font-semibold text-slate-400">Yerleşim yok</span>}
       </span>
     </button>
   );
 };
+
+const AvailabilityLegend = () => (
+  <div className="flex flex-wrap gap-2">
+    {[
+      ['AVAILABLE', 'Boş'],
+      ['STARTING_SOON', 'Yakında dolacak'],
+      ['OCCUPIED', 'Dolu'],
+    ].map(([status, label]) => {
+      const style = AVAILABILITY_STYLES[status];
+      return (
+        <span key={status} className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', style.badge)}>
+          <span className={cn('h-2.5 w-2.5 rounded-full', style.dot)} />
+          {label}
+        </span>
+      );
+    })}
+  </div>
+);
 
 const SelectionSkeleton = () => (
   <div className="grid gap-4 md:grid-cols-2">
@@ -179,6 +231,8 @@ export const ClassroomExplorerPage = () => {
     queryKey: ['public', 'floor-view', selectedBuildingId, selectedFloorId],
     queryFn: () => publicCampusService.getFloorView(selectedBuildingId, selectedFloorId),
     enabled: !!selectedBuildingId && !!selectedFloorId,
+    refetchInterval: 60_000,
+    staleTime: 20_000,
   });
 
   const selectedFaculty = useMemo(
@@ -264,7 +318,7 @@ export const ClassroomExplorerPage = () => {
 
   const isBuildingSelectLoading = !!selectedFacultyId && (isBuildingsLoading || isBuildingsFetching);
   const isFloorLoading = !!selectedBuildingId && (isFloorsLoading || isFloorsFetching);
-  const isLayoutLoading = !!selectedFloorId && (isFloorViewLoading || isFloorViewFetching);
+  const isLayoutLoading = !!selectedFloorId && isFloorViewLoading;
   const hasFloorPlan = !!floorView?.backgroundImageBase64 && !!floorView.backgroundImageType;
   const canvasSize = getCanvasSize(floorView);
   const placedObjects = useMemo(() => floorView?.objects.filter((object) => object.placed !== false) ?? [], [floorView?.objects]);
@@ -430,12 +484,21 @@ export const ClassroomExplorerPage = () => {
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Kat Yerleşimi</p>
                       <h2 className="mt-1 text-base font-bold text-slate-950">{selectedFloor.name}</h2>
                     </div>
-                    {isLayoutLoading && (
-                      <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Kat planı/slotlar yükleniyor...
-                      </span>
-                    )}
+                    <div className="flex flex-col gap-2 sm:items-end">
+                      <AvailabilityLegend />
+                      {isLayoutLoading && (
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Sınıflar ve anlık durum yükleniyor...
+                        </span>
+                      )}
+                      {isFloorViewFetching && !isFloorViewLoading && (
+                        <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Durum yenileniyor...
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {isFloorViewError ? (
@@ -523,6 +586,16 @@ export const ClassroomExplorerPage = () => {
                     {TEACHING_TYPE_LABELS[selectedClassroom.type] ?? selectedClassroom.type}
                     {selectedClassroom.capacity != null ? ` · ${selectedClassroom.capacity} kişi` : ''}
                   </p>
+                  <p className="text-sm font-semibold text-slate-700">
+                    {AVAILABILITY_LABELS[selectedClassroom.availabilityStatus ?? 'AVAILABLE'] ?? selectedClassroom.availabilityLabel}
+                  </p>
+                  {(selectedClassroom.currentCourseName || selectedClassroom.nextCourseName) && (
+                    <p className="text-xs text-slate-500">
+                      {selectedClassroom.currentCourseName
+                        ? `${selectedClassroom.currentCourseName} · ${selectedClassroom.currentTimeSlot ?? ''}`
+                        : `${selectedClassroom.nextCourseName} · ${selectedClassroom.nextStartTime ?? ''}`}
+                    </p>
+                  )}
                 </section>
               )}
             </>

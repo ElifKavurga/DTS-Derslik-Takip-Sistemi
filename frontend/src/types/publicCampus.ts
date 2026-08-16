@@ -1,5 +1,7 @@
 import { SpaceObjectStatus, SpaceObjectType } from '@/types/floorLayout';
 
+export type ClassroomAvailabilityStatus = 'AVAILABLE' | 'STARTING_SOON' | 'OCCUPIED';
+
 export interface PublicFacultyResponse {
   id: string;
   name: string;
@@ -48,6 +50,12 @@ export interface PublicSpaceObjectResponse {
   slotRow?: number;
   slotColumn?: number;
   placed?: boolean;
+  availabilityStatus?: ClassroomAvailabilityStatus;
+  availabilityLabel?: string;
+  currentCourseName?: string;
+  currentTimeSlot?: string;
+  nextCourseName?: string;
+  nextStartTime?: string;
 }
 
 export interface PublicFloorDetailResponse {
