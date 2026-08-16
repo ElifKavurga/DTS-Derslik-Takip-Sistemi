@@ -280,7 +280,10 @@ export const ClassroomExplorerPage = () => {
     enabled: !!selectedFacultyId,
   });
 
-  const buildings = useMemo(() => buildingsData?.buildings ?? [], [buildingsData?.buildings]);
+  const buildings = useMemo(
+    () => (buildingsData?.buildings ?? []).filter((building) => building.facultyId === selectedFacultyId),
+    [buildingsData?.buildings, selectedFacultyId],
+  );
 
   const {
     data: floorsData,
@@ -293,10 +296,13 @@ export const ClassroomExplorerPage = () => {
     enabled: !!selectedBuildingId,
   });
 
-  const floors = useMemo(() => floorsData?.floors ?? [], [floorsData?.floors]);
+  const floors = useMemo(
+    () => (floorsData?.floors ?? []).filter((floor) => floor.buildingId === selectedBuildingId),
+    [floorsData?.floors, selectedBuildingId],
+  );
 
   const {
-    data: floorView,
+    data: floorViewData,
     isLoading: isFloorViewLoading,
     isFetching: isFloorViewFetching,
     isError: isFloorViewError,
@@ -307,6 +313,14 @@ export const ClassroomExplorerPage = () => {
     refetchInterval: 60_000,
     staleTime: 20_000,
   });
+
+  const floorView = useMemo(
+    () =>
+      floorViewData?.id === selectedFloorId && floorViewData.buildingId === selectedBuildingId
+        ? floorViewData
+        : undefined,
+    [floorViewData, selectedBuildingId, selectedFloorId],
+  );
 
   const selectedFaculty = useMemo(
     () => faculties.find((faculty) => faculty.id === selectedFacultyId),
@@ -332,9 +346,18 @@ export const ClassroomExplorerPage = () => {
   }, [faculties, selectedFacultyId]);
 
   useEffect(() => {
-    if (!selectedFacultyId || isBuildingsLoading || isBuildingsFetching) return;
+    if (!selectedFacultyId) {
+      if (selectedBuildingId) setSelectedBuildingId('');
+      if (selectedFloorId) setSelectedFloorId('');
+      if (selectedClassroomId) setSelectedClassroomId('');
+      return;
+    }
+
+    if (isBuildingsLoading || isBuildingsFetching) return;
     if (buildings.length === 0) {
       setSelectedBuildingId('');
+      setSelectedFloorId('');
+      setSelectedClassroomId('');
       return;
     }
 
@@ -342,11 +365,27 @@ export const ClassroomExplorerPage = () => {
     if (selectedStillValid) return;
 
     const defaultBuilding = findDefaultBuilding(buildings);
+    setSelectedFloorId('');
+    setSelectedClassroomId('');
     setSelectedBuildingId(defaultBuilding?.id ?? '');
-  }, [buildings, isBuildingsFetching, isBuildingsLoading, selectedBuildingId, selectedFacultyId]);
+  }, [
+    buildings,
+    isBuildingsFetching,
+    isBuildingsLoading,
+    selectedBuildingId,
+    selectedClassroomId,
+    selectedFacultyId,
+    selectedFloorId,
+  ]);
 
   useEffect(() => {
-    if (!selectedBuildingId || isFloorsLoading || isFloorsFetching) return;
+    if (!selectedBuildingId) {
+      if (selectedFloorId) setSelectedFloorId('');
+      if (selectedClassroomId) setSelectedClassroomId('');
+      return;
+    }
+
+    if (isFloorsLoading || isFloorsFetching) return;
     if (floors.length === 0) {
       setSelectedFloorId('');
       setSelectedClassroomId('');
@@ -359,7 +398,18 @@ export const ClassroomExplorerPage = () => {
     const defaultFloor = findDefaultFloor(floors);
     setSelectedFloorId(defaultFloor?.id ?? '');
     setSelectedClassroomId('');
-  }, [floors, isFloorsFetching, isFloorsLoading, selectedBuildingId, selectedFloorId]);
+  }, [floors, isFloorsFetching, isFloorsLoading, selectedBuildingId, selectedClassroomId, selectedFloorId]);
+
+  useEffect(() => {
+    if (!selectedClassroomId || isFloorViewLoading || !floorView) return;
+
+    const classroomStillVisible = floorView.objects.some(
+      (object) => object.classroomId === selectedClassroomId || object.id === selectedClassroomId,
+    );
+    if (!classroomStillVisible) {
+      setSelectedClassroomId('');
+    }
+  }, [floorView, isFloorViewLoading, selectedClassroomId]);
 
   const facultyOptions = useMemo(
     () => faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })),
@@ -391,7 +441,7 @@ export const ClassroomExplorerPage = () => {
 
   const isBuildingSelectLoading = !!selectedFacultyId && (isBuildingsLoading || isBuildingsFetching);
   const isFloorLoading = !!selectedBuildingId && (isFloorsLoading || isFloorsFetching);
-  const isLayoutLoading = !!selectedFloorId && isFloorViewLoading;
+  const isLayoutLoading = !!selectedFloorId && (isFloorViewLoading || (isFloorViewFetching && !floorView));
   const hasFloorPlan = !!floorView?.backgroundImageBase64 && !!floorView.backgroundImageType;
   const canvasSize = getCanvasSize(floorView);
   const placedObjects = useMemo(() => floorView?.objects.filter((object) => object.placed !== false) ?? [], [floorView?.objects]);
