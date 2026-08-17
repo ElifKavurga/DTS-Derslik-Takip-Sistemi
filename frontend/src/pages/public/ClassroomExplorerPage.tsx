@@ -10,7 +10,6 @@ import {
   Landmark,
   Loader2,
   LogIn,
-  MapPinned,
   Presentation,
   School,
   UserRound,
@@ -149,7 +148,7 @@ const ClassroomSlot = ({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex min-h-28 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:border-[#006482]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+        'flex min-h-24 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:border-[#006482]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
         availabilityStyle.card,
         selected && 'border-[#006482] ring-2 ring-[#006482]/15',
         absolute && 'absolute overflow-hidden',
@@ -627,13 +626,14 @@ export const ClassroomExplorerPage = () => {
   return (
     <main className="min-h-screen bg-slate-50">
       <PageContainer>
-        <div className="space-y-6">
-          <header className="flex flex-col gap-2 border-b border-slate-200/70 pb-5">
+        <div className="space-y-4">
+          <header className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-5 py-4 shadow-md sm:px-6">
+            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#006482]">Genel Kullanıcı</span>
                 <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Görüntüleme</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
                   Fakülte, blok ve kat seçerek mevcut derslik yerleşimini görüntüleyin.
                 </p>
               </div>
@@ -655,10 +655,10 @@ export const ClassroomExplorerPage = () => {
             />
           ) : (
             <>
-              <section className="grid gap-4 md:grid-cols-2">
-                <div className="dts-card min-w-0 p-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-[#006482]">
+              <section className="dts-card grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(280px,1.2fr)]">
+                <div className="min-w-0">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
                       <Landmark className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -679,9 +679,9 @@ export const ClassroomExplorerPage = () => {
                   />
                 </div>
 
-                <div className="dts-card min-w-0 p-5">
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-[#006482]">
+                <div className="min-w-0">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
                       <Building2 className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
@@ -713,14 +713,14 @@ export const ClassroomExplorerPage = () => {
                     />
                   )}
                 </div>
-              </section>
 
-              {selectedBuilding && (
-                <section className="dts-card p-5">
-                  <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-base font-bold text-slate-950">Katlar</h2>
-                      <p className="text-xs text-slate-500">{selectedBuilding.name} için tanımlı katlar</p>
+                <div className="min-w-0">
+                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <h2 className="text-sm font-bold text-slate-950">Katlar</h2>
+                      <p className="truncate text-xs text-slate-500">
+                        {selectedBuilding ? `${selectedBuilding.name} için tanımlı katlar` : 'Blok seçildiğinde listelenir.'}
+                      </p>
                     </div>
                     {isFloorLoading && (
                       <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
@@ -730,19 +730,23 @@ export const ClassroomExplorerPage = () => {
                     )}
                   </div>
 
-                  {isFloorsError ? (
+                  {!selectedBuilding ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-400">
+                      Katları görüntülemek için blok seçin.
+                    </div>
+                  ) : isFloorsError ? (
                     <EmptyState title="Katlar yüklenemedi." />
                   ) : !isFloorLoading && floors.length === 0 ? (
                     <EmptyState title="Bu blokta kat bilgisi bulunamadı." />
                   ) : (
-                    <div className="flex gap-2 overflow-x-auto pb-1">
+                    <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap">
                       {floors.map((floor) => (
                         <button
                           key={floor.id}
                           type="button"
                           onClick={() => handleFloorChange(floor.id)}
                           className={cn(
-                            'min-w-24 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+                            'min-w-24 rounded-2xl border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
                             selectedFloorId === floor.id
                               ? 'border-[#006482] bg-[#eff8ff] text-[#006482]'
                               : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
@@ -753,36 +757,15 @@ export const ClassroomExplorerPage = () => {
                       ))}
                     </div>
                   )}
-                </section>
-              )}
-
-              {selectedFaculty && buildings.length === 0 && !isBuildingsLoading && !isBuildingsFetching && !isBuildingsError ? (
-                <EmptyState title="Bu fakülteye ait blok bulunamadı." />
-              ) : selectedFaculty && selectedBuilding ? (
-                <section className="dts-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
-                      <MapPinned className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Seçilen Blok</p>
-                      <h2 className="mt-1 truncate text-base font-bold text-slate-950">{selectedBuilding.name}</h2>
-                      <p className="mt-1 truncate text-sm text-slate-500">{selectedFaculty.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="dts-badge-primary">{selectedFaculty.code}</span>
-                    <span className="dts-badge-secondary">{selectedBuilding.code}</span>
-                  </div>
-                </section>
-              ) : null}
+                </div>
+              </section>
 
               {selectedFloor && (
-                <section className="dts-card p-5">
-                  <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
+                <section className="dts-card p-4 sm:p-5">
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Kat Yerleşimi</p>
-                      <h2 className="mt-1 text-base font-bold text-slate-950">{selectedFloor.name}</h2>
+                      <span className="rounded-full bg-[#eff8ff] px-2.5 py-1 text-xs font-bold text-[#006482]">{selectedFloor.name}</span>
                     </div>
                     <div className="flex flex-col gap-2 sm:items-end">
                       <AvailabilityLegend />
