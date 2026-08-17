@@ -216,7 +216,9 @@ const DailySchedulePanel = ({
   isLoading,
   isFetching,
   isError,
+  classroomCode,
   onPreviousDay,
+  onToday,
   onNextDay,
 }: {
   schedule?: PublicClassroomDailyScheduleResponse;
@@ -224,13 +226,16 @@ const DailySchedulePanel = ({
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  classroomCode: string;
   onPreviousDay: () => void;
+  onToday: () => void;
   onNextDay: () => void;
 }) => (
   <div className="border-t border-slate-100 pt-5">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Günlük Program</p>
+        <h3 className="text-lg font-bold text-slate-900">{classroomCode}</h3>
+        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Günlük Program</p>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
           <CalendarDays className="h-4 w-4 text-[#006482]" />
           <span>{schedule?.dayLabel ?? formatDisplayDate(selectedDate)}</span>
@@ -242,6 +247,9 @@ const DailySchedulePanel = ({
       <div className="flex items-center gap-2">
         <button type="button" onClick={onPreviousDay} className="dts-btn-secondary px-3" aria-label="Önceki gün">
           <ChevronLeft className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={onToday} className="dts-btn-secondary px-4 text-xs font-semibold" aria-label="Bugün">
+          Bugün
         </button>
         <button type="button" onClick={onNextDay} className="dts-btn-secondary px-3" aria-label="Sonraki gün">
           <ChevronRight className="h-4 w-4" />
@@ -324,6 +332,7 @@ const ClassroomDetailContent = ({
   isDailyScheduleFetching: boolean;
   isDailyScheduleError: boolean;
   onPreviousDay: () => void;
+  onToday: () => void;
   onNextDay: () => void;
 }) => {
   if (!classroom) {
@@ -377,7 +386,9 @@ const ClassroomDetailContent = ({
         isLoading={isDailyScheduleLoading}
         isFetching={isDailyScheduleFetching}
         isError={isDailyScheduleError}
+        classroomCode={classroom.code || classroom.label || 'Derslik'}
         onPreviousDay={onPreviousDay}
+        onToday={onToday}
         onNextDay={onNextDay}
       />
     </div>
@@ -610,6 +621,10 @@ export const ClassroomExplorerPage = () => {
     setSelectedDate((current) => shiftDate(current, -1));
   };
 
+  const handleToday = () => {
+    setSelectedDate(toDateValue(new Date()));
+  };
+
   const handleNextDay = () => {
     setSelectedDate((current) => shiftDate(current, 1));
   };
@@ -631,8 +646,7 @@ export const ClassroomExplorerPage = () => {
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#006482]">Genel Kullanıcı</span>
-                <h1 className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Görüntüleme</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Görüntüleme</h1>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
                   Fakülte, blok ve kat seçerek mevcut derslik yerleşimini görüntüleyin.
                 </p>
@@ -878,6 +892,7 @@ export const ClassroomExplorerPage = () => {
                   isDailyScheduleFetching={isDailyScheduleFetching}
                   isDailyScheduleError={isDailyScheduleError}
                   onPreviousDay={handlePreviousDay}
+                  onToday={handleToday}
                   onNextDay={handleNextDay}
                 />
               </FormModal>
