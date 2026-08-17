@@ -31,3 +31,32 @@ export const getWeekEnd = (dateString: string): Date => {
   weekEnd.setDate(weekStart.getDate() + 6);
   return weekEnd;
 };
+
+/**
+ * Returns the Monday of the current week.
+ */
+export const getCurrentWeekStart = (): string => {
+  return toDateValue(getWeekStart(toDateValue(new Date())));
+};
+
+/**
+ * Shifts a given date string by a number of days.
+ */
+export const shiftDate = (dateString: string, days: number): string => {
+  const date = new Date(`${dateString}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  return toDateValue(date);
+};
+
+/**
+ * Formats a week range (e.g. "17 - 23 Ağustos 2026")
+ */
+export const formatWeekRange = (startStr: string, endStr: string): string => {
+  const start = new Date(`${startStr}T12:00:00`);
+  const end = new Date(`${endStr}T12:00:00`);
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const month = end.toLocaleDateString('tr-TR', { month: 'long' });
+  const year = end.getFullYear();
+  return `${startDay} - ${endDay} ${month} ${year}`;
+};

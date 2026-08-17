@@ -19,6 +19,8 @@ import { SchedulePage } from '@/pages/departmentAdmin/SchedulePage';
 import { AcademicianCoursesPage } from '@/pages/academician/AcademicianCoursesPage';
 import { AcademicianExceptionsPage } from '@/pages/academician/AcademicianExceptionsPage';
 import { ClassroomExplorerPage } from '@/pages/public/ClassroomExplorerPage';
+import { ProgramsPage } from '@/pages/public/ProgramsPage';
+import { ClassroomSchedulePage } from '@/pages/public/ClassroomSchedulePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -31,6 +33,14 @@ export const router = createBrowserRouter([
   {
     path: '/classrooms',
     element: <ClassroomExplorerPage />,
+  },
+  {
+    path: '/programlar',
+    element: <ProgramsPage />,
+  },
+  {
+    path: '/programlar/sinif',
+    element: <ClassroomSchedulePage />,
   },
   {
     element: <PublicRoute />,
