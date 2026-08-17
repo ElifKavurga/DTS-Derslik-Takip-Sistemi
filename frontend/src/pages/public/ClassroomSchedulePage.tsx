@@ -102,7 +102,7 @@ export const ClassroomSchedulePage = () => {
     isFetching: isFloorViewFetching,
   } = useQuery({
     queryKey: ['public', 'floorView', selectedFloorId],
-    queryFn: () => publicCampusService.getFloorView(selectedFloorId, toDateValue(new Date())),
+    queryFn: () => publicCampusService.getFloorView(selectedBuildingId, selectedFloorId),
     enabled: !!selectedFloorId,
   });
 
@@ -220,11 +220,11 @@ export const ClassroomSchedulePage = () => {
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-500">
                   <Link to="/programlar" className="hover:text-[#006482]">&larr; Programlar</Link>
                   <span>/</span>
-                  <span className="text-slate-900">Sınıf Programı</span>
+                  <span className="text-slate-900">Derslik Programı</span>
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Sınıf Programı</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Programı</h1>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Fakülte, blok, kat ve sınıf seçerek haftalık ders programını inceleyin.
+                  Fakülte, blok, kat ve derslik seçerek haftalık ders programını inceleyin.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -291,8 +291,8 @@ export const ClassroomSchedulePage = () => {
                   options={classroomOptions}
                   onChange={(val) => updateParams({ classroom: val }, false)}
                   searchable
-                  searchPlaceholder="Sınıf ara..."
-                  emptyText="Sınıf bulunamadı"
+                  searchPlaceholder="Derslik ara..."
+                  emptyText="Bu katta derslik bulunamadı"
                   disabled={!selectedFloorId || classrooms.length === 0 || isClassroomSelectLoading}
                 />
               </div>
@@ -308,7 +308,7 @@ export const ClassroomSchedulePage = () => {
                 isLoading={isScheduleLoading}
                 isFetching={isScheduleFetching}
                 isError={isScheduleError}
-                emptyStateMessage="Bu sınıfta seçilen hafta için planlanmış ders bulunmuyor."
+                emptyStateMessage="Bu derslikte seçilen hafta için planlanmış ders bulunmuyor."
                 scheduleType="classroom"
                 onPreviousWeek={handlePreviousWeek}
                 onThisWeek={handleThisWeek}

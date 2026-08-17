@@ -11,7 +11,7 @@ export const ProgramTypeSelector = () => {
   const tabs = [
     {
       id: 'classroom',
-      name: 'Sınıf Programı',
+      name: 'Derslik Programı',
       path: '/programlar/sinif',
       icon: Presentation,
     },

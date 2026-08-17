@@ -14,7 +14,7 @@ export const ProgramsPage = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Programlar</h1>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Sınıf, bölüm veya öğretim görevlisi programlarını inceleyin.
+                  Derslik, bölüm veya öğretim görevlisi programlarını inceleyin.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -42,9 +42,9 @@ export const ProgramsPage = () => {
                 <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
                   <Presentation className="h-6 w-6" />
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Sınıf Programı</h2>
+                <h2 className="text-xl font-bold text-slate-900">Derslik Programı</h2>
                 <p className="mt-2 text-sm text-slate-500">
-                  Sınıfların haftalık ders programlarını ve doluluk durumlarını görüntüleyin.
+                  Dersliklerin haftalık ders programlarını ve doluluk durumlarını görüntüleyin.
                 </p>
               </div>
               <div className="flex items-center text-sm font-semibold text-[#006482] group-hover:text-[#004b62]">
