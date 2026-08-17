@@ -11,6 +11,8 @@ import com.dts.dersliktakip.dto.PublicSpaceObjectResponse;
 import com.dts.dersliktakip.dto.PublicDepartmentResponse;
 import com.dts.dersliktakip.dto.PublicWeeklyScheduleDayResponse;
 import com.dts.dersliktakip.dto.PublicWeeklyScheduleResponse;
+import com.dts.dersliktakip.dto.PublicAcademicianResponse;
+import com.dts.dersliktakip.dto.PublicAcademicianListResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
@@ -27,6 +29,7 @@ import com.dts.dersliktakip.entity.SpaceObjectStatus;
 import com.dts.dersliktakip.entity.SpaceObjectType;
 import com.dts.dersliktakip.entity.WeeklySchedule;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
+import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.BuildingRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
@@ -85,6 +88,7 @@ public class PublicCampusService {
     private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
     private final DepartmentRepository departmentRepository;
     private final CourseRepository courseRepository;
+    private final AcademicianRepository academicianRepository;
 
     @Transactional(readOnly = true)
     public List<PublicFacultyResponse> getFaculties() {
@@ -360,6 +364,80 @@ public class PublicCampusService {
                 department.getId(),
                 department.getCode(),
                 department.getName() + " - " + classLevel + ". Sinif",
+                startDate,
+                endDate,
+                days
+        );
+    }
+
+    public List<PublicAcademicianResponse> getAcademicians() {
+        return academicianRepository.findAllByOrderByFirstNameAscLastNameAsc().stream()
+                .map(a -> new PublicAcademicianResponse(a.getId(), a.getFirstName(), a.getLastName(), a.getTitle()))
+                .toList();
+    }
+
+    public PublicWeeklyScheduleResponse getAcademicianWeeklySchedule(UUID academicianId, LocalDate startDate, LocalDate endDate) {
+        Academician academician = academicianRepository.findById(academicianId)
+                .orElseThrow(() -> new ResourceNotFoundException("Akademisyen bulunamadi."));
+
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Gecerli bir tarih araligi secilmelidir.");
+        }
+
+        List<WeeklySchedule> weeklySchedules = weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academicianId);
+
+        List<ScheduleException> cancelledExceptions = scheduleExceptionRepository
+                .findAllByOriginalSchedule_Course_Academician_IdAndOriginalDateBetweenOrderByOriginalDateAscTimeSlotAsc(academicianId, startDate, endDate);
+
+        List<ScheduleException> activeExceptions = scheduleExceptionRepository
+                .findAllByAcademician_IdAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(academicianId, startDate, endDate);
+
+        List<PublicWeeklyScheduleDayResponse> days = new ArrayList<>();
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            final LocalDate loopDate = currentDate;
+            String dayOfWeek = loopDate.getDayOfWeek().name();
+
+            Set<UUID> cancelledScheduleIds = cancelledExceptions.stream()
+                    .filter(exception -> exception.getType() == ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getOriginalSchedule() != null)
+                    .filter(exception -> exception.getOriginalDate().equals(loopDate))
+                    .map(exception -> exception.getOriginalSchedule().getId())
+                    .collect(Collectors.toSet());
+
+            List<DailyScheduleEntry> dailyEntries = new ArrayList<>();
+
+            weeklySchedules.stream()
+                    .filter(schedule -> schedule.getDayOfWeek().equalsIgnoreCase(dayOfWeek))
+                    .filter(schedule -> !cancelledScheduleIds.contains(schedule.getId()))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            activeExceptions.stream()
+                    .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getTargetDate().equals(loopDate))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            List<PublicClassroomDailyScheduleItemResponse> items = mergeDailyScheduleEntries(dailyEntries);
+
+            days.add(new PublicWeeklyScheduleDayResponse(
+                    loopDate,
+                    dayOfWeek,
+                    DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek),
+                    items
+            ));
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        String fullName = academicianName(academician);
+
+        return new PublicWeeklyScheduleResponse(
+                academician.getId(),
+                fullName,
+                fullName,
                 startDate,
                 endDate,
                 days

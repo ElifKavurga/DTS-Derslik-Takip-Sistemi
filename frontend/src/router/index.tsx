@@ -22,6 +22,7 @@ import { ClassroomExplorerPage } from '@/pages/public/ClassroomExplorerPage';
 import { ProgramsPage } from '@/pages/public/ProgramsPage';
 import { ClassroomSchedulePage } from '@/pages/public/ClassroomSchedulePage';
 import { DepartmentSchedulePage } from '@/pages/public/DepartmentSchedulePage';
+import { AcademicianSchedulePage } from '@/pages/public/AcademicianSchedulePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
   {
     path: '/programlar/bolum',
     element: <DepartmentSchedulePage />,
+  },
+  {
+    path: '/programlar/akademisyen',
+    element: <AcademicianSchedulePage />,
   },
   {
     element: <PublicRoute />,

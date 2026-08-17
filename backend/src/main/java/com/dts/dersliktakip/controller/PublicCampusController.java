@@ -5,6 +5,7 @@ import com.dts.dersliktakip.dto.PublicBuildingResponse;
 import com.dts.dersliktakip.dto.PublicClassroomDailyScheduleResponse;
 import com.dts.dersliktakip.dto.PublicDepartmentListResponse;
 import com.dts.dersliktakip.dto.PublicClassLevelListResponse;
+import com.dts.dersliktakip.dto.PublicAcademicianListResponse;
 import com.dts.dersliktakip.dto.PublicFacultyListResponse;
 import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
@@ -56,6 +57,21 @@ public class PublicCampusController {
             @RequestParam(required = false) LocalDate endDate
     ) {
         PublicWeeklyScheduleResponse response = publicCampusService.getDepartmentWeeklySchedule(departmentId, classLevel, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/academicians")
+    public ResponseEntity<PublicAcademicianListResponse> getAcademicians() {
+        return ResponseEntity.ok(new PublicAcademicianListResponse(publicCampusService.getAcademicians()));
+    }
+
+    @GetMapping("/academicians/{academicianId}/weekly-schedule")
+    public ResponseEntity<PublicWeeklyScheduleResponse> getAcademicianWeeklySchedule(
+            @PathVariable UUID academicianId,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        PublicWeeklyScheduleResponse response = publicCampusService.getAcademicianWeeklySchedule(academicianId, startDate, endDate);
         return ResponseEntity.ok(response);
     }
 

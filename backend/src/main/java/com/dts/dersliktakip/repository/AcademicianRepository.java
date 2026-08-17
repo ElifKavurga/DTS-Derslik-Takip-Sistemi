@@ -16,6 +16,9 @@ public interface AcademicianRepository extends JpaRepository<Academician, UUID> 
     List<Academician> findAll();
 
     @EntityGraph(attributePaths = {"faculty", "department"})
+    List<Academician> findAllByOrderByFirstNameAscLastNameAsc();
+
+    @EntityGraph(attributePaths = {"faculty", "department"})
     List<Academician> findByDepartmentId(UUID departmentId);
 
     Optional<Academician> findByEmail(String email);

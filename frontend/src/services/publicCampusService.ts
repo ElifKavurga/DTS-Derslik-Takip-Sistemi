@@ -9,6 +9,7 @@ import {
   PublicWeeklyScheduleResponse,
   PublicDepartmentListResponse,
   PublicClassLevelListResponse,
+  PublicAcademicianListResponse,
 } from '@/types';
 
 export const publicCampusService = {
@@ -54,6 +55,16 @@ export const publicCampusService = {
   },
   getDepartmentWeeklySchedule: async (departmentId: string, classLevel: number, startDate: string, endDate: string) => {
     const response = await apiClient.get<PublicWeeklyScheduleResponse>(`/public/departments/${departmentId}/class-levels/${classLevel}/weekly-schedule`, {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+  getAcademicians: async () => {
+    const response = await apiClient.get<PublicAcademicianListResponse>('/public/academicians');
+    return response.data;
+  },
+  getAcademicianWeeklySchedule: async (academicianId: string, startDate: string, endDate: string) => {
+    const response = await apiClient.get<PublicWeeklyScheduleResponse>(`/public/academicians/${academicianId}/weekly-schedule`, {
       params: { startDate, endDate },
     });
     return response.data;

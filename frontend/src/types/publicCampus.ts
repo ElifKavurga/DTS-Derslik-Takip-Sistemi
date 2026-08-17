@@ -26,6 +26,17 @@ export interface PublicClassLevelListResponse {
   classLevels: number[];
 }
 
+export interface PublicAcademicianResponse {
+  id: string;
+  firstName: string;
+  lastName: string;
+  title: string;
+}
+
+export interface PublicAcademicianListResponse {
+  academicians: PublicAcademicianResponse[];
+}
+
 export interface PublicBuildingResponse {
   id: string;
   name: string;
