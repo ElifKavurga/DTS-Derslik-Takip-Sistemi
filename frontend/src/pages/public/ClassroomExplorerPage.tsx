@@ -320,6 +320,7 @@ const ClassroomDetailContent = ({
   isDailyScheduleFetching,
   isDailyScheduleError,
   onPreviousDay,
+  onToday,
   onNextDay,
 }: {
   classroom?: PublicSpaceObjectResponse;
