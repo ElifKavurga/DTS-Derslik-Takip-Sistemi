@@ -8,6 +8,8 @@ import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
 import com.dts.dersliktakip.dto.PublicFloorResponse;
 import com.dts.dersliktakip.dto.PublicSpaceObjectResponse;
+import com.dts.dersliktakip.dto.PublicWeeklyScheduleDayResponse;
+import com.dts.dersliktakip.dto.PublicWeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
@@ -202,6 +204,77 @@ public class PublicCampusService {
                 dayOfWeek,
                 DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek),
                 items
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PublicWeeklyScheduleResponse getClassroomWeeklySchedule(UUID classroomId, LocalDate startDate, LocalDate endDate) {
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Derslik bulunamadi."));
+
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Gecerli bir tarih araligi secilmelidir.");
+        }
+
+        // Fetch all recurring weekly schedules for this classroom
+        List<WeeklySchedule> weeklySchedules = weeklyScheduleRepository.findAllByClassroom_IdOrderByDayOfWeekAscTimeSlotAsc(classroomId);
+
+        // Fetch exceptions for the date range
+        List<ScheduleException> cancelledExceptions = scheduleExceptionRepository
+                .findAllByOriginalDateBetweenAndOriginalSchedule_Classroom_IdOrderByOriginalDateAscTimeSlotAsc(startDate, endDate, classroomId);
+
+        List<ScheduleException> activeExceptions = scheduleExceptionRepository
+                .findAllByTargetDateBetweenAndClassroom_IdOrderByTargetDateAscTimeSlotAsc(startDate, endDate, classroomId);
+
+        List<PublicWeeklyScheduleDayResponse> days = new ArrayList<>();
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            final LocalDate loopDate = currentDate;
+            String dayOfWeek = loopDate.getDayOfWeek().name();
+
+            Set<UUID> cancelledScheduleIds = cancelledExceptions.stream()
+                    .filter(exception -> exception.getType() == ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getOriginalSchedule() != null)
+                    .filter(exception -> exception.getOriginalDate().equals(loopDate))
+                    .map(exception -> exception.getOriginalSchedule().getId())
+                    .collect(Collectors.toSet());
+
+            List<DailyScheduleEntry> dailyEntries = new ArrayList<>();
+
+            weeklySchedules.stream()
+                    .filter(schedule -> schedule.getDayOfWeek().equalsIgnoreCase(dayOfWeek))
+                    .filter(schedule -> !cancelledScheduleIds.contains(schedule.getId()))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            activeExceptions.stream()
+                    .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getClassroom() != null)
+                    .filter(exception -> exception.getCourse() != null && exception.getCourse().getDepartment() != null)
+                    .filter(exception -> exception.getTargetDate().equals(loopDate))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            List<PublicClassroomDailyScheduleItemResponse> items = mergeDailyScheduleEntries(dailyEntries);
+
+            days.add(new PublicWeeklyScheduleDayResponse(
+                    loopDate,
+                    dayOfWeek,
+                    DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek),
+                    items
+            ));
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        return new PublicWeeklyScheduleResponse(
+                classroom.getId(),
+                classroom.getCode(),
+                classroom.getName(),
+                startDate,
+                endDate,
+                days
         );
     }
 

@@ -11,6 +11,7 @@ import com.dts.dersliktakip.dto.PublicFloorResponse;
 import com.dts.dersliktakip.service.PublicCampusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import com.dts.dersliktakip.dto.PublicWeeklyScheduleResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,5 +70,14 @@ public class PublicCampusController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         return ResponseEntity.ok(publicCampusService.getClassroomDailySchedule(classroomId, date));
+    }
+
+    @GetMapping("/classrooms/{classroomId}/weekly-schedule")
+    public ResponseEntity<PublicWeeklyScheduleResponse> getClassroomWeeklySchedule(
+            @PathVariable UUID classroomId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate
+    ) {
+        return ResponseEntity.ok(publicCampusService.getClassroomWeeklySchedule(classroomId, startDate, endDate));
     }
 }

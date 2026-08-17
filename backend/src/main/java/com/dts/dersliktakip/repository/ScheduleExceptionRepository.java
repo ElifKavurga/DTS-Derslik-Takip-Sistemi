@@ -50,4 +50,10 @@ public interface ScheduleExceptionRepository extends JpaRepository<ScheduleExcep
 
     @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "academician", "classroom", "originalSchedule", "originalSchedule.classroom"})
     List<ScheduleException> findAllByOriginalDateAndOriginalSchedule_Classroom_Id(LocalDate originalDate, UUID classroomId);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "academician", "classroom", "originalSchedule", "originalSchedule.classroom"})
+    List<ScheduleException> findAllByTargetDateBetweenAndClassroom_IdOrderByTargetDateAscTimeSlotAsc(LocalDate start, LocalDate end, UUID classroomId);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "academician", "classroom", "originalSchedule", "originalSchedule.classroom"})
+    List<ScheduleException> findAllByOriginalDateBetweenAndOriginalSchedule_Classroom_IdOrderByOriginalDateAscTimeSlotAsc(LocalDate start, LocalDate end, UUID classroomId);
 }
