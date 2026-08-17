@@ -99,3 +99,20 @@ export interface PublicClassroomDailyScheduleResponse {
   dayLabel: string;
   items: PublicClassroomDailyScheduleItemResponse[];
 }
+
+export interface PublicWeeklyScheduleDayResponse {
+  date: string;
+  dayOfWeek: string;
+  dayLabel: string;
+  items: PublicClassroomDailyScheduleItemResponse[];
+}
+
+export interface PublicWeeklyScheduleResponse {
+  classroomId: string;
+  classroomCode: string;
+  classroomName: string;
+  startDate: string;
+  endDate: string;
+  days: PublicWeeklyScheduleDayResponse[];
+}
+
