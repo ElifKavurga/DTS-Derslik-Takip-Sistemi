@@ -20,7 +20,7 @@ const SHORT_DAY_LABELS: Record<string, string> = {
   SUNDAY: 'Paz',
 };
 
-const WeeklyDayColumn = ({ day }: { day: PublicWeeklyScheduleDayResponse }) => {
+const WeeklyDayColumn = ({ day, scheduleType }: { day: PublicWeeklyScheduleDayResponse, scheduleType?: 'classroom' | 'department' | 'academician' }) => {
   const isToday = day.date === toDateValue(new Date());
   return (
     <div className="min-w-0 flex-1">
@@ -68,7 +68,7 @@ const WeeklyDayColumn = ({ day }: { day: PublicWeeklyScheduleDayResponse }) => {
                   {item.courseName}
                 </p>
                 <p className="truncate text-[10px] text-slate-500">{item.courseCode}</p>
-                {item.academicianName && (
+                {scheduleType !== 'academician' && item.academicianName && (
                   <p className="mt-1 flex items-center gap-1 truncate text-[10px] text-slate-400">
                     <UserRound className="h-2.5 w-2.5 shrink-0" />
                     {item.academicianName}
@@ -101,6 +101,7 @@ export const WeeklySchedulePanel = ({
   isFetching,
   isError,
   emptyStateMessage,
+  scheduleType,
   onPreviousWeek,
   onThisWeek,
   onNextWeek,
@@ -112,6 +113,7 @@ export const WeeklySchedulePanel = ({
   isFetching: boolean;
   isError: boolean;
   emptyStateMessage?: string;
+  scheduleType?: 'classroom' | 'department' | 'academician';
   onPreviousWeek: () => void;
   onThisWeek: () => void;
   onNextWeek: () => void;
@@ -191,7 +193,7 @@ export const WeeklySchedulePanel = ({
         <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
           <div className="flex min-w-[560px] gap-2">
             {schedule.days.map((day) => (
-              <WeeklyDayColumn key={day.date} day={day} />
+              <WeeklyDayColumn key={day.date} day={day} scheduleType={scheduleType} />
             ))}
           </div>
         </div>

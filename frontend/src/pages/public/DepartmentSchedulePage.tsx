@@ -7,6 +7,7 @@ import { AppSelect } from '@/components/ui/AppSelect';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { publicCampusService } from '@/services/publicCampusService';
 import { WeeklySchedulePanel } from './components/WeeklySchedulePanel';
+import { ProgramTypeSelector } from './components/ProgramTypeSelector';
 import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue, getWeekEnd } from '@/utils/date';
 import { PublicDepartmentResponse } from '@/types';
 
@@ -162,6 +163,8 @@ export const DepartmentSchedulePage = () => {
             </div>
           </header>
 
+          <ProgramTypeSelector />
+
           <div className="rounded-3xl border border-[#006482]/10 bg-white p-5 shadow-sm sm:p-6">
             {isDepartmentsLoading ? (
               <div className="grid gap-4 md:grid-cols-2">
@@ -206,6 +209,7 @@ export const DepartmentSchedulePage = () => {
                 isFetching={isScheduleFetching}
                 isError={isScheduleError}
                 emptyStateMessage="Bu bölümün seçili sınıf seviyesi için seçilen haftada planlanmış ders bulunmuyor."
+                scheduleType="department"
                 onPreviousWeek={handlePreviousWeek}
                 onThisWeek={handleThisWeek}
                 onNextWeek={handleNextWeek}
