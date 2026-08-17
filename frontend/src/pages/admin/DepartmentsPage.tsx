@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FormModal } from '@/components/ui/FormModal';
 import { MoreActionsMenu } from '@/components/ui/MoreActionsMenu';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { RichList } from '@/components/ui/RichList';
 import { RichListItem } from '@/components/ui/RichListItem';
@@ -145,19 +146,20 @@ export const DepartmentsPage = () => {
   const renderedCount = countLabel(filteredDepartments.length, departments.length);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Bölüm Yönetimi
-            {renderedCount && (
-              <span className="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{renderedCount}</span>
-            )}
-          </h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">Sistemde tanımlı tüm bölümleri buradan yönetebilirsiniz.</p>
-        </div>
-        <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>Yeni Bölüm</PrimaryButton>
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <PageHeader
+        title="Bölüm Yönetimi"
+        badge={
+          renderedCount ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{renderedCount}</span>
+          ) : null
+        }
+        action={
+          <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
+            Yeni Bölüm
+          </PrimaryButton>
+        }
+      />
 
       {departments.length > 0 && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

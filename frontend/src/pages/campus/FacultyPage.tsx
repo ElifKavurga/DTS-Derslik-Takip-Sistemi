@@ -149,10 +149,16 @@ export const FacultyPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5">
       <PageHeader
         title="Fakülte Yönetimi"
-        description="Sistemde tanımlı fakülteleri görüntüleyebilir ve yönetebilirsiniz."
+        badge={
+          facultiesList.length > 0 ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+              {filteredFaculties.length}{filteredFaculties.length !== facultiesList.length ? ` / ${facultiesList.length}` : ''}
+            </span>
+          ) : null
+        }
         action={
           facultiesList.length > 0 ? (
             <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4.5 w-4.5" />}>

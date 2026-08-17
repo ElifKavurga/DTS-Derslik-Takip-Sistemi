@@ -775,7 +775,8 @@ const EditorInner = () => {
     <div className="flex h-screen flex-col bg-slate-50 overflow-hidden">
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2 shadow-sm z-10 flex-shrink-0">
+      <div className="relative flex items-center gap-2 border-b border-slate-200 bg-gradient-to-r from-[#eff8ff]/40 via-white to-white px-4 py-2.5 shadow-xs z-10 flex-shrink-0">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
 
         {/* Back */}
         <button

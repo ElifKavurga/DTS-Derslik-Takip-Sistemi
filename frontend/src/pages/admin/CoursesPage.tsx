@@ -14,6 +14,7 @@ import { AxiosError } from 'axios';
 import { cn } from '@/utils/cn';
 import { createPortal } from 'react-dom';
 
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -166,7 +167,7 @@ const InfoRow = ({ icon, text }: { icon: React.ReactNode; text?: string | null }
 // ── CourseCard ───────────────────────────────────────────────────────────────
 const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, isReadOnly = false }: any) => {
   return (
-    <div className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/50 bg-white px-5 py-4 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-lg hover:shadow-slate-200/70">
+    <div className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-4 sm:p-5 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-md">
       <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-transparent group-hover:bg-[#006482] transition-colors duration-200" />
       
       {/* Sol: Kod + İsim */}
@@ -573,17 +574,25 @@ export const CoursesPage = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Dersler {coursesList.length > 0 && <span className="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">{filteredCourses.length}{filteredCourses.length !== coursesList.length ? ` / ${coursesList.length}` : ''}</span>}</h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">Üniversitede açılan dersleri tanımlayabilirsiniz.</p>
-        </div>
-        {!isReadOnly && (
-          <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>Yeni Ders</PrimaryButton>
-        )}
-      </div>
+      <PageHeader
+        title="Dersler"
+        badge={
+          coursesList.length > 0 ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+              {filteredCourses.length}{filteredCourses.length !== coursesList.length ? ` / ${coursesList.length}` : ''}
+            </span>
+          ) : null
+        }
+        action={
+          !isReadOnly ? (
+            <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
+              Yeni Ders
+            </PrimaryButton>
+          ) : null
+        }
+      />
 
       {/* Toolbar */}
       {coursesList.length > 0 && (

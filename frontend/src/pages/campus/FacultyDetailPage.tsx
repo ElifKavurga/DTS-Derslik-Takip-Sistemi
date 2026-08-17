@@ -190,29 +190,33 @@ export const FacultyDetailPage = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Back navigation and header */}
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={() => navigate('/super-admin/fakulteler')}
-          className="flex w-fit items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition select-none group"
-        >
-          <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          Fakülte Listesine Dön
-        </button>
-
-        <PageHeader
-          title={faculty?.name || ''}
-          description="Bu fakülteye ait binaları görüntüleyebilir, yönetebilirsiniz."
-          action={
-            buildingsList.length > 0 ? (
-              <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4.5 w-4.5" />}>
-                Yeni Bina Ekle
-              </PrimaryButton>
-            ) : null
-          }
-        />
-      </div>
+    <div className="space-y-4 sm:space-y-5">
+      <PageHeader
+        title={faculty?.name || ''}
+        backAction={
+          <button
+            onClick={() => navigate('/super-admin/fakulteler')}
+            className="flex w-fit items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition select-none group"
+          >
+            <ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            Fakülte Listesine Dön
+          </button>
+        }
+        badge={
+          faculty?.code ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+              Kod: {faculty.code}
+            </span>
+          ) : null
+        }
+        action={
+          buildingsList.length > 0 ? (
+            <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4.5 w-4.5" />}>
+              Yeni Bina Ekle
+            </PrimaryButton>
+          ) : null
+        }
+      />
 
       {/* Faculty Summary Card */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">

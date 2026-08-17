@@ -15,6 +15,7 @@ import {
 import { AxiosError } from 'axios';
 import { cn } from '@/utils/cn';
 
+import { PageHeader }      from '@/components/ui/PageHeader';
 import { PrimaryButton }   from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { ConfirmDialog }   from '@/components/ui/ConfirmDialog';
@@ -243,7 +244,7 @@ const UserCard = ({ user, onEdit, onDelete, onToggleActive, onResetPw, onViewPro
 
   return (
     <div
-      className="group relative flex items-center gap-4 rounded-2xl border border-slate-200/50 bg-white px-5 py-4 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-lg hover:shadow-slate-200/70"
+      className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-4 sm:p-5 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-md"
       style={{ boxShadow: '0 1px 3px rgba(15,23,42,0.04), 0 4px 16px -4px rgba(15,23,42,0.06)' }}
     >
       {/* Left accent */}
@@ -686,27 +687,25 @@ export const UsersPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
-
+    <div className="space-y-4 sm:space-y-5">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-            Kullanıcılar
-            {usersList.length > 0 && (
-              <span className="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-                {filteredUsers.length}{filteredUsers.length !== usersList.length ? ` / ${usersList.length}` : ''}
-              </span>
-            )}
-          </h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">Sistemdeki tüm kullanıcıları buradan yönetebilirsiniz.</p>
-        </div>
-        {usersList.length > 0 && (
-          <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
-            Yeni Kullanıcı
-          </PrimaryButton>
-        )}
-      </div>
+      <PageHeader
+        title="Kullanıcılar"
+        badge={
+          usersList.length > 0 ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+              {filteredUsers.length}{filteredUsers.length !== usersList.length ? ` / ${usersList.length}` : ''}
+            </span>
+          ) : null
+        }
+        action={
+          usersList.length > 0 ? (
+            <PrimaryButton onClick={handleOpenCreate} icon={<Plus className="h-4 w-4" />}>
+              Yeni Kullanıcı
+            </PrimaryButton>
+          ) : null
+        }
+      />
 
       {/* Search + Filter */}
       {usersList.length > 0 && (

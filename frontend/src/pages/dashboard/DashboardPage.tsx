@@ -344,48 +344,56 @@ const SuperAdminDashboard = () => {
       label: 'Toplam Fakülte',
       value: stats?.totalFaculties ?? 0,
       icon: Landmark,
+      href: '/super-admin/fakulteler',
       colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Bina',
       value: stats?.totalBuildings ?? 0,
       icon: Building2,
+      href: '/super-admin/fakulteler',
       colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Kat',
       value: stats?.totalFloors ?? 0,
       icon: Layers,
+      href: '/super-admin/fakulteler',
       colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Bölüm',
       value: stats?.totalDepartments ?? 0,
       icon: GitBranch,
+      href: '/super-admin/bolumler',
       colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Derslik',
       value: stats?.totalClassrooms ?? 0,
       icon: MapPinned,
+      href: '/classrooms',
       colorClass: 'text-amber-600 bg-amber-50',
     },
     {
       label: 'Toplam Akademisyen',
       value: stats?.totalAcademicians ?? 0,
       icon: GraduationCap,
+      href: '/super-admin/kullanicilar',
       colorClass: 'text-emerald-600 bg-emerald-50',
     },
     {
       label: 'Toplam Bölüm Admini',
       value: stats?.totalDepartmentAdmins ?? 0,
       icon: Shield,
+      href: '/super-admin/kullanicilar',
       colorClass: 'text-indigo-600 bg-indigo-50',
     },
     {
       label: 'Toplam Kullanıcı',
       value: stats?.totalUsers ?? 0,
       icon: Users,
+      href: '/super-admin/kullanicilar',
       colorClass: 'text-slate-600 bg-slate-50',
     },
   ];
@@ -400,220 +408,285 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 1. Hoş Geldiniz & Sistem Bilgilendirme Kartı */}
-      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-6 py-5 shadow-md">
+    <div className="space-y-5">
+      {/* 1. Üst Ana Kart / Hero Alanı */}
+      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff]/60 via-white to-white px-5 py-4 shadow-sm">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-1.5">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">Süper Admin Paneli 👋</h2>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-              Derslik Takip Sistemi (DTS) yönetim paneline hoş geldiniz. Buradan fakülte, bina, derslik ve kullanıcı tanımlamalarını kolayca yönetebilirsiniz.
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] border border-[#006482]/15">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900">Süper Admin Paneli 👋</h2>
+              <p className="text-[11px] font-medium text-slate-500">Tüm sistem ve birim yönetimi</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3 bg-amber-50/70 border border-amber-100 rounded-2xl p-3.5 max-w-md">
-            <Info className="h-5 w-5 text-amber-600 shrink-0" />
-            <p className="text-[11px] font-medium leading-normal text-amber-800">
-              <strong className="font-bold">Önemli Başlangıç:</strong> Sistemi kullanmaya başlamak için önce fakülteleri oluşturun. Daha sonra sırasıyla bina, kat, bölüm ve derslik tanımlamalarını yapabilirsiniz.
-            </p>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Sistem Aktif
+            </span>
           </div>
         </div>
       </section>
 
-      {/* 2. Hızlı İşlemler Kartı */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Hızlı İşlemler</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Link
-            to="/super-admin/fakulteler"
-            className="dts-card dts-card-hover flex items-center justify-between p-4 group transition-colors hover:border-[#006482]/40"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                <Landmark className="h-5 w-5" />
+      {/* 2. Hızlı İşlemler & Görüntülemeler */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Hızlı İşlemler */}
+        <section className="space-y-2 lg:col-span-7">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Hızlı İşlemler</h3>
+          <div className="grid gap-2.5 sm:grid-cols-3">
+            <Link
+              to="/super-admin/fakulteler"
+              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
+                  <Landmark className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xs font-bold text-slate-800 truncate">Fakülte Ekle</p>
+                  <p className="text-[10px] text-slate-400 truncate">Yeni fakülte tanımla</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-slate-800">Fakülte Ekle</p>
-                <p className="text-[10px] text-slate-400">Yeni bir fakülte tanımla</p>
-              </div>
-            </div>
-            <Plus className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition duration-200" />
-          </Link>
+              <Plus className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482] transition duration-200" />
+            </Link>
 
-          <Link
-            to="/super-admin/dersler"
-            className="dts-card dts-card-hover flex items-center justify-between p-4 group transition-colors hover:border-[#006482]/40"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                <BookOpen className="h-5 w-5" />
+            <Link
+              to="/super-admin/dersler"
+              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
+                  <BookOpen className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xs font-bold text-slate-800 truncate">Ders Ekle</p>
+                  <p className="text-[10px] text-slate-400 truncate">Yeni ders tanımla</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-slate-800">Ders Ekle</p>
-                <p className="text-[10px] text-slate-400">Yeni bir ders tanımla</p>
-              </div>
-            </div>
-            <Plus className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition duration-200" />
-          </Link>
+              <Plus className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482] transition duration-200" />
+            </Link>
 
-          <Link
-            to="/super-admin/kullanicilar"
-            className="dts-card dts-card-hover flex items-center justify-between p-4 group transition-colors hover:border-[#006482]/40"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                <Users className="h-5 w-5" />
+            <Link
+              to="/super-admin/kullanicilar"
+              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xs font-bold text-slate-800 truncate">Kullanıcı Ekle</p>
+                  <p className="text-[10px] text-slate-400 truncate">Yeni kullanıcı kaydet</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="text-xs font-bold text-slate-800">Kullanıcı Ekle</p>
-                <p className="text-[10px] text-slate-400">Sisteme yeni kullanıcı kaydet</p>
+              <Plus className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482] transition duration-200" />
+            </Link>
+          </div>
+        </section>
+
+        {/* Görüntülemeler */}
+        <section className="space-y-2 lg:col-span-5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Görüntülemeler</h3>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <Link
+              to="/classrooms"
+              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
+                  <MapPinned className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xs font-bold text-slate-800 truncate">Derslik Görüntüleme</p>
+                  <p className="text-[10px] text-slate-400 truncate">Derslik doluluk ve yerleşim</p>
+                </div>
               </div>
-            </div>
-            <Plus className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition duration-200" />
-          </Link>
-        </div>
-      </section>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482] group-hover:translate-x-0.5 transition duration-200" />
+            </Link>
 
-      {/* 3. İstatistik Kartları */}
-      <section className="space-y-3">
-        <PageTitle
-          title="Genel Bakış"
-          description="Sistemdeki kampüs ve kullanıcı birimlerinin genel metrikleri."
-        />
+            <Link
+              to="/programlar"
+              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
+                  <Calendar className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 text-left">
+                  <p className="text-xs font-bold text-slate-800 truncate">Programlar</p>
+                  <p className="text-[10px] text-slate-400 truncate">Haftalık ders programı</p>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 group-hover:text-[#006482] group-hover:translate-x-0.5 transition duration-200" />
+            </Link>
+          </div>
+        </section>
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 3. İstatistik Kartları / Genel Bakış */}
+      <section className="space-y-2">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Genel Bakış</h3>
+
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => {
             const Icon = stat.icon;
 
             return (
-              <article
+              <Link
                 key={stat.label}
-                className="dts-card dts-card-hover group p-5"
+                to={stat.href}
+                className="dts-card dts-card-hover group p-4 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/20 hover:border-[#006482]/40 hover:shadow-md transition-all duration-200 block"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold tracking-wide text-slate-500 truncate group-hover:text-[#006482] transition-colors">
+                      {stat.label}
+                    </p>
                     {isLoading ? (
-                      <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
+                      <div className="mt-2 h-7 w-14 animate-pulse rounded-lg bg-slate-100" />
                     ) : (
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                      <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
                         {stat.value}
                       </p>
                     )}
                   </div>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 ${stat.colorClass} group-hover:scale-105`}>
-                    <Icon className="h-5 w-5" />
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${stat.colorClass} group-hover:scale-105`}>
+                    <Icon className="h-4.5 w-4.5" />
                   </div>
                 </div>
-              </article>
+              </Link>
             );
           })}
         </div>
       </section>
 
       {/* 4. Son Eklenen Kayıtlar */}
-      <section className="space-y-4">
+      <section className="space-y-2">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Son Eklenen Kayıtlar</h3>
         
-        <div className="grid gap-6 xl:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {/* Son Eklenen Fakülteler */}
-          <div className="dts-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Landmark className="h-4.5 w-4.5 text-[#006482]" />
+          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
+                <Landmark className="h-4 w-4 text-[#006482]" />
                 Son Eklenen Fakülteler
               </h4>
+              <Link to="/super-admin/fakulteler" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
+                Tümü <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
             
             {isLoading ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-10 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentFaculties?.length ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Fakülte kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-3 text-center">Fakülte kaydı bulunmuyor.</p>
             ) : (
-              <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1">
+              <div className="divide-y divide-slate-100/80">
                 {data.recentFaculties.map((faculty) => (
-                  <div key={faculty.id} className="py-3 flex justify-between items-center gap-2 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 truncate max-w-[180px]">{faculty.name}</p>
+                  <Link
+                    key={faculty.id}
+                    to={`/super-admin/fakulteler/${faculty.id}`}
+                    className="py-2.5 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">{faculty.name}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5">Kod: {faculty.code}</p>
                     </div>
-                    <span className="text-[9px] text-slate-400 font-medium flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 shrink-0">
                       <Calendar className="h-3 w-3" />
                       {formatDate(faculty.createdAt)}
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
 
           {/* Son Eklenen Binalar */}
-          <div className="dts-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Building2 className="h-4.5 w-4.5 text-[#006482]" />
+          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-[#006482]" />
                 Son Eklenen Binalar
               </h4>
+              <Link to="/super-admin/fakulteler" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
+                Tümü <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
             
             {isLoading ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-10 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentBuildings?.length ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Bina kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-3 text-center">Bina kaydı bulunmuyor.</p>
             ) : (
-              <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1">
+              <div className="divide-y divide-slate-100/80">
                 {data.recentBuildings.map((building) => (
-                  <div key={building.id} className="py-3 flex justify-between items-center gap-2 first:pt-0 last:pb-0">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800 truncate max-w-[180px]">{building.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[180px]">{building.facultyName}</p>
+                  <Link
+                    key={building.id}
+                    to={`/super-admin/binalar/${building.id}`}
+                    className="py-2.5 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">{building.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{building.facultyName}</p>
                     </div>
-                    <span className="text-[9px] text-slate-400 font-medium flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 shrink-0">
                       <Calendar className="h-3 w-3" />
                       {formatDate(building.createdAt)}
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
           </div>
 
           {/* Son Eklenen Kullanıcılar */}
-          <div className="dts-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <Users className="h-4.5 w-4.5 text-[#006482]" />
+          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
+                <Users className="h-4 w-4 text-[#006482]" />
                 Son Eklenen Kullanıcılar
               </h4>
+              <Link to="/super-admin/kullanicilar" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
+                Tümü <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
             
             {isLoading ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-10 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentUsers?.length ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Kullanıcı kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-3 text-center">Kullanıcı kaydı bulunmuyor.</p>
             ) : (
-              <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto pr-1">
+              <div className="divide-y divide-slate-100/80">
                 {data.recentUsers.map((user) => (
-                  <div key={user.id} className="py-3 flex justify-between items-center gap-2 first:pt-0 last:pb-0">
+                  <Link
+                    key={user.id}
+                    to="/super-admin/kullanicilar"
+                    className="py-2 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-slate-800 truncate">
+                      <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">
                         {user.firstName} {user.lastName}
                       </p>
                       <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex flex-col items-end gap-1 shrink-0">
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${roleBadgeClasses[user.role]}`}>
                         {roleLabels[user.role]}
                       </span>
@@ -622,7 +695,7 @@ const SuperAdminDashboard = () => {
                         {formatDate(user.createdAt)}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

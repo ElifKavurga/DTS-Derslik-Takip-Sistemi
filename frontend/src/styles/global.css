@@ -33,13 +33,19 @@
 @layer components {
   /* Premium Design System Cards */
   .dts-card {
-    @apply rounded-[24px] border border-slate-200/40 bg-white p-6 transition-all duration-300 ease-out;
+    @apply rounded-[24px] border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-5 sm:p-6 transition-all duration-300 ease-out;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 8px 24px -2px rgba(15, 23, 42, 0.03), 0 16px 32px -4px rgba(15, 23, 42, 0.02);
   }
 
   .dts-card-hover {
-    @apply hover:-translate-y-0.5 hover:border-[#88d0f2]/40;
+    @apply hover:-translate-y-0.5 hover:border-[#88d0f2]/60;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 16px 40px -6px rgba(15, 23, 42, 0.05), 0 24px 64px -8px rgba(15, 23, 42, 0.03);
+  }
+
+  /* Hero & Top Container Card with subtle gradient */
+  .dts-hero-card {
+    @apply relative overflow-hidden rounded-[24px] border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff]/70 via-white to-white p-5 sm:p-6 transition-all duration-300 ease-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02), 0 8px 24px -2px rgba(15, 23, 42, 0.03);
   }
 
   /* Headings & Typography */

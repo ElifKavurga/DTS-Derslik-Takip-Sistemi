@@ -212,54 +212,53 @@ export const ProfilePage = () => {
     .join(' • ');
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      <PageTitle title="Hesap Ayarları" description="Profil bilgilerinizi ve şifrenizi buradan güncelleyin." />
-
-      <section className="dts-card p-5 lg:p-6">
+    <div className="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+      {/* Top Hero / User Profile Banner */}
+      <section className="dts-hero-card relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff]/70 via-white to-white p-4 sm:p-5 shadow-xs">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
             <div className="relative shrink-0">
               {profile?.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
                   alt={profile.fullName}
-                  className="h-16 w-16 rounded-full border border-slate-100 object-cover shadow-sm"
+                  className="h-14 w-14 sm:h-16 sm:w-16 rounded-full border border-slate-100 object-cover shadow-sm"
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#006482] text-lg font-bold text-white shadow-sm">
+                <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-[#006482] text-base sm:text-lg font-bold text-white shadow-sm">
                   {initials}
                 </div>
               )}
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
             </div>
             <div className="min-w-0">
-              <h2 className="truncate text-base font-bold text-slate-950">{profile?.fullName}</h2>
-              <p className="mt-1 text-xs font-semibold text-slate-500">{profileMeta}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500">
+              <h2 className="truncate text-base sm:text-lg font-bold text-slate-950">{profile?.fullName}</h2>
+              <p className="mt-0.5 text-xs font-semibold text-slate-500">{profileMeta}</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-medium text-slate-500">
                 <span className="inline-flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5" />
+                  <Mail className="h-3.5 w-3.5 text-slate-400" />
                   {profile?.email}
                 </span>
                 {profile?.phone && (
                   <span className="inline-flex items-center gap-1.5">
-                    <Phone className="h-3.5 w-3.5" />
+                    <Phone className="h-3.5 w-3.5 text-slate-400" />
                     {profile.phone}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-[#006482]/10 px-3 py-2 text-xs font-bold text-[#006482]">
-            <User className="h-4 w-4" />
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[#006482]/10 border border-[#006482]/15 px-3 py-1.5 text-xs font-bold text-[#006482]">
+            <User className="h-3.5 w-3.5" />
             Profil Ayarları
           </span>
         </div>
       </section>
 
-      <section className="dts-card p-6 lg:p-8">
-        <div className="mb-6">
+      <section className="dts-card p-5 sm:p-6 lg:p-7">
+        <div className="mb-4">
           <h3 className="text-sm font-bold tracking-tight text-slate-900">Profil Bilgileri</h3>
-          <p className="mt-1 text-xs text-slate-500">Profil bilgilerinizi buradan görüntüleyebilir ve kişisel bilgilerinizi güncelleyebilirsiniz.</p>
         </div>
 
         <form onSubmit={handleSubmitProfile(onProfileSubmit)} className="space-y-5">
@@ -454,10 +453,9 @@ export const ProfilePage = () => {
         </form>
       </section>
 
-      <section className="dts-card p-6 lg:p-8">
-        <div className="mb-6">
+      <section className="dts-card p-5 sm:p-6 lg:p-7">
+        <div className="mb-4">
           <h3 className="text-sm font-bold tracking-tight text-slate-900">Şifre Değiştir</h3>
-          <p className="mt-1 text-xs text-slate-500">Mevcut şifrenizi doğrulayarak yeni şifrenizi belirleyin.</p>
         </div>
 
         <form onSubmit={handleSubmitPassword(onPasswordSubmit)} className="space-y-4">
