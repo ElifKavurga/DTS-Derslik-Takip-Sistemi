@@ -148,9 +148,9 @@ const ClassroomSlot = ({
       type="button"
       onClick={onSelect}
       className={cn(
-        'flex min-h-24 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:border-[#006482]/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+        'flex min-h-24 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
         availabilityStyle.card,
-        selected && 'border-[#006482] ring-2 ring-[#006482]/15',
+        selected ? 'ring-2 ring-offset-1 ring-[#006482] border-[#006482] z-10' : 'hover:border-[#006482]/50',
         absolute && 'absolute overflow-hidden',
       )}
       style={
@@ -645,7 +645,7 @@ export const ClassroomExplorerPage = () => {
         <div className="space-y-4">
           <header className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-5 py-4 shadow-md sm:px-6">
             <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Görüntüleme</h1>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
@@ -672,9 +672,9 @@ export const ClassroomExplorerPage = () => {
             <>
               <section className="dts-card grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(280px,1.2fr)]">
                 <div className="min-w-0">
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
-                      <Landmark className="h-5 w-5" />
+                  <div className="mb-2 flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
+                      <Landmark className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <label htmlFor="public-faculty" className="dts-input-label mb-1">
@@ -695,9 +695,9 @@ export const ClassroomExplorerPage = () => {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
-                      <Building2 className="h-5 w-5" />
+                  <div className="mb-2 flex items-center gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
+                      <Building2 className="h-4 w-4" />
                     </div>
                     <div className="min-w-0">
                       <label htmlFor="public-building" className="dts-input-label mb-1">
@@ -730,7 +730,7 @@ export const ClassroomExplorerPage = () => {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
                       <h2 className="text-sm font-bold text-slate-950">Katlar</h2>
                       <p className="truncate text-xs text-slate-500">
