@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, FlaskConical, Landmark, Loader2, LogIn, MapPinned, Presentation, School } from 'lucide-react';
+import {
+  Building2,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FlaskConical,
+  Landmark,
+  Loader2,
+  LogIn,
+  MapPinned,
+  Presentation,
+  School,
+  UserRound,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,6 +24,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { publicCampusService } from '@/services/publicCampusService';
 import {
   PublicBuildingResponse,
+  PublicClassroomDailyScheduleResponse,
   PublicFacultyResponse,
   PublicFloorDetailResponse,
   PublicFloorResponse,
@@ -68,6 +83,26 @@ const findDefaultBuilding = (buildings: PublicBuildingResponse[]) =>
   buildings[0];
 
 const findDefaultFloor = (floors: PublicFloorResponse[]) => floors[0];
+
+const toDateValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const shiftDate = (dateValue: string, dayOffset: number) => {
+  const nextDate = new Date(`${dateValue}T12:00:00`);
+  nextDate.setDate(nextDate.getDate() + dayOffset);
+  return toDateValue(nextDate);
+};
+
+const formatDisplayDate = (dateValue: string) =>
+  new Intl.DateTimeFormat('tr-TR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(`${dateValue}T12:00:00`));
 
 const getCanvasSize = (floorView?: PublicFloorDetailResponse) => {
   const objects = floorView?.objects ?? [];
@@ -176,16 +211,121 @@ const DetailItem = ({ label, value }: { label: string; value?: string | number |
   </div>
 );
 
+const DailySchedulePanel = ({
+  schedule,
+  selectedDate,
+  isLoading,
+  isFetching,
+  isError,
+  onPreviousDay,
+  onNextDay,
+}: {
+  schedule?: PublicClassroomDailyScheduleResponse;
+  selectedDate: string;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  onPreviousDay: () => void;
+  onNextDay: () => void;
+}) => (
+  <div className="border-t border-slate-100 pt-5">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Günlük Program</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
+          <CalendarDays className="h-4 w-4 text-[#006482]" />
+          <span>{schedule?.dayLabel ?? formatDisplayDate(selectedDate)}</span>
+          <span className="text-slate-300">/</span>
+          <span>{formatDisplayDate(schedule?.date ?? selectedDate)}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={onPreviousDay} className="dts-btn-secondary px-3" aria-label="Önceki gün">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <button type="button" onClick={onNextDay} className="dts-btn-secondary px-3" aria-label="Sonraki gün">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+
+    {isError ? (
+      <div className="mt-4">
+        <EmptyState title="Günlük ders programı yüklenemedi." />
+      </div>
+    ) : isLoading ? (
+      <div className="mt-4 space-y-3">
+        {[1, 2].map((item) => (
+          <div key={item} className="h-24 animate-pulse rounded-2xl bg-slate-100" />
+        ))}
+      </div>
+    ) : schedule && schedule.items.length === 0 ? (
+      <div className="mt-4">
+        <EmptyState title="Bu sınıfta seçilen gün için planlanmış ders bulunmuyor." />
+      </div>
+    ) : schedule ? (
+      <div className="mt-4 space-y-3">
+        {isFetching && (
+          <span className="inline-flex items-center gap-2 text-xs font-medium text-slate-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Program yenileniyor...
+          </span>
+        )}
+        {schedule.items.map((item) => (
+          <div key={`${item.sourceType}-${item.id}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-xs font-bold text-[#006482]">
+                  <Clock className="h-4 w-4" />
+                  <span>{item.startTime} - {item.endTime}</span>
+                </div>
+                <h3 className="mt-2 truncate text-sm font-bold text-slate-950">{item.courseName}</h3>
+                <p className="mt-1 text-xs font-semibold text-slate-500">{item.courseCode}</p>
+              </div>
+              {item.exceptionType && (
+                <span className="w-fit rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">
+                  {item.exceptionType === 'MAKEUP' ? 'Telafi' : 'Ek Ders'}
+                </span>
+              )}
+            </div>
+            {item.academicianName && (
+              <p className="mt-3 flex items-center gap-2 truncate text-xs font-medium text-slate-500">
+                <UserRound className="h-4 w-4 shrink-0 text-slate-400" />
+                {item.academicianName}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : null}
+  </div>
+);
+
 const ClassroomDetailContent = ({
   classroom,
   facultyName,
   buildingName,
   floorName,
+  dailySchedule,
+  selectedDate,
+  isDailyScheduleLoading,
+  isDailyScheduleFetching,
+  isDailyScheduleError,
+  onPreviousDay,
+  onNextDay,
 }: {
   classroom?: PublicSpaceObjectResponse;
   facultyName?: string;
   buildingName?: string;
   floorName?: string;
+  dailySchedule?: PublicClassroomDailyScheduleResponse;
+  selectedDate: string;
+  isDailyScheduleLoading: boolean;
+  isDailyScheduleFetching: boolean;
+  isDailyScheduleError: boolean;
+  onPreviousDay: () => void;
+  onNextDay: () => void;
 }) => {
   if (!classroom) {
     return <EmptyState title="Derslik bilgileri yüklenemedi." />;
@@ -232,11 +372,15 @@ const ClassroomDetailContent = ({
         <DetailItem label="Yerleşim" value={classroom.placed === false ? 'Kat planında yerleşim yok' : 'Kat planında yerleşik'} />
       </div>
 
-      <div className="flex justify-end border-t border-slate-100 pt-4">
-        <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500">
-          Program görünümü sonraki sprint kapsamında
-        </span>
-      </div>
+      <DailySchedulePanel
+        schedule={dailySchedule}
+        selectedDate={selectedDate}
+        isLoading={isDailyScheduleLoading}
+        isFetching={isDailyScheduleFetching}
+        isError={isDailyScheduleError}
+        onPreviousDay={onPreviousDay}
+        onNextDay={onNextDay}
+      />
     </div>
   );
 };
@@ -257,6 +401,7 @@ export const ClassroomExplorerPage = () => {
   const [selectedBuildingId, setSelectedBuildingId] = useState('');
   const [selectedFloorId, setSelectedFloorId] = useState('');
   const [selectedClassroomId, setSelectedClassroomId] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => toDateValue(new Date()));
 
   const {
     data: facultiesData,
@@ -337,6 +482,29 @@ export const ClassroomExplorerPage = () => {
   const selectedClassroom = useMemo(
     () => floorView?.objects.find((object) => object.classroomId === selectedClassroomId || object.id === selectedClassroomId),
     [floorView?.objects, selectedClassroomId],
+  );
+  const selectedClassroomScheduleId = selectedClassroom?.classroomId;
+
+  const {
+    data: dailyScheduleData,
+    isLoading: isDailyScheduleLoading,
+    isFetching: isDailyScheduleFetching,
+    isError: isDailyScheduleError,
+  } = useQuery({
+    queryKey: ['public', 'classroom-daily-schedule', selectedClassroomScheduleId, selectedDate],
+    queryFn: () => publicCampusService.getClassroomDailySchedule(selectedClassroomScheduleId ?? '', selectedDate),
+    enabled: !!selectedClassroomScheduleId && !!selectedDate,
+    staleTime: 20_000,
+  });
+
+  const dailySchedule = useMemo(
+    () => {
+      if (!dailyScheduleData) return undefined;
+      return dailyScheduleData.classroomId === selectedClassroomScheduleId && dailyScheduleData.date === selectedDate
+        ? dailyScheduleData
+        : undefined;
+    },
+    [dailyScheduleData, selectedClassroomScheduleId, selectedDate],
   );
 
   useEffect(() => {
@@ -439,9 +607,18 @@ export const ClassroomExplorerPage = () => {
     setSelectedFloorId(floorId);
   };
 
+  const handlePreviousDay = () => {
+    setSelectedDate((current) => shiftDate(current, -1));
+  };
+
+  const handleNextDay = () => {
+    setSelectedDate((current) => shiftDate(current, 1));
+  };
+
   const isBuildingSelectLoading = !!selectedFacultyId && (isBuildingsLoading || isBuildingsFetching);
   const isFloorLoading = !!selectedBuildingId && (isFloorsLoading || isFloorsFetching);
   const isLayoutLoading = !!selectedFloorId && (isFloorViewLoading || (isFloorViewFetching && !floorView));
+  const isDailySchedulePending = !!selectedClassroomScheduleId && (isDailyScheduleLoading || (isDailyScheduleFetching && !dailySchedule));
   const hasFloorPlan = !!floorView?.backgroundImageBase64 && !!floorView.backgroundImageType;
   const canvasSize = getCanvasSize(floorView);
   const placedObjects = useMemo(() => floorView?.objects.filter((object) => object.placed !== false) ?? [], [floorView?.objects]);
@@ -712,28 +889,15 @@ export const ClassroomExplorerPage = () => {
                   facultyName={selectedFaculty?.name}
                   buildingName={selectedBuilding?.name}
                   floorName={selectedFloor?.name}
+                  dailySchedule={dailySchedule}
+                  selectedDate={selectedDate}
+                  isDailyScheduleLoading={isDailySchedulePending}
+                  isDailyScheduleFetching={isDailyScheduleFetching}
+                  isDailyScheduleError={isDailyScheduleError}
+                  onPreviousDay={handlePreviousDay}
+                  onNextDay={handleNextDay}
                 />
               </FormModal>
-              {/*
-                <section className="dts-card flex flex-col gap-2 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Seçilen Sınıf</p>
-                  <h2 className="text-base font-bold text-slate-950">{selectedClassroom.code || selectedClassroom.label}</h2>
-                  <p className="text-sm text-slate-500">
-                    {TEACHING_TYPE_LABELS[selectedClassroom.type] ?? selectedClassroom.type}
-                    {selectedClassroom.capacity != null ? ` · ${selectedClassroom.capacity} kişi` : ''}
-                  </p>
-                  <p className="text-sm font-semibold text-slate-700">
-                    {AVAILABILITY_LABELS[selectedClassroom.availabilityStatus ?? 'AVAILABLE'] ?? selectedClassroom.availabilityLabel}
-                  </p>
-                  {(selectedClassroom.currentCourseName || selectedClassroom.nextCourseName) && (
-                    <p className="text-xs text-slate-500">
-                      {selectedClassroom.currentCourseName
-                        ? `${selectedClassroom.currentCourseName} · ${selectedClassroom.currentTimeSlot ?? ''}`
-                        : `${selectedClassroom.nextCourseName} · ${selectedClassroom.nextStartTime ?? ''}`}
-                    </p>
-                  )}
-                </section>
-              */}
             </>
           )}
         </div>

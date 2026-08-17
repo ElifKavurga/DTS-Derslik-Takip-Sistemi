@@ -2,6 +2,7 @@ import { apiClient } from '@/services/axios';
 import {
   PublicBuildingListResponse,
   PublicBuildingResponse,
+  PublicClassroomDailyScheduleResponse,
   PublicFacultyListResponse,
   PublicFloorDetailResponse,
   PublicFloorListResponse,
@@ -26,6 +27,12 @@ export const publicCampusService = {
   },
   getFloorView: async (buildingId: string, floorId: string) => {
     const response = await apiClient.get<PublicFloorDetailResponse>(`/public/buildings/${buildingId}/floors/${floorId}`);
+    return response.data;
+  },
+  getClassroomDailySchedule: async (classroomId: string, date: string) => {
+    const response = await apiClient.get<PublicClassroomDailyScheduleResponse>(`/public/classrooms/${classroomId}/schedule`, {
+      params: { date },
+    });
     return response.data;
   },
 };

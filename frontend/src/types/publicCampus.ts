@@ -75,3 +75,27 @@ export interface PublicFloorDetailResponse {
   backgroundOpacity: number;
   objects: PublicSpaceObjectResponse[];
 }
+
+export interface PublicClassroomDailyScheduleItemResponse {
+  id: string;
+  sourceType: 'WEEKLY' | 'EXCEPTION';
+  exceptionType?: 'MAKEUP' | 'EXTRA' | null;
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  academicianId?: string | null;
+  academicianName?: string | null;
+  timeSlot: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface PublicClassroomDailyScheduleResponse {
+  classroomId: string;
+  classroomCode: string;
+  classroomName: string;
+  date: string;
+  dayOfWeek: string;
+  dayLabel: string;
+  items: PublicClassroomDailyScheduleItemResponse[];
+}

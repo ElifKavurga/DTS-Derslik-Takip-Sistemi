@@ -2,13 +2,17 @@ package com.dts.dersliktakip.service;
 
 import com.dts.dersliktakip.dto.ClassroomAvailabilityStatus;
 import com.dts.dersliktakip.dto.PublicBuildingResponse;
+import com.dts.dersliktakip.dto.PublicClassroomDailyScheduleItemResponse;
+import com.dts.dersliktakip.dto.PublicClassroomDailyScheduleResponse;
 import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
 import com.dts.dersliktakip.dto.PublicFloorResponse;
 import com.dts.dersliktakip.dto.PublicSpaceObjectResponse;
+import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.ClassroomType;
+import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.Faculty;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.FloorLayout;
@@ -41,6 +45,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +58,15 @@ public class PublicCampusService {
 
     private static final ZoneId APPLICATION_ZONE = ZoneId.of("Europe/Istanbul");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    private static final Map<String, String> DAY_LABELS = Map.of(
+            "MONDAY", "Pazartesi",
+            "TUESDAY", "Sali",
+            "WEDNESDAY", "Carsamba",
+            "THURSDAY", "Persembe",
+            "FRIDAY", "Cuma",
+            "SATURDAY", "Cumartesi",
+            "SUNDAY", "Pazar"
+    );
 
     private final FacultyRepository facultyRepository;
     private final BuildingRepository buildingRepository;
@@ -149,6 +163,48 @@ public class PublicCampusService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public PublicClassroomDailyScheduleResponse getClassroomDailySchedule(UUID classroomId, LocalDate date) {
+        Classroom classroom = classroomRepository.findById(classroomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Derslik bulunamadi."));
+        LocalDate targetDate = date != null ? date : LocalDate.now(APPLICATION_ZONE);
+        String dayOfWeek = targetDate.getDayOfWeek().name();
+
+        Set<UUID> cancelledScheduleIds = scheduleExceptionRepository
+                .findAllByOriginalDateAndOriginalSchedule_Classroom_Id(targetDate, classroomId)
+                .stream()
+                .filter(exception -> exception.getType() == ScheduleExceptionType.CANCELLED)
+                .filter(exception -> exception.getOriginalSchedule() != null)
+                .map(exception -> exception.getOriginalSchedule().getId())
+                .collect(Collectors.toSet());
+
+        List<DailyScheduleEntry> entries = new ArrayList<>();
+        weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekOrderByTimeSlotAsc(classroomId, dayOfWeek)
+                .stream()
+                .filter(schedule -> !cancelledScheduleIds.contains(schedule.getId()))
+                .map(this::toDailyScheduleEntry)
+                .forEach(entries::add);
+
+        scheduleExceptionRepository.findAllByTargetDateAndClassroom_Id(targetDate, classroomId)
+                .stream()
+                .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                .filter(exception -> exception.getClassroom() != null)
+                .filter(exception -> exception.getCourse() != null && exception.getCourse().getDepartment() != null)
+                .map(this::toDailyScheduleEntry)
+                .forEach(entries::add);
+
+        List<PublicClassroomDailyScheduleItemResponse> items = mergeDailyScheduleEntries(entries);
+        return new PublicClassroomDailyScheduleResponse(
+                classroom.getId(),
+                classroom.getCode(),
+                classroom.getName(),
+                targetDate,
+                dayOfWeek,
+                DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek),
+                items
+        );
+    }
+
     private PublicFacultyResponse toFacultyResponse(Faculty faculty) {
         return PublicFacultyResponse.builder()
                 .id(faculty.getId())
@@ -173,6 +229,96 @@ public class PublicCampusService {
                 .level(floor.getLevel())
                 .buildingId(floor.getBuilding().getId())
                 .build();
+    }
+
+    private DailyScheduleEntry toDailyScheduleEntry(WeeklySchedule schedule) {
+        TimeRange range = parseTimeRange(schedule.getTimeSlot());
+        Course course = schedule.getCourse();
+        Academician academician = course.getAcademician();
+        UUID groupId = schedule.getScheduleGroupId() != null ? schedule.getScheduleGroupId() : schedule.getId();
+        return new DailyScheduleEntry(
+                groupId,
+                "WEEKLY:" + groupId,
+                "WEEKLY",
+                null,
+                course.getId(),
+                course.getCode(),
+                course.getName(),
+                academician != null ? academician.getId() : null,
+                academicianName(academician),
+                range.start(),
+                range.end()
+        );
+    }
+
+    private DailyScheduleEntry toDailyScheduleEntry(ScheduleException exception) {
+        List<TimeRange> slots = generateSlots(exception.getCourse().getDepartment().getId());
+        TimeRange range = resolveExceptionRange(exception, slots);
+        Course course = exception.getCourse();
+        Academician academician = exception.getAcademician() != null ? exception.getAcademician() : course.getAcademician();
+        return new DailyScheduleEntry(
+                exception.getId(),
+                "EXCEPTION:" + exception.getId(),
+                "EXCEPTION",
+                exception.getType().name(),
+                course.getId(),
+                course.getCode(),
+                course.getName(),
+                academician != null ? academician.getId() : null,
+                academicianName(academician),
+                range.start(),
+                range.end()
+        );
+    }
+
+    private List<PublicClassroomDailyScheduleItemResponse> mergeDailyScheduleEntries(List<DailyScheduleEntry> entries) {
+        Map<String, List<DailyScheduleEntry>> entriesByGroup = entries.stream()
+                .sorted(Comparator.comparing(DailyScheduleEntry::start))
+                .collect(Collectors.groupingBy(DailyScheduleEntry::groupKey, LinkedHashMap::new, Collectors.toList()));
+
+        return entriesByGroup.values().stream()
+                .map(this::toDailyScheduleItem)
+                .sorted(Comparator.comparing(PublicClassroomDailyScheduleItemResponse::startTime))
+                .toList();
+    }
+
+    private PublicClassroomDailyScheduleItemResponse toDailyScheduleItem(List<DailyScheduleEntry> group) {
+        DailyScheduleEntry first = group.stream()
+                .min(Comparator.comparing(DailyScheduleEntry::start))
+                .orElseThrow();
+        LocalTime start = group.stream()
+                .map(DailyScheduleEntry::start)
+                .min(LocalTime::compareTo)
+                .orElse(first.start());
+        LocalTime end = group.stream()
+                .map(DailyScheduleEntry::end)
+                .max(LocalTime::compareTo)
+                .orElse(first.end());
+        String startTime = start.format(TIME_FORMATTER);
+        String endTime = end.format(TIME_FORMATTER);
+        return new PublicClassroomDailyScheduleItemResponse(
+                first.id(),
+                first.sourceType(),
+                first.exceptionType(),
+                first.courseId(),
+                first.courseCode(),
+                first.courseName(),
+                first.academicianId(),
+                first.academicianName(),
+                startTime + "-" + endTime,
+                startTime,
+                endTime
+        );
+    }
+
+    private String academicianName(Academician academician) {
+        if (academician == null) {
+            return null;
+        }
+        return List.of(academician.getTitle(), academician.getFirstName(), academician.getLastName())
+                .stream()
+                .filter(part -> part != null && !part.isBlank())
+                .collect(Collectors.joining(" "));
     }
 
     private PublicSpaceObjectResponse toSpaceObjectResponse(SpaceObject spaceObject, Map<UUID, ClassroomStatusSnapshot> statuses) {
@@ -376,6 +522,21 @@ public class PublicCampusService {
             case LABORATORY -> SpaceObjectType.LABORATORY;
             case AMPHITHEATER -> SpaceObjectType.AMPHITHEATER;
         };
+    }
+
+    private record DailyScheduleEntry(
+            UUID id,
+            String groupKey,
+            String sourceType,
+            String exceptionType,
+            UUID courseId,
+            String courseCode,
+            String courseName,
+            UUID academicianId,
+            String academicianName,
+            LocalTime start,
+            LocalTime end
+    ) {
     }
 
     private record TimeRange(LocalTime start, LocalTime end) {
