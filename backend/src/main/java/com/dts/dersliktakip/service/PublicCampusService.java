@@ -60,9 +60,9 @@ public class PublicCampusService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final Map<String, String> DAY_LABELS = Map.of(
             "MONDAY", "Pazartesi",
-            "TUESDAY", "Sali",
-            "WEDNESDAY", "Carsamba",
-            "THURSDAY", "Persembe",
+            "TUESDAY", "Salı",
+            "WEDNESDAY", "Çarşamba",
+            "THURSDAY", "Perşembe",
             "FRIDAY", "Cuma",
             "SATURDAY", "Cumartesi",
             "SUNDAY", "Pazar"
