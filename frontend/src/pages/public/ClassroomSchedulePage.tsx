@@ -7,7 +7,7 @@ import { AppSelect } from '@/components/ui/AppSelect';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { publicCampusService } from '@/services/publicCampusService';
 import { WeeklySchedulePanel } from './components/WeeklySchedulePanel';
-import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue } from '@/utils/date';
+import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue, getWeekEnd } from '@/utils/date';
 import { PublicBuildingResponse, PublicFacultyResponse, PublicFloorResponse } from '@/types';
 
 // Yardımcı fonksiyonlar
@@ -176,6 +176,22 @@ export const ClassroomSchedulePage = () => {
   const floorOptions = useMemo(() => floors.map((floor) => ({ value: floor.id, label: floor.name })), [floors]);
   const classroomOptions = useMemo(() => classrooms.map((c) => ({ value: c.classroomId ?? c.id, label: c.code || c.label || 'Derslik' })), [classrooms]);
 
+  const selectedClassroom = classrooms.find(c => (c.classroomId ?? c.id) === selectedClassroomId);
+  const activeClassroomId = selectedClassroom?.classroomId ?? selectedClassroom?.id;
+  const weekEnd = toDateValue(getWeekEnd(weekAnchor));
+
+  const {
+    data: weeklyData,
+    isLoading: isScheduleLoading,
+    isFetching: isScheduleFetching,
+    isError: isScheduleError,
+  } = useQuery({
+    queryKey: ['public', 'classroom-weekly-schedule', activeClassroomId, weekAnchor, weekEnd],
+    queryFn: () => publicCampusService.getClassroomWeeklySchedule(activeClassroomId!, weekAnchor, weekEnd),
+    enabled: !!activeClassroomId,
+    staleTime: 60_000,
+  });
+
   const handlePreviousWeek = () => {
     updateParams({ week: toDateValue(getWeekStart(shiftDate(weekAnchor, -7))) });
   };
@@ -191,8 +207,6 @@ export const ClassroomSchedulePage = () => {
   const isBuildingSelectLoading = !!selectedFacultyId && (isBuildingsLoading || isBuildingsFetching);
   const isFloorSelectLoading = !!selectedBuildingId && (isFloorsLoading || isFloorsFetching);
   const isClassroomSelectLoading = !!selectedFloorId && (isFloorViewLoading || isFloorViewFetching);
-
-  const selectedClassroom = classrooms.find(c => (c.classroomId ?? c.id) === selectedClassroomId);
 
   return (
     <main className="min-h-screen bg-slate-50/50 pb-12 pt-8">
@@ -285,9 +299,13 @@ export const ClassroomSchedulePage = () => {
           {selectedClassroomId && selectedClassroom && (
             <div className="rounded-3xl border border-[#006482]/10 bg-white p-5 shadow-sm sm:p-6 mt-6">
               <WeeklySchedulePanel
-                classroomId={selectedClassroom.classroomId ?? selectedClassroom.id}
-                classroomCode={selectedClassroom.code || selectedClassroom.label || 'Derslik'}
+                title={selectedClassroom.code || selectedClassroom.label || 'Derslik'}
                 weekStart={weekAnchor}
+                schedule={weeklyData?.classroomId === activeClassroomId ? weeklyData : undefined}
+                isLoading={isScheduleLoading}
+                isFetching={isScheduleFetching}
+                isError={isScheduleError}
+                emptyStateMessage="Bu sınıfta seçilen hafta için planlanmış ders bulunmuyor."
                 onPreviousWeek={handlePreviousWeek}
                 onThisWeek={handleThisWeek}
                 onNextWeek={handleNextWeek}

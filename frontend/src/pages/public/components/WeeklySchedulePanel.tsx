@@ -1,7 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { CalendarRange, ChevronLeft, ChevronRight, Clock, Loader2, UserRound } from 'lucide-react';
-import { publicCampusService } from '@/services/publicCampusService';
-import { PublicWeeklyScheduleDayResponse } from '@/types';
+import { PublicWeeklyScheduleDayResponse, PublicWeeklyScheduleResponse } from '@/types';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { cn } from '@/utils/cn';
 import { formatWeekRange, getCurrentWeekStart, getWeekEnd, toDateValue } from '@/utils/date';
@@ -96,16 +94,24 @@ const WeeklyDayColumn = ({ day }: { day: PublicWeeklyScheduleDayResponse }) => {
 };
 
 export const WeeklySchedulePanel = ({
-  classroomId,
-  classroomCode,
+  title,
   weekStart,
+  schedule,
+  isLoading,
+  isFetching,
+  isError,
+  emptyStateMessage,
   onPreviousWeek,
   onThisWeek,
   onNextWeek,
 }: {
-  classroomId: string;
-  classroomCode: string;
+  title: string;
   weekStart: string;
+  schedule: PublicWeeklyScheduleResponse | undefined;
+  isLoading: boolean;
+  isFetching: boolean;
+  isError: boolean;
+  emptyStateMessage?: string;
   onPreviousWeek: () => void;
   onThisWeek: () => void;
   onNextWeek: () => void;
@@ -113,19 +119,6 @@ export const WeeklySchedulePanel = ({
   const weekEnd = toDateValue(getWeekEnd(weekStart));
   const isCurrentWeek = weekStart === getCurrentWeekStart();
 
-  const {
-    data: weeklyData,
-    isLoading,
-    isFetching,
-    isError,
-  } = useQuery({
-    queryKey: ['public', 'classroom-weekly-schedule', classroomId, weekStart, weekEnd],
-    queryFn: () => publicCampusService.getClassroomWeeklySchedule(classroomId, weekStart, weekEnd),
-    enabled: !!classroomId,
-    staleTime: 60_000,
-  });
-
-  const schedule = weeklyData?.classroomId === classroomId ? weeklyData : undefined;
   const totalItems = schedule?.days.reduce((sum, day) => sum + day.items.length, 0) ?? 0;
 
   return (
@@ -133,7 +126,7 @@ export const WeeklySchedulePanel = ({
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-bold text-slate-900">{classroomCode}</h3>
+          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Haftalık Program</p>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
             <CalendarRange className="h-4 w-4 text-[#006482]" />
@@ -192,7 +185,7 @@ export const WeeklySchedulePanel = ({
         </div>
       ) : schedule && totalItems === 0 ? (
         <div className="mt-4">
-          <EmptyState title="Bu sınıfta seçilen hafta için planlanmış ders bulunmuyor." />
+          <EmptyState title={emptyStateMessage ?? "Seçilen hafta için planlanmış ders bulunmuyor."} />
         </div>
       ) : schedule ? (
         <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-3">

@@ -7,6 +7,8 @@ import {
   PublicFloorDetailResponse,
   PublicFloorListResponse,
   PublicWeeklyScheduleResponse,
+  PublicDepartmentListResponse,
+  PublicClassLevelListResponse,
 } from '@/types';
 
 export const publicCampusService = {
@@ -38,6 +40,20 @@ export const publicCampusService = {
   },
   getClassroomWeeklySchedule: async (classroomId: string, startDate: string, endDate: string) => {
     const response = await apiClient.get<PublicWeeklyScheduleResponse>(`/public/classrooms/${classroomId}/weekly-schedule`, {
+      params: { startDate, endDate },
+    });
+    return response.data;
+  },
+  getDepartments: async () => {
+    const response = await apiClient.get<PublicDepartmentListResponse>('/public/departments');
+    return response.data;
+  },
+  getDepartmentClassLevels: async (departmentId: string) => {
+    const response = await apiClient.get<PublicClassLevelListResponse>(`/public/departments/${departmentId}/class-levels`);
+    return response.data;
+  },
+  getDepartmentWeeklySchedule: async (departmentId: string, classLevel: number, startDate: string, endDate: string) => {
+    const response = await apiClient.get<PublicWeeklyScheduleResponse>(`/public/departments/${departmentId}/class-levels/${classLevel}/weekly-schedule`, {
       params: { startDate, endDate },
     });
     return response.data;

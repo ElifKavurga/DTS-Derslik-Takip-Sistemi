@@ -4,6 +4,8 @@ import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.Semester;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,6 +28,9 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
 
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByAcademicianIdAndSemester(UUID academicianId, Semester semester);
+
+    @Query("SELECT DISTINCT c.grade FROM Course c WHERE c.department.id = :departmentId ORDER BY c.grade ASC")
+    List<Integer> findDistinctGradesByDepartmentId(@Param("departmentId") UUID departmentId);
 
     long countByDepartment_Id(UUID departmentId);
 

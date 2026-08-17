@@ -8,6 +8,7 @@ import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
 import com.dts.dersliktakip.dto.PublicFloorResponse;
 import com.dts.dersliktakip.dto.PublicSpaceObjectResponse;
+import com.dts.dersliktakip.dto.PublicDepartmentResponse;
 import com.dts.dersliktakip.dto.PublicWeeklyScheduleDayResponse;
 import com.dts.dersliktakip.dto.PublicWeeklyScheduleResponse;
 import com.dts.dersliktakip.entity.Academician;
@@ -15,6 +16,7 @@ import com.dts.dersliktakip.entity.Building;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.ClassroomType;
 import com.dts.dersliktakip.entity.Course;
+import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Faculty;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.FloorLayout;
@@ -27,6 +29,8 @@ import com.dts.dersliktakip.entity.WeeklySchedule;
 import com.dts.dersliktakip.exception.ResourceNotFoundException;
 import com.dts.dersliktakip.repository.BuildingRepository;
 import com.dts.dersliktakip.repository.ClassroomRepository;
+import com.dts.dersliktakip.repository.CourseRepository;
+import com.dts.dersliktakip.repository.DepartmentRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorLayoutRepository;
@@ -79,6 +83,8 @@ public class PublicCampusService {
     private final WeeklyScheduleRepository weeklyScheduleRepository;
     private final ScheduleExceptionRepository scheduleExceptionRepository;
     private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
+    private final DepartmentRepository departmentRepository;
+    private final CourseRepository courseRepository;
 
     @Transactional(readOnly = true)
     public List<PublicFacultyResponse> getFaculties() {
@@ -278,11 +284,101 @@ public class PublicCampusService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<PublicDepartmentResponse> getDepartments() {
+        return departmentRepository.findAllByOrderByNameAsc().stream()
+                .map(this::toDepartmentResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Integer> getClassLevelsByDepartmentId(UUID departmentId) {
+        if (!departmentRepository.existsById(departmentId)) {
+            throw new ResourceNotFoundException("Bolum bulunamadi.");
+        }
+        return courseRepository.findDistinctGradesByDepartmentId(departmentId);
+    }
+
+    @Transactional(readOnly = true)
+    public PublicWeeklyScheduleResponse getDepartmentWeeklySchedule(UUID departmentId, int classLevel, LocalDate startDate, LocalDate endDate) {
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Bolum bulunamadi."));
+
+        if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("Gecerli bir tarih araligi secilmelidir.");
+        }
+
+        List<WeeklySchedule> weeklySchedules = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeOrderByDayOfWeekAscTimeSlotAsc(departmentId, classLevel);
+
+        List<ScheduleException> cancelledExceptions = scheduleExceptionRepository
+                .findAllByOriginalSchedule_Course_Department_IdAndOriginalSchedule_Course_GradeAndOriginalDateBetweenOrderByOriginalDateAscTimeSlotAsc(departmentId, classLevel, startDate, endDate);
+
+        List<ScheduleException> activeExceptions = scheduleExceptionRepository
+                .findAllByCourse_Department_IdAndCourse_GradeAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(departmentId, classLevel, startDate, endDate);
+
+        List<PublicWeeklyScheduleDayResponse> days = new ArrayList<>();
+        LocalDate currentDate = startDate;
+
+        while (!currentDate.isAfter(endDate)) {
+            final LocalDate loopDate = currentDate;
+            String dayOfWeek = loopDate.getDayOfWeek().name();
+
+            Set<UUID> cancelledScheduleIds = cancelledExceptions.stream()
+                    .filter(exception -> exception.getType() == ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getOriginalSchedule() != null)
+                    .filter(exception -> exception.getOriginalDate().equals(loopDate))
+                    .map(exception -> exception.getOriginalSchedule().getId())
+                    .collect(Collectors.toSet());
+
+            List<DailyScheduleEntry> dailyEntries = new ArrayList<>();
+
+            weeklySchedules.stream()
+                    .filter(schedule -> schedule.getDayOfWeek().equalsIgnoreCase(dayOfWeek))
+                    .filter(schedule -> !cancelledScheduleIds.contains(schedule.getId()))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            activeExceptions.stream()
+                    .filter(exception -> exception.getType() != ScheduleExceptionType.CANCELLED)
+                    .filter(exception -> exception.getTargetDate().equals(loopDate))
+                    .map(this::toDailyScheduleEntry)
+                    .forEach(dailyEntries::add);
+
+            List<PublicClassroomDailyScheduleItemResponse> items = mergeDailyScheduleEntries(dailyEntries);
+
+            days.add(new PublicWeeklyScheduleDayResponse(
+                    loopDate,
+                    dayOfWeek,
+                    DAY_LABELS.getOrDefault(dayOfWeek, dayOfWeek),
+                    items
+            ));
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        return new PublicWeeklyScheduleResponse(
+                department.getId(),
+                department.getCode(),
+                department.getName() + " - " + classLevel + ". Sinif",
+                startDate,
+                endDate,
+                days
+        );
+    }
+
     private PublicFacultyResponse toFacultyResponse(Faculty faculty) {
         return PublicFacultyResponse.builder()
                 .id(faculty.getId())
                 .name(faculty.getName())
                 .code(faculty.getCode())
+                .build();
+    }
+
+    private PublicDepartmentResponse toDepartmentResponse(Department department) {
+        return PublicDepartmentResponse.builder()
+                .id(department.getId())
+                .name(department.getName())
+                .code(department.getCode())
                 .build();
     }
 

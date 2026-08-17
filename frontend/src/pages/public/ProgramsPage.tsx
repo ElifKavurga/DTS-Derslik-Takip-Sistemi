@@ -52,14 +52,15 @@ export const ProgramsPage = () => {
               </div>
             </Link>
 
-            <div
+            <Link
+              to="/programlar/bolum"
               className={cn(
-                'relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-sm opacity-60 grayscale',
-                'border-slate-200 bg-slate-50 cursor-not-allowed',
+                'group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-sm transition-all hover:shadow-md',
+                'border-[#006482]/20 bg-white hover:border-[#006482]/40',
               )}
             >
               <div className="mb-8">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-200 text-slate-500">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
                   <School className="h-6 w-6" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900">Bölüm Programı</h2>
@@ -67,10 +68,10 @@ export const ProgramsPage = () => {
                   Bölümlere ait müfredat ve haftalık genel ders programları.
                 </p>
               </div>
-              <div className="flex items-center text-sm font-semibold text-slate-400">
-                Yakında Eklenecek
+              <div className="flex items-center text-sm font-semibold text-[#006482] group-hover:text-[#004b62]">
+                Programı Gör &rarr;
               </div>
-            </div>
+            </Link>
 
             <div
               className={cn(

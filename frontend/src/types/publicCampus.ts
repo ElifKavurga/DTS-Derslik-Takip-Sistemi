@@ -12,6 +12,20 @@ export interface PublicFacultyListResponse {
   faculties: PublicFacultyResponse[];
 }
 
+export interface PublicDepartmentResponse {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface PublicDepartmentListResponse {
+  departments: PublicDepartmentResponse[];
+}
+
+export interface PublicClassLevelListResponse {
+  classLevels: number[];
+}
+
 export interface PublicBuildingResponse {
   id: string;
   name: string;

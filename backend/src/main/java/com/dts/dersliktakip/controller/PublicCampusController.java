@@ -3,6 +3,8 @@ package com.dts.dersliktakip.controller;
 import com.dts.dersliktakip.dto.PublicBuildingListResponse;
 import com.dts.dersliktakip.dto.PublicBuildingResponse;
 import com.dts.dersliktakip.dto.PublicClassroomDailyScheduleResponse;
+import com.dts.dersliktakip.dto.PublicDepartmentListResponse;
+import com.dts.dersliktakip.dto.PublicClassLevelListResponse;
 import com.dts.dersliktakip.dto.PublicFacultyListResponse;
 import com.dts.dersliktakip.dto.PublicFacultyResponse;
 import com.dts.dersliktakip.dto.PublicFloorDetailResponse;
@@ -34,6 +36,27 @@ public class PublicCampusController {
     public ResponseEntity<PublicFacultyListResponse> getFaculties() {
         List<PublicFacultyResponse> faculties = publicCampusService.getFaculties();
         return ResponseEntity.ok(new PublicFacultyListResponse(faculties));
+    }
+
+    @GetMapping("/departments")
+    public ResponseEntity<PublicDepartmentListResponse> getDepartments() {
+        return ResponseEntity.ok(new PublicDepartmentListResponse(publicCampusService.getDepartments()));
+    }
+
+    @GetMapping("/departments/{departmentId}/class-levels")
+    public ResponseEntity<PublicClassLevelListResponse> getClassLevelsByDepartmentId(@PathVariable UUID departmentId) {
+        return ResponseEntity.ok(new PublicClassLevelListResponse(publicCampusService.getClassLevelsByDepartmentId(departmentId)));
+    }
+
+    @GetMapping("/departments/{departmentId}/class-levels/{classLevel}/weekly-schedule")
+    public ResponseEntity<PublicWeeklyScheduleResponse> getDepartmentWeeklySchedule(
+            @PathVariable UUID departmentId,
+            @PathVariable int classLevel,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        PublicWeeklyScheduleResponse response = publicCampusService.getDepartmentWeeklySchedule(departmentId, classLevel, startDate, endDate);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/faculties/{facultyId}/buildings")

@@ -21,8 +21,14 @@ public interface ScheduleExceptionRepository extends JpaRepository<ScheduleExcep
     @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "academician", "classroom", "originalSchedule", "originalSchedule.classroom"})
     List<ScheduleException> findAllByCourse_Department_IdOrderByTargetDateDescTimeSlotAsc(UUID departmentId);
 
-    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "academician", "classroom", "originalSchedule", "originalSchedule.classroom"})
+    @EntityGraph(attributePaths = {"originalSchedule", "course", "course.department", "course.academician", "classroom", "academician"})
     List<ScheduleException> findAllByCourse_Department_IdAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(UUID departmentId, LocalDate start, LocalDate end);
+
+    @EntityGraph(attributePaths = {"originalSchedule", "course", "course.department", "course.academician", "classroom", "academician"})
+    List<ScheduleException> findAllByCourse_Department_IdAndCourse_GradeAndTargetDateBetweenOrderByTargetDateAscTimeSlotAsc(UUID departmentId, int grade, LocalDate start, LocalDate end);
+
+    @EntityGraph(attributePaths = {"originalSchedule", "course", "course.department", "course.academician", "classroom", "academician"})
+    List<ScheduleException> findAllByOriginalSchedule_Course_Department_IdAndOriginalSchedule_Course_GradeAndOriginalDateBetweenOrderByOriginalDateAscTimeSlotAsc(UUID departmentId, int grade, LocalDate start, LocalDate end);
 
     boolean existsByOriginalSchedule_IdAndOriginalDateAndType(UUID originalScheduleId, LocalDate originalDate, ScheduleExceptionType type);
 
