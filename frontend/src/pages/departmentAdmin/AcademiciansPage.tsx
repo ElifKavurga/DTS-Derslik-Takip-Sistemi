@@ -317,7 +317,6 @@ export const AcademiciansPage = () => {
               </span>
             )}
           </h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">Yetkili oldugunuz bolumdeki akademisyenleri yonetin.</p>
         </div>
         <PrimaryButton type="button" onClick={openCreateModal} icon={<Plus className="h-4 w-4" />}>
           Akademisyen Ekle

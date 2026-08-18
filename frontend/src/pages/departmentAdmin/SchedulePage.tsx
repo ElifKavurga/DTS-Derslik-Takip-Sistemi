@@ -847,9 +847,11 @@ export const SchedulePage = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
-          <p className="mt-0.5 text-xs font-medium text-slate-400">
-            {isReadOnly ? 'Ders kartları salt okunurdur; düzenleme işlemleri bölüm admini tarafından yapılır.' : 'Oluşturulmuş ders programı kayıtları takvimde gösterilir.'}
-          </p>
+          {isReadOnly && (
+            <p className="mt-0.5 text-xs font-medium text-slate-400">
+              Ders kartları salt okunurdur; düzenleme işlemleri bölüm admini tarafından yapılır.
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {!isReadOnly && (
@@ -1472,36 +1474,43 @@ const GradeScheduleSummary = ({
   onOpenCourse: (courseId: string) => void;
   onShowDetails: () => void;
 }) => (
-  <section className="rounded-2xl border border-slate-200/70 bg-white px-4 py-3">
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-      <div className="min-w-0">
-        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
-        <div className="mt-2 grid grid-cols-3 gap-2 xl:grid-cols-5">
-          <SummaryMetric label="Ders" value={summary.courseCount} />
-          <SummaryMetric label="Saat" value={summary.requiredHours} />
-          <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
-          <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
-          <SummaryMetric label="Fazla" value={summary.excessHours} tone={summary.excessHours > 0 ? 'warn' : 'ok'} />
+  <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 sm:p-5 shadow-xs relative overflow-hidden">
+    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
+    
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {/* Sol Taraf: Metrikler */}
+      <div className="min-w-0 lg:col-span-7 flex flex-col justify-between">
+        <div>
+          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
+          <div className="mt-3 grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
+            <SummaryMetric label="Ders" value={summary.courseCount} />
+            <SummaryMetric label="Saat" value={summary.requiredHours} />
+            <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
+            <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
+            <SummaryMetric label="Fazla" value={summary.excessHours} tone={summary.excessHours > 0 ? 'warn' : 'ok'} />
+          </div>
         </div>
       </div>
-      <div className="min-w-0 flex-1 lg:max-w-[58%]">
+
+      {/* Sağ Taraf: Sorunlu Dersler */}
+      <div className="min-w-0 lg:col-span-5 border-t lg:border-t-0 lg:border-l border-slate-100/90 lg:pl-5 pt-4 lg:pt-0">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Eksik / Fazla Dersler ({problemCourses.length})</p>
           <button type="button" onClick={onShowDetails} className="text-[11px] font-bold text-[#006482] hover:underline">Detay</button>
         </div>
         {problemCourses.length === 0 ? (
-          <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">Seçili sınıf için program tamam.</p>
+          <p className="mt-3 rounded-xl bg-emerald-50 border border-emerald-100/60 px-3 py-2 text-xs font-semibold text-emerald-700">Seçili sınıf için program tamam.</p>
         ) : (
-          <div className="mt-2 max-h-24 space-y-1 overflow-y-auto pr-1">
+          <div className="mt-3 max-h-28 space-y-1.5 overflow-y-auto pr-1">
             {problemCourses.map((course) => (
               <button
                 key={course.courseId}
                 type="button"
                 onClick={() => onOpenCourse(course.courseId)}
-                className="flex w-full items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2 text-left text-xs font-semibold transition hover:bg-[#eff8ff]"
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white hover:border-[#88d0f2] hover:bg-[#eff8ff] px-3 py-2 text-left text-xs font-semibold transition duration-150"
               >
                 <span className="min-w-0 truncate text-slate-700">{course.courseCode} - {course.courseName}</span>
-                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold', course.remainingHours < 0 ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700')}>
+                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold border', course.remainingHours < 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100')}>
                   {course.remainingHours < 0 ? `Fazla ${Math.abs(course.remainingHours)}` : `Eksik ${course.remainingHours}`}
                 </span>
               </button>

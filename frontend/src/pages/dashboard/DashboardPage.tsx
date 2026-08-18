@@ -67,6 +67,70 @@ export const DashboardPage = () => {
   }
 
   return <SuperAdminDashboard />;
+};const SemesterDropdown = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const options = [
+    { value: 'GUZ', label: '2026-2027 Güz' },
+    { value: 'BAHAR', label: '2026-2027 Bahar' },
+    { value: 'YAZ_OKULU', label: '2025-2026 Güz' },
+  ];
+
+  React.useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex h-10 w-44 items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:border-[#88d0f2] hover:bg-slate-50 focus:outline-none"
+      >
+        <span className="truncate">{selectedOption.label}</span>
+        <svg
+          className={cn("h-4 w-4 text-slate-400 transition-transform duration-200 shrink-0 ml-1.5", isOpen && "rotate-180")}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 z-50 w-44 origin-top-right rounded-xl border border-slate-200/60 bg-white p-1 shadow-lg animate-fade-in">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center px-3 py-2 text-xs font-semibold rounded-lg transition duration-150 text-left",
+                option.value === value
+                  ? "bg-[#eff8ff] text-[#006482]"
+                  : "text-slate-650 hover:bg-slate-50 hover:text-slate-900"
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const DepartmentAdminDashboard = () => {
@@ -82,37 +146,41 @@ const DepartmentAdminDashboard = () => {
       label: 'Toplam Ders',
       value: data?.courseCount ?? 0,
       icon: BookOpen,
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
-      emptyText: 'Henuz ders bulunmuyor.',
+      href: '/department-admin/dersler',
+      emptyText: 'Henüz ders bulunmuyor.',
+      colorClass: 'text-[#006482] bg-[#eff8ff] border-[#006482]/10',
     },
     {
       label: 'Akademisyen',
       value: data?.academicianCount ?? 0,
       icon: GraduationCap,
-      colorClass: 'text-emerald-600 bg-emerald-50',
-      emptyText: 'Henuz akademisyen bulunmuyor.',
+      href: '/department-admin/academisyenler',
+      emptyText: 'Henüz akademisyen bulunmuyor.',
+      colorClass: 'text-emerald-650 bg-emerald-50/80 border-emerald-100',
     },
     {
       label: 'Derslik',
       value: data?.classroomCount ?? 0,
       icon: MapPinned,
-      colorClass: 'text-amber-600 bg-amber-50',
+      href: '/classrooms',
       emptyText: 'Derslik bulunmuyor.',
+      colorClass: 'text-amber-650 bg-amber-50/80 border-amber-100',
     },
     {
       label: 'Programlanan Ders',
       value: data?.scheduleSummary?.completedCourses ?? 0,
       icon: Calendar,
-      colorClass: 'text-indigo-600 bg-indigo-50',
+      href: '/department-admin/ders-programi',
       emptyText: 'Programlanan ders yok.',
+      colorClass: 'text-indigo-650 bg-indigo-50/80 border-indigo-100',
     },
   ];
 
   if (error) {
     return (
       <div className="dts-card py-12 text-center">
-        <h3 className="text-lg font-bold text-red-600">Bolum bilgileri yuklenemedi.</h3>
-        <p className="mt-2 text-sm text-slate-500">Lutfen daha sonra tekrar deneyiniz.</p>
+        <h3 className="text-lg font-bold text-red-600">Bölüm bilgileri yüklenemedi.</h3>
+        <p className="mt-2 text-sm text-slate-500">Lütfen daha sonra tekrar deneyiniz.</p>
       </div>
     );
   }
@@ -122,192 +190,232 @@ const DepartmentAdminDashboard = () => {
     (c) => c.status === 'INCOMPLETE' || c.status === 'NOT_SCHEDULED'
   ) || [];
 
+  const recentChanges = [
+    {
+      id: '1',
+      academician: 'Doç. Dr. Ahmet Yılmaz',
+      action: 'Telafi dersi eklendi',
+      course: 'CENG201 - Veri Yapıları',
+      timestamp: '24.09.2026 14:30',
+      icon: CalendarPlus,
+      color: 'text-amber-600 bg-amber-50 border-amber-100',
+    },
+    {
+      id: '2',
+      academician: 'Doç. Dr. Ahmet Yılmaz',
+      action: 'Ek ders eklendi',
+      course: 'CENG101 - Bilgisayar Programlamaya Giriş',
+      timestamp: '23.09.2026 16:40',
+      icon: CalendarPlus,
+      color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    },
+    {
+      id: '3',
+      academician: 'Doç. Dr. Ahmet Yılmaz',
+      action: 'Ders iptal edildi',
+      course: 'CENG301 - İşletim Sistemleri',
+      timestamp: '22.09.2026 10:15',
+      icon: Ban,
+      color: 'text-rose-600 bg-rose-50 border-rose-100',
+    },
+    {
+      id: '4',
+      academician: 'Prof. Dr. Ayşe Kaya',
+      action: 'Derslik değişikliği yapıldı',
+      course: 'CENG401 - Algoritmalar',
+      timestamp: '21.09.2026 11:00',
+      icon: MapPin,
+      color: 'text-blue-600 bg-blue-50 border-blue-100',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-6 py-6 shadow-md">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0 space-y-2 flex-1">
+    <div className="space-y-5 sm:space-y-6 max-w-full">
+      {/* 1. Üst Header Kartı */}
+      <section className="dts-card relative border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] px-5 py-4 sm:py-4.5 shadow-xs">
+        <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07]" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Ana Ekran</p>
             {isLoading ? (
-              <div className="space-y-3">
-                <div className="h-8 w-72 max-w-full animate-pulse rounded-lg bg-slate-100" />
-                <div className="h-4 w-48 animate-pulse rounded-lg bg-slate-100" />
+              <div className="space-y-2">
+                <div className="h-6 w-64 max-w-full animate-pulse rounded bg-slate-100" />
+                <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
               </div>
             ) : (
               <>
-                <h2 className="break-words text-2xl font-bold tracking-tight text-slate-900">
+                <h2 className="break-words text-lg font-bold tracking-tight text-slate-900 leading-snug">
                   {data?.departmentName} Bölümü
                 </h2>
-                <p className="text-sm font-medium text-slate-500">{data?.facultyName}</p>
+                <p className="text-xs font-medium text-slate-500">{data?.facultyName}</p>
               </>
             )}
           </div>
           
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <select
-              value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
-              className="px-3 py-1.5 text-sm font-medium rounded-lg border border-slate-200 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#006482]/20"
-            >
-              <option value="GUZ">Güz Dönemi</option>
-              <option value="BAHAR">Bahar Dönemi</option>
-              <option value="YAZ_OKULU">Yaz Okulu</option>
-            </select>
-            <div className="inline-flex w-fit items-center rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-              Bolum Admini
+          <div className="flex flex-wrap items-center gap-2.5">
+            <SemesterDropdown value={selectedSemester} onChange={setSelectedSemester} />
+            <div className="inline-flex w-fit items-center rounded-full border border-indigo-155 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-extrabold text-indigo-700">
+              Bölüm Admini
             </div>
           </div>
         </div>
       </section>
 
-      {/* İstatistikler */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 2. İstatistikler */}
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <article key={stat.label} className="dts-card dts-card-hover p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
-                  {isLoading ? (
-                    <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
-                  ) : (
-                    <>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
-                      {stat.value === 0 && <p className="mt-1 text-[10px] text-slate-400">{stat.emptyText}</p>}
-                    </>
-                  )}
+            <div key={stat.label} className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <Link
+                to={stat.href}
+                className="relative rounded-[14px] bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 border border-slate-200/80 group-hover:border-transparent transition-all duration-300 block text-left h-full"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                    {isLoading ? (
+                      <div className="mt-3.5 h-8 w-16 animate-pulse rounded-lg bg-slate-100" />
+                    ) : (
+                      <>
+                        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">{stat.value}</p>
+                        {stat.value === 0 && <p className="mt-1 text-[10px] text-slate-400">{stat.emptyText}</p>}
+                      </>
+                    )}
+                  </div>
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-300", stat.colorClass)}>
+                    <Icon className="h-5 w-5 animate-none group-hover:scale-105 transition-transform duration-300" />
+                  </div>
                 </div>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${stat.colorClass}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-              </div>
-            </article>
+              </Link>
+            </div>
           );
         })}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          {/* Ders Programı Durumu */}
-          <section className="dts-card p-5 space-y-4">
-            <h3 className="text-sm font-bold text-slate-800">Ders Programı Durumu</h3>
-            {isLoading ? (
-               <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
-            ) : (
-              <div className="space-y-4">
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold text-slate-900">{completionPercentage}%</p>
-                    <p className="text-xs text-slate-500">Tamamlanma Oranı</p>
+      {/* 3. Alt Kolonlu 3'lü Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        {/* SOL: Ders Programı Durumu */}
+        <div className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer h-full min-h-[350px]">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          <section className="relative rounded-[14px] bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 border border-slate-200/80 group-hover:border-transparent transition-all duration-300 h-full flex flex-col justify-between space-y-4">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Ders Programı Durumu</h3>
+              {isLoading ? (
+                 <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] font-black text-lg border border-[#006482]/10 shadow-3xs">
+                      {completionPercentage}%
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800">Planlama Oranı</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tamamlanma Oranı</p>
+                    </div>
                   </div>
-                  <div className="text-right text-xs space-y-1 text-slate-600">
-                    <p><span className="text-emerald-600 font-bold">✓ Tamamlanan:</span> {data?.scheduleSummary?.completedCourses ?? 0}</p>
-                    <p><span className="text-amber-600 font-bold">⚠ Eksik:</span> {data?.scheduleSummary?.incompleteCourses ?? 0}</p>
-                    <p><span className="text-slate-400 font-bold">○ Programlanmamış:</span> {data?.scheduleSummary?.notScheduledCourses ?? 0}</p>
+                  
+                  <div className="space-y-2.5 border-t border-slate-100 pt-4 text-[11px] text-slate-600 font-semibold">
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-600">✓ Tamamlanan:</span>
+                      <span className="text-slate-800 font-bold">{data?.scheduleSummary?.completedCourses ?? 0} ders</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-amber-600">⚠ Eksik Saat:</span>
+                      <span className="text-slate-800 font-bold">{data?.scheduleSummary?.incompleteCourses ?? 0} ders</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">○ Planlanmamış:</span>
+                      <span className="text-slate-800 font-bold">{data?.scheduleSummary?.notScheduledCourses ?? 0} ders</span>
+                    </div>
                   </div>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-3">
-                  <div 
-                    className="bg-[#006482] h-3 rounded-full transition-all duration-500" 
-                    style={{ width: `${completionPercentage}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Eksik Programlar */}
-          <section className="dts-card p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-slate-800">Eksik / Programlanmamış Dersler</h3>
-              <Link to="/bolum-admin/ders-programi" className="text-xs font-bold text-[#006482] hover:underline">Tümünü Gör</Link>
+              )}
             </div>
             
-            {isLoading ? (
-               <div className="space-y-2">
-                 <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
-                 <div className="h-12 animate-pulse rounded-lg bg-slate-100" />
-               </div>
-            ) : incompleteOrNotScheduled.length === 0 ? (
-              <p className="text-xs text-slate-500 py-2">Harika! Tüm dersler programlanmış.</p>
-            ) : (
-              <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
-                {incompleteOrNotScheduled.slice(0, 5).map((course) => (
-                  <div key={course.courseId} className="flex justify-between items-center p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{course.courseCode} - {course.courseName}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{course.status === 'NOT_SCHEDULED' ? 'Hiç programlanmamış' : `${course.remainingHours} saat eksik`}</p>
-                    </div>
-                    <Link to="/bolum-admin/ders-programi" className="px-3 py-1.5 bg-white border border-slate-200 rounded-md text-[10px] font-bold text-slate-700 hover:bg-slate-50 transition-colors">
-                      Programa Git
-                    </Link>
-                  </div>
-                ))}
-                {incompleteOrNotScheduled.length > 5 && (
-                  <p className="text-[10px] text-center text-slate-400 pt-2">+ {incompleteOrNotScheduled.length - 5} ders daha</p>
-                )}
-              </div>
-            )}
+            <div className="w-full bg-slate-100/90 rounded-full h-2 mt-4">
+              <div 
+                className="bg-[#006482] h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
           </section>
         </div>
 
-        <div className="space-y-6">
-          {/* Uyarılar */}
-          {data?.warnings && data.warnings.length > 0 && (
-            <section className="dts-card p-5 bg-amber-50/50 border border-amber-100 space-y-3">
-              <h3 className="text-xs font-bold text-amber-800 flex items-center gap-2">
-                <Info className="w-4 h-4" />
-                DİKKAT GEREKENLER
-              </h3>
-              <ul className="space-y-2">
-                {data.warnings.map((warning, idx) => (
-                  <li key={idx} className="text-xs text-amber-700 flex items-start gap-1.5">
-                    <span className="text-amber-500 mt-0.5">⚠</span>
-                    {warning}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+        {/* ORTA: Eksik / Programlanmamış Dersler */}
+        <div className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer h-full min-h-[350px]">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          <section className="relative rounded-[14px] bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 border border-slate-200/80 group-hover:border-transparent transition-all duration-300 h-full flex flex-col justify-between">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Eksik Dersler</h3>
+                <Link to="/department-admin/ders-programi" className="text-[10px] font-bold text-[#006482] hover:underline">Tümünü Gör</Link>
+              </div>
+              
+              {isLoading ? (
+                 <div className="space-y-2">
+                   <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
+                   <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
+                 </div>
+              ) : incompleteOrNotScheduled.length === 0 ? (
+                 <p className="text-xs text-slate-500 py-4 text-center">Harika! Tüm dersler programlanmış.</p>
+              ) : (
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                  {incompleteOrNotScheduled.slice(0, 4).map((course) => (
+                    <div key={course.courseId} className="flex justify-between items-center p-2.5 rounded-xl border border-slate-100/90 bg-gradient-to-br from-white/95 to-[#eff9fe]/40 hover:border-[#00a896] hover:bg-[#eff8ff] transition-all duration-150">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className="text-xs font-bold text-slate-800 truncate">{course.courseCode} - {course.courseName}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{course.status === 'NOT_SCHEDULED' ? 'Hiç programlanmamış' : `${course.remainingHours} saat eksik`}</p>
+                      </div>
+                      <Link to="/department-admin/ders-programi" className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shrink-0">
+                        Git
+                      </Link>
+                    </div>
+                  ))}
+                  {incompleteOrNotScheduled.length > 4 && (
+                    <p className="text-[10px] text-center text-slate-400 pt-1">+ {incompleteOrNotScheduled.length - 4} ders daha</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
-          {/* Hızlı İşlemler */}
-          <section className="dts-card p-5 space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Hızlı İşlemler</h3>
-            <div className="grid gap-2">
-              <Link to="/bolum-admin/ders-programi" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-800">Ders Programı</p>
-                </div>
-              </Link>
-              <Link to="/bolum-admin/dersler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-800">Dersler</p>
-                </div>
-              </Link>
-              <Link to="/bolum-admin/akademisyenler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                  <GraduationCap className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-800">Akademisyenler</p>
-                </div>
-              </Link>
-              <Link to="/bolum-admin/derslikler" className="flex items-center gap-3 p-3 rounded-lg border border-slate-100 hover:border-[#006482]/30 hover:bg-slate-50 transition-colors group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                  <MapPinned className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-800">Derslikler</p>
-                </div>
-              </Link>
+        {/* SAĞ: Son Değişiklikler */}
+        <div className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer h-full min-h-[350px]">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          
+          <section className="relative rounded-[14px] bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 border border-slate-200/80 group-hover:border-transparent transition-all duration-300 h-full flex flex-col justify-between">
+            <div className="w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Son Değişiklikler</h3>
+                <span className="text-[10px] font-bold text-[#006482] hover:underline cursor-pointer">Tümünü Gör</span>
+              </div>
+
+              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+                {recentChanges.map((change) => {
+                  const Icon = change.icon;
+                  return (
+                    <div key={change.id} className="flex gap-2.5 p-2.5 rounded-xl border border-slate-100/90 bg-gradient-to-br from-white/95 to-[#eff9fe]/40 hover:border-[#00a896] hover:bg-[#eff8ff] transition-all duration-150">
+                      <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border", change.color)}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex justify-between items-start gap-1">
+                          <p className="text-[11px] font-bold text-slate-800 truncate">{change.academician}</p>
+                          <span className="text-[9px] text-slate-400 font-semibold shrink-0 whitespace-nowrap">{change.timestamp.split(' ')[0]}</span>
+                        </div>
+                        <p className="text-[10px] font-semibold text-[#006482] mt-0.2">{change.action}</p>
+                        <p className="text-[10px] text-slate-500 truncate mt-0.5">{change.course}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </section>
         </div>
@@ -315,8 +423,8 @@ const DepartmentAdminDashboard = () => {
 
       {!isLoading && data?.academicianCount === 0 && data?.courseCount === 0 && (
         <EmptyState
-          title="Bolum verisi henuz bos"
-          description="Bu bolume ait akademisyen veya ders kaydi eklendiginde ozet burada gorunecek."
+          title="Bölüm verisi henüz boş"
+          description="Bu bölüme ait akademisyen veya ders kaydı eklendiğinde özet burada görünecek."
         />
       )}
     </div>
