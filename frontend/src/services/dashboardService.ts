@@ -6,13 +6,13 @@ export const dashboardService = {
     const response = await apiClient.get<DashboardStatsResponse>('/dashboard/stats');
     return response.data;
   },
-  getDepartmentAdminDashboard: async (semester?: string) => {
-    const params = semester ? { semester } : undefined;
+  getDepartmentAdminDashboard: async (periodId?: string) => {
+    const params = periodId ? { periodId } : undefined;
     const response = await apiClient.get<DepartmentAdminDashboardResponse>('/dashboard/department-admin', { params });
     return response.data;
   },
-  getAcademicianDashboard: async (semester?: string) => {
-    const params = semester ? { semester } : undefined;
+  getAcademicianDashboard: async (periodId?: string) => {
+    const params = periodId ? { periodId } : undefined;
     const response = await apiClient.get<AcademicianDashboardResponse>('/dashboard/academician', { params });
     return response.data;
   },

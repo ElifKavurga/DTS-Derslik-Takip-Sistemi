@@ -225,6 +225,7 @@ class CourseServiceTest {
                 studentCount,
                 CourseType.ZORUNLU,
                 Semester.GUZ,
+                UUID.randomUUID(),
                 1,
                 true
         );
@@ -244,6 +245,7 @@ class CourseServiceTest {
                 studentCount,
                 CourseType.ZORUNLU,
                 Semester.GUZ,
+                UUID.randomUUID(),
                 1,
                 true
         );
@@ -300,6 +302,8 @@ class CourseServiceTest {
                 72,
                 CourseType.ZORUNLU,
                 Semester.GUZ,
+                UUID.randomUUID(),
+                "2026-2027 Güz",
                 1,
                 true
         );

@@ -16,6 +16,8 @@ public record DepartmentAdminDashboardResponse(
         long academicianCount,
         long courseCount,
         Semester semester,
+        UUID academicPeriodId,
+        String academicPeriodDisplayName,
         long classroomCount,
         ScheduleCompletionResponse scheduleSummary,
         List<String> warnings

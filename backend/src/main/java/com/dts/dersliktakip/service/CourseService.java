@@ -18,6 +18,9 @@ import com.dts.dersliktakip.mapper.CourseMapper;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentRepository;
+import com.dts.dersliktakip.repository.AcademicPeriodRepository;
+import com.dts.dersliktakip.entity.AcademicPeriod;
+import com.dts.dersliktakip.entity.TermType;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,7 @@ public class CourseService {
     private final CourseMapper courseMapper;
     private final AccessScopeService accessScopeService;
     private final NotificationService notificationService;
+    private final AcademicPeriodRepository academicPeriodRepository;
 
     @Transactional(readOnly = true)
     public CourseListResponse getAllCourses(User currentUser) {
@@ -102,9 +106,20 @@ public class CourseService {
         course.setCredits(request.credits());
         course.setStudentCount(request.studentCount());
         course.setCourseType(request.courseType());
-        course.setSemester(request.semester());
         course.setGrade(request.grade());
         course.setActive(request.active());
+
+        UUID periodId = request.academicPeriodId();
+        AcademicPeriod period;
+        if (periodId != null) {
+            period = academicPeriodRepository.findById(periodId)
+                    .orElseThrow(() -> new IllegalArgumentException("Dönem bulunamadı"));
+        } else {
+            period = academicPeriodRepository.findByIsActiveTrue()
+                    .orElseThrow(() -> new IllegalArgumentException("Aktif dönem bulunamadı"));
+        }
+        course.setAcademicPeriod(period);
+        course.setSemester(period.getTermType() == TermType.SPRING ? Semester.BAHAR : Semester.GUZ);
 
         course = courseRepository.save(course);
         notificationService.createForUser(
@@ -147,9 +162,20 @@ public class CourseService {
         course.setCredits(request.credits());
         course.setStudentCount(request.studentCount());
         course.setCourseType(request.courseType());
-        course.setSemester(request.semester());
         course.setGrade(request.grade());
         course.setActive(request.active());
+
+        UUID periodId = request.academicPeriodId();
+        AcademicPeriod period;
+        if (periodId != null) {
+            period = academicPeriodRepository.findById(periodId)
+                    .orElseThrow(() -> new IllegalArgumentException("Dönem bulunamadı"));
+        } else {
+            period = academicPeriodRepository.findByIsActiveTrue()
+                    .orElseThrow(() -> new IllegalArgumentException("Aktif dönem bulunamadı"));
+        }
+        course.setAcademicPeriod(period);
+        course.setSemester(period.getTermType() == TermType.SPRING ? Semester.BAHAR : Semester.GUZ);
 
         course = courseRepository.save(course);
         return courseMapper.toResponse(course);
@@ -215,16 +241,19 @@ public class CourseService {
     // ── Academician-specific read-only methods ──────────────────────────────
 
     @Transactional(readOnly = true)
-    public List<AcademicianCourseDetailResponse> getAcademicianCourses(User currentUser, Semester semester) {
+    public List<AcademicianCourseDetailResponse> getAcademicianCourses(User currentUser, UUID periodId) {
         Academician academician = resolveAcademician(currentUser);
 
-        List<Course> courses = semester == null
-                ? courseRepository.findAllByAcademicianId(academician.getId())
-                : courseRepository.findAllByAcademicianIdAndSemester(academician.getId(), semester);
+        UUID actualPeriodId = periodId;
+        if (actualPeriodId == null) {
+            actualPeriodId = academicPeriodRepository.findByIsActiveTrue()
+                    .map(AcademicPeriod::getId)
+                    .orElseThrow(() -> new IllegalArgumentException("Aktif dönem bulunamadı"));
+        }
 
-        List<WeeklySchedule> allSchedules = semester == null
-                ? weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId())
-                : weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), semester);
+        List<Course> courses = courseRepository.findAllByAcademicianIdAndAcademicPeriodId(academician.getId(), actualPeriodId);
+
+        List<WeeklySchedule> allSchedules = weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), actualPeriodId);
 
         Map<UUID, List<WeeklySchedule>> schedulesByCourseId = allSchedules.stream()
                 .collect(Collectors.groupingBy(s -> s.getCourse().getId()));

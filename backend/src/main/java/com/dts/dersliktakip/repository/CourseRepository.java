@@ -23,11 +23,17 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByDepartmentIdAndSemester(UUID departmentId, Semester semester);
 
+    @EntityGraph(attributePaths = {"faculty", "department", "academician", "academicPeriod"})
+    List<Course> findAllByDepartmentIdAndAcademicPeriodId(UUID departmentId, UUID periodId);
+
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByAcademicianId(UUID academicianId);
 
     @EntityGraph(attributePaths = {"faculty", "department", "academician"})
     List<Course> findAllByAcademicianIdAndSemester(UUID academicianId, Semester semester);
+
+    @EntityGraph(attributePaths = {"faculty", "department", "academician", "academicPeriod"})
+    List<Course> findAllByAcademicianIdAndAcademicPeriodId(UUID academicianId, UUID periodId);
 
     @Query("SELECT DISTINCT c.grade FROM Course c WHERE c.department.id = :departmentId ORDER BY c.grade ASC")
     List<Integer> findDistinctGradesByDepartmentId(@Param("departmentId") UUID departmentId);
@@ -39,4 +45,6 @@ public interface CourseRepository extends JpaRepository<Course, UUID> {
     boolean existsByCodeIgnoreCase(String code);
     
     boolean existsByCodeIgnoreCaseAndIdNot(String code, UUID id);
+
+    boolean existsByAcademicPeriodId(UUID periodId);
 }

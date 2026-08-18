@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -30,17 +31,17 @@ public class DashboardController {
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
     public ResponseEntity<DepartmentAdminDashboardResponse> getDepartmentAdminDashboard(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) com.dts.dersliktakip.entity.Semester semester
+            @RequestParam(required = false) UUID periodId
     ) {
-        return ResponseEntity.ok(dashboardService.getDepartmentAdminDashboard(principal.getUser(), semester));
+        return ResponseEntity.ok(dashboardService.getDepartmentAdminDashboard(principal.getUser(), periodId));
     }
 
     @GetMapping("/academician")
     @PreAuthorize("hasRole('ACADEMICIAN')")
     public ResponseEntity<com.dts.dersliktakip.dto.AcademicianDashboardResponse> getAcademicianDashboard(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) com.dts.dersliktakip.entity.Semester semester
+            @RequestParam(required = false) UUID periodId
     ) {
-        return ResponseEntity.ok(dashboardService.getAcademicianDashboard(principal.getUser(), semester));
+        return ResponseEntity.ok(dashboardService.getAcademicianDashboard(principal.getUser(), periodId));
     }
 }

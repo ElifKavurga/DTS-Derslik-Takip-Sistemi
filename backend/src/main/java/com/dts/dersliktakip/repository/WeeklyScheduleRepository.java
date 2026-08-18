@@ -36,6 +36,18 @@ public interface WeeklyScheduleRepository extends JpaRepository<WeeklySchedule, 
     })
     List<WeeklySchedule> findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(UUID departmentId, Semester semester);
 
+    @EntityGraph(attributePaths = {
+            "course",
+            "course.department",
+            "course.academician",
+            "course.academicPeriod",
+            "classroom",
+            "classroom.floor",
+            "classroom.floor.building",
+            "classroom.floor.building.faculty"
+    })
+    List<WeeklySchedule> findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(UUID departmentId, UUID periodId);
+
     @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "classroom"})
     Optional<WeeklySchedule> findWithDetailsById(UUID id);
 
@@ -77,4 +89,7 @@ public interface WeeklyScheduleRepository extends JpaRepository<WeeklySchedule, 
 
     @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "classroom"})
     List<WeeklySchedule> findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(UUID academicianId, Semester semester);
+
+    @EntityGraph(attributePaths = {"course", "course.department", "course.academician", "course.academicPeriod", "classroom"})
+    List<WeeklySchedule> findAllByCourse_Academician_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(UUID academicianId, UUID periodId);
 }

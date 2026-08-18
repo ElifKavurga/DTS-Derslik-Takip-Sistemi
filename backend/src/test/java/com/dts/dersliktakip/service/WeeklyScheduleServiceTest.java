@@ -22,6 +22,9 @@ import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
+import com.dts.dersliktakip.repository.AcademicPeriodRepository;
+import com.dts.dersliktakip.entity.AcademicPeriod;
+import com.dts.dersliktakip.entity.TermType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -61,6 +64,9 @@ class WeeklyScheduleServiceTest {
 
     @Mock
     private AcademicianRepository academicianRepository;
+
+    @Mock
+    private AcademicPeriodRepository academicPeriodRepository;
 
     @InjectMocks
     private WeeklyScheduleService weeklyScheduleService;
@@ -854,12 +860,21 @@ class WeeklyScheduleServiceTest {
                 schedule(overScheduled, classroom, "THURSDAY", "11:00-12:00")
         );
 
-        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
-        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(courses);
-        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
-                .thenReturn(schedules);
+        UUID periodId = UUID.randomUUID();
+        AcademicPeriod period = new AcademicPeriod();
+        period.setId(periodId);
+        period.setAcademicYear("2026-2027");
+        period.setTermType(TermType.FALL);
+        period.setDisplayName("2026-2027 Güz");
+        period.setActive(true);
 
-        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndAcademicPeriodId(department.getId(), periodId)).thenReturn(courses);
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), periodId))
+                .thenReturn(schedules);
+        when(academicPeriodRepository.findById(periodId)).thenReturn(Optional.of(period));
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, periodId);
 
         assertThat(response.totalCourses()).isEqualTo(4);
         assertThat(response.completedCourses()).isEqualTo(1);
@@ -904,12 +919,21 @@ class WeeklyScheduleServiceTest {
         User currentUser = new User();
         Department department = department(UUID.randomUUID(), faculty(UUID.randomUUID()));
 
-        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
-        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(List.of());
-        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
-                .thenReturn(List.of());
+        UUID periodId = UUID.randomUUID();
+        AcademicPeriod period = new AcademicPeriod();
+        period.setId(periodId);
+        period.setAcademicYear("2026-2027");
+        period.setTermType(TermType.FALL);
+        period.setDisplayName("2026-2027 Güz");
+        period.setActive(true);
 
-        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndAcademicPeriodId(department.getId(), periodId)).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), periodId))
+                .thenReturn(List.of());
+        when(academicPeriodRepository.findById(periodId)).thenReturn(Optional.of(period));
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, periodId);
 
         assertThat(response.totalCourses()).isZero();
         assertThat(response.completedCourses()).isZero();
@@ -930,12 +954,21 @@ class WeeklyScheduleServiceTest {
                 schedule(course, insufficientClassroom, "TUESDAY", "09:00-10:00")
         );
 
-        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
-        when(courseRepository.findAllByDepartmentIdAndSemester(department.getId(), Semester.GUZ)).thenReturn(courses);
-        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), Semester.GUZ))
-                .thenReturn(schedules);
+        UUID periodId = UUID.randomUUID();
+        AcademicPeriod period = new AcademicPeriod();
+        period.setId(periodId);
+        period.setAcademicYear("2026-2027");
+        period.setTermType(TermType.FALL);
+        period.setDisplayName("2026-2027 Güz");
+        period.setActive(true);
 
-        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, Semester.GUZ);
+        when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
+        when(courseRepository.findAllByDepartmentIdAndAcademicPeriodId(department.getId(), periodId)).thenReturn(courses);
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), periodId))
+                .thenReturn(schedules);
+        when(academicPeriodRepository.findById(periodId)).thenReturn(Optional.of(period));
+
+        ScheduleCompletionResponse response = weeklyScheduleService.getScheduleCompletion(currentUser, periodId);
 
         assertThat(response.completedCourses()).isEqualTo(1);
         assertThat(response.capacityWarningCount()).isEqualTo(2);

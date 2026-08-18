@@ -86,6 +86,12 @@ export const Sidebar = ({
       roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'],
     },
     {
+      label: 'Dönem Yönetimi',
+      path: '/super-admin/donem-yonetimi',
+      icon: CalendarDays,
+      roles: ['SUPER_ADMIN'],
+    },
+    {
       label: 'Ders Programı',
       path: role === 'ACADEMICIAN' ? '/academician/ders-programi' : '/department-admin/ders-programi',
       icon: CalendarDays,

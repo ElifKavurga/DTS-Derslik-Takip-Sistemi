@@ -11,16 +11,16 @@ import {
 } from '@/types';
 
 export const scheduleService = {
-  getAll: async (semester?: Semester) => {
+  getAll: async (periodId?: string) => {
     const response = await apiClient.get<WeeklyScheduleResponse[]>('/schedules', {
-      params: semester ? { semester } : undefined,
+      params: periodId ? { periodId } : undefined,
     });
     return response.data;
   },
 
-  getStatus: async (semester?: Semester) => {
+  getStatus: async (periodId?: string) => {
     const response = await apiClient.get<ScheduleCompletionResponse>('/schedules/status', {
-      params: semester ? { semester } : undefined,
+      params: periodId ? { periodId } : undefined,
     });
     return response.data;
   },

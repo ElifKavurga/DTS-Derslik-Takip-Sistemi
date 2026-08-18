@@ -22,6 +22,8 @@ public record CourseResponse(
         int studentCount,
         CourseType courseType,
         Semester semester,
+        UUID academicPeriodId,
+        String academicPeriodDisplayName,
         int grade,
         boolean active
 ) {

@@ -24,6 +24,7 @@ import { courseService } from '@/services/courseService';
 import { academicianService } from '@/services/academicianService';
 import { facultyService } from '@/services/facultyService';
 import { departmentService } from '@/services/departmentService';
+import { semesterService } from '@/services/semesterService';
 import { CourseType, Semester } from '@/types';
 import { useAuthStore } from '@/store/useAuthStore';
 
@@ -52,7 +53,8 @@ const courseSchema = z.object({
   credits: z.coerce.number().min(0, 'En az 0 olabilir.'),
   studentCount: z.coerce.number().int('Tam sayı giriniz.').min(0, "Ders mevcudu 0'dan küçük olamaz."),
   courseType: z.enum(['ZORUNLU', 'SECMELI']),
-  semester: z.enum(['GUZ', 'BAHAR', 'YAZ_OKULU']),
+  academicPeriodId: z.string().min(1, 'Dönem seçimi zorunludur.'),
+  semester: z.string().optional(),
   grade: z.coerce.number().min(1, 'En az 1 olabilir.').max(6, 'En fazla 6 olabilir.'),
   active: z.boolean(),
 });
@@ -484,6 +486,11 @@ export const CoursesPage = () => {
     staleTime: 1000 * 60 * 5,
   });
 
+  const { data: periods = [] } = useQuery({
+    queryKey: ['academicPeriodsAll'],
+    queryFn: () => semesterService.getAll(),
+  });
+
   useEffect(() => {
     if (isDepartmentAdmin) return;
     if (!isModalOpen) return;
@@ -516,7 +523,13 @@ export const CoursesPage = () => {
 
   const handleOpenCreate = () => {
     setEditingCourse(null);
-    reset({ code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, studentCount: 0, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true });
+    const activePeriod = periods.find((p) => p.isActive) || periods[0];
+    reset({
+      code: '', name: '', facultyId: '', departmentId: '', academicianId: '',
+      theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, studentCount: 0,
+      courseType: 'ZORUNLU', academicPeriodId: activePeriod?.id || '', semester: 'GUZ',
+      grade: 1, active: true
+    });
     setIsModalOpen(true);
   };
 
@@ -525,7 +538,7 @@ export const CoursesPage = () => {
     reset({
       code: course.code, name: course.name, facultyId: course.facultyId, departmentId: course.departmentId, academicianId: course.academicianId,
       theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits, studentCount: course.studentCount,
-      courseType: course.courseType, semester: course.semester, grade: course.grade, active: course.active
+      courseType: course.courseType, academicPeriodId: course.academicPeriodId || '', semester: course.semester, grade: course.grade, active: course.active
     });
     setIsModalOpen(true);
   };
@@ -542,7 +555,7 @@ export const CoursesPage = () => {
     reset({
       code: `${course.code}-KOPYA`, name: course.name, facultyId: course.facultyId, departmentId: course.departmentId, academicianId: course.academicianId,
       theoreticalHours: course.theoreticalHours, practicalHours: course.practicalHours, ects: course.ects, credits: course.credits, studentCount: course.studentCount,
-      courseType: course.courseType, semester: course.semester, grade: course.grade, active: true
+      courseType: course.courseType, academicPeriodId: course.academicPeriodId || '', semester: course.semester, grade: course.grade, active: true
     });
     setIsModalOpen(true);
   };
@@ -577,9 +590,15 @@ export const CoursesPage = () => {
       return;
     }
 
-    const payload = isDepartmentAdmin
-      ? { ...values, facultyId: undefined, departmentId: undefined }
-      : values;
+    const selectedPeriod = periods.find((p) => p.id === values.academicPeriodId);
+    const resolvedSemester = (selectedPeriod?.termType === 'SPRING' ? 'BAHAR' : 'GUZ') as Semester;
+
+    const payload = {
+      ...values,
+      semester: resolvedSemester,
+      facultyId: isDepartmentAdmin ? undefined : values.facultyId,
+      departmentId: isDepartmentAdmin ? undefined : values.departmentId,
+    };
 
     if (editingCourse) updateMutation.mutate({ id: editingCourse.id, payload });
     else createMutation.mutate(payload);
@@ -833,17 +852,15 @@ export const CoursesPage = () => {
             <div className="space-y-1">
               <label className="dts-input-label text-[10px] mb-1">Dönem</label>
               <Controller
-                name="semester"
+                name="academicPeriodId"
                 control={control}
                 render={({ field }) => (
                   <AppSelect
-                    options={[
-                      { label: 'Güz', value: 'GUZ' },
-                      { label: 'Bahar', value: 'BAHAR' },
-                      { label: 'Yaz Okulu', value: 'YAZ_OKULU' }
-                    ]}
+                    options={periods.map((p) => ({ label: p.displayName, value: p.id }))}
                     value={field.value}
                     onChange={field.onChange}
+                    placeholder="Seçiniz..."
+                    hasError={!!errors.academicPeriodId}
                   />
                 )}
               />

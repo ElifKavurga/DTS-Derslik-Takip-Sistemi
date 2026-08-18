@@ -9,6 +9,8 @@ public record ScheduleCompletionResponse(
         UUID departmentId,
         String departmentName,
         Semester semester,
+        UUID academicPeriodId,
+        String academicPeriodDisplayName,
         int totalCourses,
         int completedCourses,
         int incompleteCourses,

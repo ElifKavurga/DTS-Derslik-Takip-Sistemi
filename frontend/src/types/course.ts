@@ -18,6 +18,8 @@ export type CourseResponse = {
   studentCount: number;
   courseType: CourseType;
   semester: Semester;
+  academicPeriodId: string;
+  academicPeriodDisplayName: string;
   grade: number;
   active: boolean;
 };
@@ -39,6 +41,7 @@ export type CreateCourseRequest = {
   studentCount: number;
   courseType: CourseType;
   semester: Semester;
+  academicPeriodId: string;
   grade: number;
   active: boolean;
 };

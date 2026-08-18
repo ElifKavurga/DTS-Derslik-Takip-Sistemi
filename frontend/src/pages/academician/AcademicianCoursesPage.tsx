@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -14,8 +14,9 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { apiClient } from '@/services/axios';
 import { scheduleService } from '@/services/scheduleService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
+import { semesterService } from '@/services/semesterService';
 import { cn } from '@/utils/cn';
-import { CourseType, Semester } from '@/types';
+import { CourseType, Semester, AcademicPeriod } from '@/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface ScheduleSlotSummary {
@@ -741,14 +742,33 @@ const SkeletonRow = () => (
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export const AcademicianCoursesPage = () => {
-  const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('');
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [detailCourse, setDetailCourse] = useState<AcademicianCourseDetailResponse | null>(null);
+
+  const { data: periods = [] } = useQuery({
+    queryKey: ['academicPeriodsDropdown'],
+    queryFn: () => semesterService.getAll(3),
+  });
+
+  const periodOptions = useMemo(() => {
+    return [
+      { label: 'Tüm Dönemler', value: '' },
+      ...periods.map((p: AcademicPeriod) => ({ label: p.displayName, value: p.id })),
+    ];
+  }, [periods]);
+
+  useEffect(() => {
+    if (periods.length > 0 && !selectedSemester) {
+      const active = periods.find((p: AcademicPeriod) => p.isActive) || periods[0];
+      setSelectedSemester(active.id);
+    }
+  }, [periods, selectedSemester]);
 
   const { data: courses, isLoading, error, refetch } = useQuery({
     queryKey: ['academicianCourses', selectedSemester],
     queryFn: async () => {
-      const params = selectedSemester ? { semester: selectedSemester } : undefined;
+      const params = selectedSemester ? { periodId: selectedSemester } : undefined;
       const res = await apiClient.get<AcademicianCourseDetailResponse[]>('/academician/courses', { params });
       return res.data;
     },
@@ -765,13 +785,6 @@ export const AcademicianCoursesPage = () => {
         c.departmentName.toLowerCase().includes(q),
     );
   }, [courses, searchQuery]);
-
-  const semesterOptions: { value: Semester | ''; label: string }[] = [
-    { value: '', label: 'Tüm Dönemler' },
-    { value: 'GUZ', label: 'Güz' },
-    { value: 'BAHAR', label: 'Bahar' },
-    { value: 'YAZ_OKULU', label: 'Yaz Okulu' },
-  ];
 
   return (
     <div className="space-y-6">
@@ -826,7 +839,7 @@ export const AcademicianCoursesPage = () => {
 
         {/* Semester Filter */}
         <div className="flex shrink-0 items-center gap-2">
-          {semesterOptions.map((opt) => (
+          {periodOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -835,7 +848,7 @@ export const AcademicianCoursesPage = () => {
                 'rounded-2xl border px-3.5 py-2 text-xs font-semibold shadow-sm transition-all duration-150 whitespace-nowrap',
                 selectedSemester === opt.value
                   ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482]'
-                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50',
+                  : 'border-slate-200 bg-white text-slate-650 hover:border-slate-355 hover:bg-slate-50',
               )}
             >
               {opt.label}

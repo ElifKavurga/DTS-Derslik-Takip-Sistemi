@@ -13,6 +13,7 @@ import { ProfilePage } from '@/pages/profile/ProfilePage';
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { CoursesPage } from '@/pages/admin/CoursesPage';
 import { DepartmentsPage } from '@/pages/admin/DepartmentsPage';
+import { SemesterManagementPage } from '@/pages/admin/SemesterManagementPage';
 import { DepartmentDetailPage } from '@/pages/admin/DepartmentDetailPage';
 import { AcademiciansPage } from '@/pages/departmentAdmin/AcademiciansPage';
 import { SchedulePage } from '@/pages/departmentAdmin/SchedulePage';
@@ -125,6 +126,10 @@ export const router = createBrowserRouter([
               {
                 path: '/super-admin/dersler',
                 element: <CoursesPage />,
+              },
+              {
+                path: '/super-admin/donem-yonetimi',
+                element: <SemesterManagementPage />,
               },
             ],
           },

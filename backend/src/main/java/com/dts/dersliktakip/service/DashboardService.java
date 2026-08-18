@@ -27,6 +27,8 @@ import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorRepository;
 import com.dts.dersliktakip.repository.UserRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
+import com.dts.dersliktakip.repository.AcademicPeriodRepository;
+import com.dts.dersliktakip.entity.AcademicPeriod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +62,7 @@ public class DashboardService {
     private final WeeklyScheduleRepository weeklyScheduleRepository;
     private final AcademicianMapper academicianMapper;
     private final CourseMapper courseMapper;
+    private final AcademicPeriodRepository academicPeriodRepository;
 
     @Transactional(readOnly = true)
     public DashboardStatsResponse getDashboardStats() {
@@ -114,13 +118,23 @@ public class DashboardService {
                 .build();
     }
 
+    private AcademicPeriod getActualPeriod(UUID periodId) {
+        if (periodId != null) {
+            return academicPeriodRepository.findById(periodId)
+                    .orElseThrow(() -> new IllegalArgumentException("Dönem bulunamadı."));
+        }
+        return academicPeriodRepository.findByIsActiveTrue()
+                .orElseThrow(() -> new IllegalArgumentException("Aktif bir akademik dönem bulunamadı."));
+    }
+
     @Transactional(readOnly = true)
-    public DepartmentAdminDashboardResponse getDepartmentAdminDashboard(User currentUser, com.dts.dersliktakip.entity.Semester semester) {
+    public DepartmentAdminDashboardResponse getDepartmentAdminDashboard(User currentUser, UUID periodId) {
         Department department = accessScopeService.requireDepartmentScope(currentUser);
+        AcademicPeriod period = getActualPeriod(periodId);
 
         long classroomCount = classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId()).size();
         
-        com.dts.dersliktakip.dto.ScheduleCompletionResponse scheduleSummary = weeklyScheduleService.getScheduleCompletion(currentUser, semester);
+        com.dts.dersliktakip.dto.ScheduleCompletionResponse scheduleSummary = weeklyScheduleService.getScheduleCompletion(currentUser, period.getId());
         
         java.util.List<String> warnings = new java.util.ArrayList<>();
         if (scheduleSummary.incompleteCourses() > 0) {
@@ -136,6 +150,8 @@ public class DashboardService {
             warnings.add(scheduleSummary.capacityWarningCount() + " program kaydında kapasite uyarısı var.");
         }
 
+        com.dts.dersliktakip.entity.Semester semesterEnum = period.getTermType() == com.dts.dersliktakip.entity.TermType.SPRING ? com.dts.dersliktakip.entity.Semester.BAHAR : com.dts.dersliktakip.entity.Semester.GUZ;
+
         return DepartmentAdminDashboardResponse.builder()
                 .departmentId(department.getId())
                 .departmentName(department.getName())
@@ -144,7 +160,9 @@ public class DashboardService {
                 .facultyName(department.getFaculty().getName())
                 .academicianCount(academicianRepository.countByDepartment_Id(department.getId()))
                 .courseCount(courseRepository.countByDepartment_Id(department.getId()))
-                .semester(semester)
+                .semester(semesterEnum)
+                .academicPeriodId(period.getId())
+                .academicPeriodDisplayName(period.getDisplayName())
                 .classroomCount(classroomCount)
                 .scheduleSummary(scheduleSummary)
                 .warnings(warnings)
@@ -152,17 +170,13 @@ public class DashboardService {
     }
 
     @Transactional(readOnly = true)
-    public AcademicianDashboardResponse getAcademicianDashboard(User currentUser, com.dts.dersliktakip.entity.Semester semester) {
+    public AcademicianDashboardResponse getAcademicianDashboard(User currentUser, UUID periodId) {
         Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
                 .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
+        AcademicPeriod period = getActualPeriod(periodId);
 
-        List<Course> courses = semester == null
-                ? courseRepository.findAllByAcademicianId(academician.getId())
-                : courseRepository.findAllByAcademicianIdAndSemester(academician.getId(), semester);
-
-        List<WeeklySchedule> schedules = semester == null
-                ? weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId())
-                : weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), semester);
+        List<Course> courses = courseRepository.findAllByAcademicianIdAndAcademicPeriodId(academician.getId(), period.getId());
+        List<WeeklySchedule> schedules = weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), period.getId());
 
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Istanbul"));
         LocalTime nowTime = LocalTime.now(ZoneId.of("Europe/Istanbul"));
@@ -198,11 +212,7 @@ public class DashboardService {
             completeSummary.put(day, weeklySummary.getOrDefault(day, 0L));
         }
 
-        int year = today.getYear();
-        int month = today.getMonthValue();
-        String academicYear = (month >= 8) ? year + "-" + (year + 1) : (year - 1) + "-" + year;
-        String semesterLabel = (semester != null) ? (semester == com.dts.dersliktakip.entity.Semester.GUZ ? "Güz" : (semester == com.dts.dersliktakip.entity.Semester.BAHAR ? "Bahar" : "Yaz Okulu")) : "Güz";
-        String academicTerm = academicYear + " " + semesterLabel;
+        String academicTerm = period.getDisplayName();
 
         return AcademicianDashboardResponse.builder()
                 .academician(academicianMapper.toResponse(academician))

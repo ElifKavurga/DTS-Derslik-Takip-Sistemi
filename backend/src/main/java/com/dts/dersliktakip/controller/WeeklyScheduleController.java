@@ -40,18 +40,18 @@ public class WeeklyScheduleController {
     @PreAuthorize("hasAnyRole('DEPARTMENT_ADMIN', 'ACADEMICIAN')")
     public ResponseEntity<List<WeeklyScheduleResponse>> getSchedules(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) Semester semester
+            @RequestParam(required = false) UUID periodId
     ) {
-        return ResponseEntity.ok(weeklyScheduleService.getSchedules(principal.getUser(), semester));
+        return ResponseEntity.ok(weeklyScheduleService.getSchedules(principal.getUser(), periodId));
     }
 
     @GetMapping("/status")
     @PreAuthorize("hasRole('DEPARTMENT_ADMIN')")
     public ResponseEntity<ScheduleCompletionResponse> getScheduleCompletion(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) Semester semester
+            @RequestParam(required = false) UUID periodId
     ) {
-        return ResponseEntity.ok(weeklyScheduleService.getScheduleCompletion(principal.getUser(), semester));
+        return ResponseEntity.ok(weeklyScheduleService.getScheduleCompletion(principal.getUser(), periodId));
     }
 
     @GetMapping("/available-classrooms")

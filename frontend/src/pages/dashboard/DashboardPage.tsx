@@ -28,6 +28,7 @@ import { PageTitle } from '@/components/layout/PageTitle';
 import { cn } from '@/utils/cn';
 import { dashboardService } from '@/services/dashboardService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
+import { semesterService } from '@/services/semesterService';
 import { useAuthStore } from '@/store/useAuthStore';
 import { CourseResponse, Role, ScheduleExceptionResponse } from '@/types';
 
@@ -67,15 +68,26 @@ export const DashboardPage = () => {
   }
 
   return <SuperAdminDashboard />;
-};const SemesterDropdown = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
+};const SemesterDropdown = ({ value, onChange }: { value: string; onChange: (val: string) => void }) => {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const options = [
-    { value: 'GUZ', label: '2026-2027 Güz' },
-    { value: 'BAHAR', label: '2026-2027 Bahar' },
-    { value: 'YAZ_OKULU', label: '2025-2026 Güz' },
-  ];
+  const { data: periods } = useQuery({
+    queryKey: ['academicPeriodsDropdown'],
+    queryFn: () => semesterService.getAll(3),
+  });
+
+  const options = React.useMemo(() => {
+    if (!periods) return [];
+    return periods.map((p) => ({ value: p.id, label: p.displayName }));
+  }, [periods]);
+
+  React.useEffect(() => {
+    if (periods && periods.length > 0 && !value) {
+      const activePeriod = periods.find((p) => p.isActive) || periods[0];
+      onChange(activePeriod.id);
+    }
+  }, [periods, value, onChange]);
 
   React.useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -87,7 +99,7 @@ export const DashboardPage = () => {
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  const selectedOption = options.find((opt) => opt.value === value) || options[0];
+  const selectedOption = options.find((opt) => opt.value === value) || options[0] || { value: '', label: 'Yükleniyor...' };
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
@@ -107,7 +119,7 @@ export const DashboardPage = () => {
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && options.length > 0 && (
         <div className="absolute right-0 mt-1.5 z-50 w-44 origin-top-right rounded-xl border border-slate-200/60 bg-white p-1 shadow-lg animate-fade-in">
           {options.map((option) => (
             <button
@@ -134,7 +146,7 @@ export const DashboardPage = () => {
 };
 
 const DepartmentAdminDashboard = () => {
-  const [selectedSemester, setSelectedSemester] = React.useState<string>('GUZ');
+  const [selectedSemester, setSelectedSemester] = React.useState<string>('');
   
   const { data, isLoading, error } = useQuery({
     queryKey: ['departmentAdminDashboard', selectedSemester],

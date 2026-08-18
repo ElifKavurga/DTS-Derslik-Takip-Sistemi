@@ -23,10 +23,10 @@ public class AcademicianCourseController {
     @GetMapping
     @PreAuthorize("hasRole('ACADEMICIAN')")
     public ResponseEntity<List<AcademicianCourseDetailResponse>> getMyCourses(
-            @RequestParam(required = false) Semester semester,
+            @RequestParam(required = false) UUID periodId,
             @AuthenticationPrincipal UserPrincipal principal
     ) {
-        return ResponseEntity.ok(courseService.getAcademicianCourses(principal.getUser(), semester));
+        return ResponseEntity.ok(courseService.getAcademicianCourses(principal.getUser(), periodId));
     }
 
     @GetMapping("/{courseId}")

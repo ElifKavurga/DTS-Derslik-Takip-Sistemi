@@ -22,6 +22,8 @@ public record WeeklyScheduleResponse(
         String dayOfWeek,
         String timeSlot,
         Semester semester,
+        UUID academicPeriodId,
+        String academicPeriodDisplayName,
         UUID scheduleGroupId
 ) {
 }

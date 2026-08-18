@@ -12,6 +12,10 @@ import com.dts.dersliktakip.repository.DepartmentRepository;
 import com.dts.dersliktakip.repository.FacultyRepository;
 import com.dts.dersliktakip.repository.FloorRepository;
 import com.dts.dersliktakip.repository.UserRepository;
+import com.dts.dersliktakip.repository.AcademicPeriodRepository;
+import com.dts.dersliktakip.entity.AcademicPeriod;
+import com.dts.dersliktakip.entity.TermType;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -57,6 +61,9 @@ class DashboardServiceTest {
     @Mock
     private WeeklyScheduleService weeklyScheduleService;
 
+    @Mock
+    private AcademicPeriodRepository academicPeriodRepository;
+
     @InjectMocks
     private DashboardService dashboardService;
 
@@ -64,6 +71,7 @@ class DashboardServiceTest {
     void departmentAdminDashboardUsesAuthenticatedUsersDepartmentScope() {
         UUID facultyId = UUID.randomUUID();
         UUID departmentId = UUID.randomUUID();
+        UUID periodId = UUID.randomUUID();
         User currentUser = new User();
 
         Faculty faculty = new Faculty();
@@ -76,10 +84,18 @@ class DashboardServiceTest {
         department.setCode("BM");
         department.setFaculty(faculty);
 
+        AcademicPeriod period = new AcademicPeriod();
+        period.setId(periodId);
+        period.setAcademicYear("2026-2027");
+        period.setTermType(TermType.FALL);
+        period.setDisplayName("2026-2027 Güz");
+        period.setActive(true);
+
         com.dts.dersliktakip.entity.Semester semester = com.dts.dersliktakip.entity.Semester.GUZ;
         when(accessScopeService.requireDepartmentScope(currentUser)).thenReturn(department);
         when(academicianRepository.countByDepartment_Id(departmentId)).thenReturn(10L);
         when(courseRepository.countByDepartment_Id(departmentId)).thenReturn(20L);
+        when(academicPeriodRepository.findById(periodId)).thenReturn(Optional.of(period));
         
         java.util.List<com.dts.dersliktakip.entity.Classroom> mockClassrooms = new java.util.ArrayList<>();
         for (int i = 0; i < 5; i++) {
@@ -88,11 +104,11 @@ class DashboardServiceTest {
         when(classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(facultyId)).thenReturn(mockClassrooms);
         
         com.dts.dersliktakip.dto.ScheduleCompletionResponse mockScheduleResponse = new com.dts.dersliktakip.dto.ScheduleCompletionResponse(
-                departmentId, "Bilgisayar Muhendisligi", semester, 20, 15, 3, 2, 0, 60, 45, 9, 0, 0, 75, java.util.Collections.emptyList()
+                departmentId, "Bilgisayar Muhendisligi", semester, periodId, "2026-2027 Güz", 20, 15, 3, 2, 0, 60, 45, 9, 0, 0, 75, java.util.Collections.emptyList()
         );
-        when(weeklyScheduleService.getScheduleCompletion(currentUser, semester)).thenReturn(mockScheduleResponse);
+        when(weeklyScheduleService.getScheduleCompletion(currentUser, periodId)).thenReturn(mockScheduleResponse);
 
-        DepartmentAdminDashboardResponse response = dashboardService.getDepartmentAdminDashboard(currentUser, semester);
+        DepartmentAdminDashboardResponse response = dashboardService.getDepartmentAdminDashboard(currentUser, periodId);
 
         assertThat(response.departmentId()).isEqualTo(departmentId);
         assertThat(response.departmentName()).isEqualTo("Bilgisayar Muhendisligi");
@@ -101,6 +117,8 @@ class DashboardServiceTest {
         assertThat(response.academicianCount()).isEqualTo(10L);
         assertThat(response.courseCount()).isEqualTo(20L);
         assertThat(response.semester()).isEqualTo(semester);
+        assertThat(response.academicPeriodId()).isEqualTo(periodId);
+        assertThat(response.academicPeriodDisplayName()).isEqualTo("2026-2027 Güz");
         assertThat(response.classroomCount()).isEqualTo(5L);
         assertThat(response.scheduleSummary()).isEqualTo(mockScheduleResponse);
         assertThat(response.warnings()).containsExactly("3 dersin programı eksik.", "2 ders henüz programlanmamış.");
@@ -109,6 +127,7 @@ class DashboardServiceTest {
         verify(academicianRepository).countByDepartment_Id(departmentId);
         verify(courseRepository).countByDepartment_Id(departmentId);
         verify(classroomRepository).findAllByFloorBuildingFacultyIdOrderByCodeAsc(facultyId);
-        verify(weeklyScheduleService).getScheduleCompletion(currentUser, semester);
+        verify(weeklyScheduleService).getScheduleCompletion(currentUser, periodId);
+        verify(academicPeriodRepository).findById(periodId);
     }
 }

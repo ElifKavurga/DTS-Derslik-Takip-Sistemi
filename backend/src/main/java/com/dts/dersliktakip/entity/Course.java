@@ -58,6 +58,10 @@ public class Course {
     @Column(nullable = false, length = 20)
     private Semester semester = Semester.GUZ;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "academic_period_id", nullable = false)
+    private AcademicPeriod academicPeriod;
+
     @Column(nullable = false)
     private int grade = 1;
 

@@ -24,6 +24,8 @@ import com.dts.dersliktakip.repository.CourseRepository;
 import com.dts.dersliktakip.repository.DepartmentScheduleConfigRepository;
 import com.dts.dersliktakip.repository.AcademicianRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
+import com.dts.dersliktakip.repository.AcademicPeriodRepository;
+import com.dts.dersliktakip.entity.AcademicPeriod;
 import com.dts.dersliktakip.entity.Role;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -69,34 +71,39 @@ public class WeeklyScheduleService {
     private final DepartmentScheduleConfigRepository departmentScheduleConfigRepository;
     private final AccessScopeService accessScopeService;
     private final AcademicianRepository academicianRepository;
+    private final AcademicPeriodRepository academicPeriodRepository;
 
     @Transactional(readOnly = true)
-    public List<WeeklyScheduleResponse> getSchedules(User currentUser, Semester semester) {
+    public List<WeeklyScheduleResponse> getSchedules(User currentUser, UUID periodId) {
+        AcademicPeriod period = periodId == null
+                ? academicPeriodRepository.findByIsActiveTrue()
+                        .orElseThrow(() -> new IllegalArgumentException("Aktif dönem bulunamadı"))
+                : academicPeriodRepository.findById(periodId)
+                        .orElseThrow(() -> new IllegalArgumentException("Dönem bulunamadı"));
+
         if (currentUser.getRoles() != null && currentUser.getRoles().contains(Role.ACADEMICIAN)) {
             Academician academician = academicianRepository.findByEmail(currentUser.getEmail())
                     .orElseThrow(() -> new AccessDeniedException("Akademisyen kaydı bulunamadı."));
-            List<WeeklySchedule> schedules = semester == null
-                    ? weeklyScheduleRepository.findAllByCourse_Academician_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId())
-                    : weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), semester);
+            List<WeeklySchedule> schedules = weeklyScheduleRepository.findAllByCourse_Academician_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(academician.getId(), period.getId());
             return schedules.stream().map(this::toResponse).toList();
         }
 
         Department department = accessScopeService.requireDepartmentScope(currentUser);
-        List<WeeklySchedule> schedules = semester == null
-                ? weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId())
-                : weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), semester);
+        List<WeeklySchedule> schedules = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), period.getId());
         return schedules.stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public ScheduleCompletionResponse getScheduleCompletion(User currentUser, Semester semester) {
+    public ScheduleCompletionResponse getScheduleCompletion(User currentUser, UUID periodId) {
+        AcademicPeriod period = periodId == null
+                ? academicPeriodRepository.findByIsActiveTrue()
+                        .orElseThrow(() -> new IllegalArgumentException("Aktif dönem bulunamadı"))
+                : academicPeriodRepository.findById(periodId)
+                        .orElseThrow(() -> new IllegalArgumentException("Dönem bulunamadı"));
+
         Department department = accessScopeService.requireDepartmentScope(currentUser);
-        List<Course> courses = semester == null
-                ? courseRepository.findAllByDepartmentId(department.getId())
-                : courseRepository.findAllByDepartmentIdAndSemester(department.getId(), semester);
-        List<WeeklySchedule> schedules = semester == null
-                ? weeklyScheduleRepository.findAllByCourse_Department_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId())
-                : weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), semester);
+        List<Course> courses = courseRepository.findAllByDepartmentIdAndAcademicPeriodId(department.getId(), period.getId());
+        List<WeeklySchedule> schedules = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), period.getId());
 
         Map<UUID, Integer> scheduledHoursByCourseId = schedules.stream()
                 .collect(Collectors.groupingBy(
@@ -126,10 +133,14 @@ public class WeeklyScheduleService {
         int capacityWarningCount = calculateCapacityWarningCount(schedules);
         int completionPercentage = calculateCompletionPercentage(items);
 
+        com.dts.dersliktakip.entity.Semester semesterEnum = period.getTermType() == com.dts.dersliktakip.entity.TermType.SPRING ? com.dts.dersliktakip.entity.Semester.BAHAR : com.dts.dersliktakip.entity.Semester.GUZ;
+
         return new ScheduleCompletionResponse(
                 department.getId(),
                 department.getName(),
-                semester,
+                semesterEnum,
+                period.getId(),
+                period.getDisplayName(),
                 totalCourses,
                 completedCourses,
                 counts.getOrDefault("INCOMPLETE", 0L).intValue(),
@@ -476,7 +487,7 @@ public class WeeklyScheduleService {
 
     private void assertRemainingHoursSufficient(Course course, Department department, int requestedSlotCount, Set<UUID> excludedIds) {
         int requiredHours = course.getTheoreticalHours() + course.getPracticalHours();
-        int scheduledHours = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_SemesterOrderByDayOfWeekAscTimeSlotAsc(department.getId(), course.getSemester()).stream()
+        int scheduledHours = weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(department.getId(), course.getAcademicPeriod().getId()).stream()
                 .filter(schedule -> schedule.getCourse().getId().equals(course.getId()))
                 .filter(schedule -> !isExcluded(schedule, excludedIds))
                 .mapToInt(schedule -> 1)
@@ -700,6 +711,8 @@ public class WeeklyScheduleService {
                 schedule.getDayOfWeek(),
                 schedule.getTimeSlot(),
                 course.getSemester(),
+                course.getAcademicPeriod() != null ? course.getAcademicPeriod().getId() : null,
+                course.getAcademicPeriod() != null ? course.getAcademicPeriod().getDisplayName() : null,
                 schedule.getScheduleGroupId()
         );
     }

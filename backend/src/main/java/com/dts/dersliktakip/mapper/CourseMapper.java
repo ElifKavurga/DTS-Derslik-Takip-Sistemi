@@ -14,5 +14,7 @@ public interface CourseMapper {
     @Mapping(target = "departmentName", source = "department.name")
     @Mapping(target = "academicianId", source = "academician.id")
     @Mapping(target = "academicianName", expression = "java(course.getAcademician().getTitle() + \" \" + course.getAcademician().getFirstName() + \" \" + course.getAcademician().getLastName())")
+    @Mapping(target = "academicPeriodId", source = "academicPeriod.id")
+    @Mapping(target = "academicPeriodDisplayName", source = "academicPeriod.displayName")
     CourseResponse toResponse(Course course);
 }

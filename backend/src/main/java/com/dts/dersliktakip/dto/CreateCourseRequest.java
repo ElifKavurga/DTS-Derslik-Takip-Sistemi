@@ -23,6 +23,7 @@ public record CreateCourseRequest(
         @Min(value = 0, message = "Ders mevcudu 0'dan küçük olamaz.") int studentCount,
         @NotNull CourseType courseType,
         @NotNull Semester semester,
+        UUID academicPeriodId,
         @Min(1) @Max(6) int grade,
         boolean active
 ) {

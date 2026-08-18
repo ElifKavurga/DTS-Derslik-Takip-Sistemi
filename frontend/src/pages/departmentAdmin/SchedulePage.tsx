@@ -12,6 +12,7 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { courseService } from '@/services/courseService';
 import { scheduleService } from '@/services/scheduleService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
+import { semesterService } from '@/services/semesterService';
 import {
   AvailableClassroomResponse,
   CourseScheduleStatusItemResponse,
@@ -132,7 +133,7 @@ export const SchedulePage = () => {
   const role = useAuthStore((state) => state.user?.role);
   const isReadOnly = role === 'ACADEMICIAN';
   const highlightedCourseId = isReadOnly ? searchParams.get('courseId') : null;
-  const [selectedSemester, setSelectedSemester] = useState<Semester | ''>('GUZ');
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedAcademicianId, setSelectedAcademicianId] = useState('');
   const [selectedClassroomId, setSelectedClassroomId] = useState('');
@@ -148,6 +149,25 @@ export const SchedulePage = () => {
   const [backendValidation, setBackendValidation] = useState<ScheduleValidationAlert | null>(null);
   const [pendingCapacitySubmit, setPendingCapacitySubmit] = useState<PendingScheduleSubmit | null>(null);
   const [timeConfigForm, setTimeConfigForm] = useState<ScheduleTimeConfigurationRequest>(initialTimeConfig);
+
+  const { data: periods = [] } = useQuery({
+    queryKey: ['academicPeriodsDropdown'],
+    queryFn: () => semesterService.getAll(3),
+  });
+
+  const periodOptions = useMemo(() => {
+    return [
+      { label: 'Tüm Dönemler', value: '' },
+      ...periods.map((p) => ({ label: p.displayName, value: p.id })),
+    ];
+  }, [periods]);
+
+  useEffect(() => {
+    if (periods.length > 0 && !selectedSemester) {
+      const active = periods.find((p) => p.isActive) || periods[0];
+      setSelectedSemester(active.id);
+    }
+  }, [periods, selectedSemester]);
 
   const { data: schedules = [], isLoading, error, refetch } = useQuery({
     queryKey: ['weeklySchedules', selectedSemester],
@@ -190,7 +210,7 @@ export const SchedulePage = () => {
     const grades = Array.from(new Set(
       courses
         .filter((course) => course.active)
-        .filter((course) => !selectedSemester || course.semester === selectedSemester)
+        .filter((course) => !selectedSemester || course.academicPeriodId === selectedSemester)
         .map((course) => course.grade)
         .filter((grade): grade is number => Number.isFinite(grade)),
     )).sort((a, b) => a - b);
@@ -405,7 +425,7 @@ export const SchedulePage = () => {
         if (selectedAcademicianId && exception.academicianId !== selectedAcademicianId) return false;
         if (selectedClassroomId && exception.classroomId !== selectedClassroomId) return false;
         if (selectedScheduleCourseId && exception.courseId !== selectedScheduleCourseId) return false;
-        return !selectedSemester || !course || course.semester === selectedSemester;
+        return !selectedSemester || !course || course.academicPeriodId === selectedSemester;
       })
       : [],
     [courseById, role, scheduleExceptions, selectedAcademicianId, selectedClassroomId, selectedGradeNumber, selectedScheduleCourseId, selectedSemester],
@@ -542,7 +562,7 @@ export const SchedulePage = () => {
   const courseOptions = useMemo(
     () => courses
       .filter((course) => course.active)
-      .filter((course) => !selectedSemester || course.semester === selectedSemester)
+      .filter((course) => !selectedSemester || course.academicPeriodId === selectedSemester)
       .filter((course) => selectedGradeNumber === null || course.grade === selectedGradeNumber)
       .filter((course) => {
         if (editingSchedule?.courseId === course.id) return true;
@@ -807,8 +827,8 @@ export const SchedulePage = () => {
             <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
             <AppSelect
               value={selectedSemester}
-              onChange={(value) => setSelectedSemester(value as Semester | '')}
-              options={semesterOptions}
+              onChange={(value) => setSelectedSemester(value)}
+              options={periodOptions}
               placeholder="Dönem seçiniz"
               className="min-w-[150px]"
             />
