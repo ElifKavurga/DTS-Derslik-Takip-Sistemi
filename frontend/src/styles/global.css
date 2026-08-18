@@ -42,6 +42,37 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 16px 40px -6px rgba(15, 23, 42, 0.05), 0 24px 64px -8px rgba(15, 23, 42, 0.03);
   }
 
+  /* Interactive Card with Turquoise -> Yellow Gradient Border on Hover */
+  .dts-interactive-card {
+    @apply relative overflow-hidden transition-all duration-200 ease-out;
+  }
+
+  .dts-interactive-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(135deg, #007d9e 0%, #00acc1 40%, #fabc07 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+    z-index: 10;
+  }
+
+  .dts-interactive-card:hover::before {
+    opacity: 1;
+  }
+
+  .dts-interactive-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px -2px rgba(0, 100, 130, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  }
+
   /* Hero & Top Container Card with subtle gradient */
   .dts-hero-card {
     @apply relative overflow-hidden rounded-[24px] border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff]/70 via-white to-white p-5 sm:p-6 transition-all duration-300 ease-out;

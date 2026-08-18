@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { AlertTriangle } from 'lucide-react';
 import { PrimaryButton } from './PrimaryButton';
 import { SecondaryButton } from './SecondaryButton';
@@ -25,11 +26,11 @@ export const ConfirmDialog = ({
 }: ConfirmDialogProps) => {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-950/20 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity"
         onClick={onClose}
       />
 
@@ -58,6 +59,7 @@ export const ConfirmDialog = ({
           </PrimaryButton>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

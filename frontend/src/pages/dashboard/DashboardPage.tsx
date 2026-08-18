@@ -345,105 +345,94 @@ const SuperAdminDashboard = () => {
       value: stats?.totalFaculties ?? 0,
       icon: Landmark,
       href: '/super-admin/fakulteler',
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Bina',
       value: stats?.totalBuildings ?? 0,
       icon: Building2,
       href: '/super-admin/fakulteler',
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Kat',
       value: stats?.totalFloors ?? 0,
       icon: Layers,
       href: '/super-admin/fakulteler',
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Bölüm',
       value: stats?.totalDepartments ?? 0,
       icon: GitBranch,
       href: '/super-admin/bolumler',
-      colorClass: 'text-[#006482] bg-[#eff8ff]',
     },
     {
       label: 'Toplam Derslik',
       value: stats?.totalClassrooms ?? 0,
       icon: MapPinned,
       href: '/classrooms',
-      colorClass: 'text-amber-600 bg-amber-50',
     },
     {
       label: 'Toplam Akademisyen',
       value: stats?.totalAcademicians ?? 0,
       icon: GraduationCap,
       href: '/super-admin/kullanicilar',
-      colorClass: 'text-emerald-600 bg-emerald-50',
     },
     {
       label: 'Toplam Bölüm Admini',
       value: stats?.totalDepartmentAdmins ?? 0,
       icon: Shield,
       href: '/super-admin/kullanicilar',
-      colorClass: 'text-indigo-600 bg-indigo-50',
     },
     {
       label: 'Toplam Kullanıcı',
       value: stats?.totalUsers ?? 0,
       icon: Users,
       href: '/super-admin/kullanicilar',
-      colorClass: 'text-slate-600 bg-slate-50',
     },
   ];
 
   if (error) {
     return (
-      <div className="dts-card py-12 text-center">
-        <h3 className="text-lg font-bold text-red-600">Veriler Yüklenirken Bir Hata Oluştu</h3>
-        <p className="mt-2 text-sm text-slate-500">Lütfen daha sonra tekrar deneyiniz.</p>
+      <div className="dts-card py-10 text-center border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+        <h3 className="text-base font-bold text-red-600">Veriler Yüklenirken Bir Hata Oluştu</h3>
+        <p className="mt-1 text-xs text-slate-500">Lütfen daha sonra tekrar deneyiniz.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3.5 sm:space-y-4">
       {/* 1. Üst Ana Kart / Hero Alanı */}
-      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#eff8ff]/60 via-white to-white px-5 py-4 shadow-sm">
+      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#edf7fd] via-[#f8fcff] to-white px-4 py-3 sm:px-5 sm:py-3.5 shadow-sm">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] border border-[#006482]/15">
-              <Shield className="h-5 w-5" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] border border-[#006482]/15">
+              <Shield className="h-4.5 w-4.5" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-900">Süper Admin Paneli 👋</h2>
-              <p className="text-[11px] font-medium text-slate-500">Tüm sistem ve birim yönetimi</p>
-            </div>
+            <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+              Süper Admin Paneli 👋
+            </h2>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Sistem Aktif
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 shrink-0">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Sistem Aktif
+          </span>
         </div>
       </section>
 
       {/* 2. Hızlı İşlemler & Görüntülemeler */}
-      <div className="grid gap-4 lg:grid-cols-12">
+      <div className="grid gap-3 lg:grid-cols-12">
         {/* Hızlı İşlemler */}
-        <section className="space-y-2 lg:col-span-7">
+        <section className="space-y-1.5 lg:col-span-7">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Hızlı İşlemler</h3>
-          <div className="grid gap-2.5 sm:grid-cols-3">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
             <Link
               to="/super-admin/fakulteler"
-              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+              className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                  <Landmark className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                  <Landmark className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate">Fakülte Ekle</p>
@@ -455,11 +444,11 @@ const SuperAdminDashboard = () => {
 
             <Link
               to="/super-admin/dersler"
-              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+              className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                  <BookOpen className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                  <BookOpen className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate">Ders Ekle</p>
@@ -471,11 +460,11 @@ const SuperAdminDashboard = () => {
 
             <Link
               to="/super-admin/kullanicilar"
-              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+              className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                  <Users className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                  <Users className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate">Kullanıcı Ekle</p>
@@ -488,16 +477,16 @@ const SuperAdminDashboard = () => {
         </section>
 
         {/* Görüntülemeler */}
-        <section className="space-y-2 lg:col-span-5">
+        <section className="space-y-1.5 lg:col-span-5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Görüntülemeler</h3>
-          <div className="grid gap-2.5 sm:grid-cols-2">
+          <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <Link
               to="/classrooms"
-              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+              className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                  <MapPinned className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                  <MapPinned className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate">Derslik Görüntüleme</p>
@@ -509,11 +498,11 @@ const SuperAdminDashboard = () => {
 
             <Link
               to="/programlar"
-              className="dts-card dts-card-hover flex items-center justify-between p-3.5 group border-slate-200/60 bg-gradient-to-br from-[#eff8ff]/40 to-white transition-colors hover:border-[#006482]/40"
+              className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#006482] group-hover:text-white transition duration-200">
-                  <Calendar className="h-4 w-4" />
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                  <Calendar className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 text-left">
                   <p className="text-xs font-bold text-slate-800 truncate">Programlar</p>
@@ -527,10 +516,10 @@ const SuperAdminDashboard = () => {
       </div>
 
       {/* 3. İstatistik Kartları / Genel Bakış */}
-      <section className="space-y-2">
+      <section className="space-y-1.5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Genel Bakış</h3>
 
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-2.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => {
             const Icon = stat.icon;
 
@@ -538,23 +527,23 @@ const SuperAdminDashboard = () => {
               <Link
                 key={stat.label}
                 to={stat.href}
-                className="dts-card dts-card-hover group p-4 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/20 hover:border-[#006482]/40 hover:shadow-md transition-all duration-200 block"
+                className="dts-card dts-interactive-card group p-3 sm:p-3.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] block cursor-pointer"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] font-semibold tracking-wide text-slate-500 truncate group-hover:text-[#006482] transition-colors">
                       {stat.label}
                     </p>
                     {isLoading ? (
-                      <div className="mt-2 h-7 w-14 animate-pulse rounded-lg bg-slate-100" />
+                      <div className="mt-1.5 h-6 w-12 animate-pulse rounded-md bg-slate-100" />
                     ) : (
-                      <p className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900">
+                      <p className="mt-1 text-xl font-bold tracking-tight text-slate-900">
                         {stat.value}
                       </p>
                     )}
                   </div>
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${stat.colorClass} group-hover:scale-105`}>
-                    <Icon className="h-4.5 w-4.5" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] group-hover:bg-[#d8f2fb] group-hover:text-[#005a75] transition-colors duration-200">
+                    <Icon className="h-4 w-4" />
                   </div>
                 </div>
               </Link>
@@ -564,15 +553,15 @@ const SuperAdminDashboard = () => {
       </section>
 
       {/* 4. Son Eklenen Kayıtlar */}
-      <section className="space-y-2">
+      <section className="space-y-1.5">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Son Eklenen Kayıtlar</h3>
         
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {/* Son Eklenen Fakülteler */}
-          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
-                <Landmark className="h-4 w-4 text-[#006482]" />
+          <div className="dts-card p-3.5 sm:p-4 space-y-2.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-1.5">
+                <Landmark className="h-3.5 w-3.5 text-[#006482]" />
                 Son Eklenen Fakülteler
               </h4>
               <Link to="/super-admin/fakulteler" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
@@ -581,24 +570,24 @@ const SuperAdminDashboard = () => {
             </div>
             
             {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-8 w-full animate-pulse rounded-lg bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentFaculties?.length ? (
-              <p className="text-xs text-slate-400 py-3 text-center">Fakülte kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-2.5 text-center">Fakülte kaydı bulunmuyor.</p>
             ) : (
               <div className="divide-y divide-slate-100/80">
                 {data.recentFaculties.map((faculty) => (
                   <Link
                     key={faculty.id}
                     to={`/super-admin/fakulteler/${faculty.id}`}
-                    className="py-2.5 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                    className="py-1.5 px-2 -mx-1 rounded-lg flex justify-between items-center gap-2 hover:bg-white/80 transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">{faculty.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Kod: {faculty.code}</p>
+                      <p className="text-[10px] text-slate-400">Kod: {faculty.code}</p>
                     </div>
                     <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 shrink-0">
                       <Calendar className="h-3 w-3" />
@@ -611,10 +600,10 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Son Eklenen Binalar */}
-          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-[#006482]" />
+          <div className="dts-card p-3.5 sm:p-4 space-y-2.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-[#006482]" />
                 Son Eklenen Binalar
               </h4>
               <Link to="/super-admin/fakulteler" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
@@ -623,24 +612,24 @@ const SuperAdminDashboard = () => {
             </div>
             
             {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-8 w-full animate-pulse rounded-lg bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentBuildings?.length ? (
-              <p className="text-xs text-slate-400 py-3 text-center">Bina kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-2.5 text-center">Bina kaydı bulunmuyor.</p>
             ) : (
               <div className="divide-y divide-slate-100/80">
                 {data.recentBuildings.map((building) => (
                   <Link
                     key={building.id}
                     to={`/super-admin/binalar/${building.id}`}
-                    className="py-2.5 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                    className="py-1.5 px-2 -mx-1 rounded-lg flex justify-between items-center gap-2 hover:bg-white/80 transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">{building.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">{building.facultyName}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{building.facultyName}</p>
                     </div>
                     <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1 shrink-0">
                       <Calendar className="h-3 w-3" />
@@ -653,10 +642,10 @@ const SuperAdminDashboard = () => {
           </div>
 
           {/* Son Eklenen Kullanıcılar */}
-          <div className="dts-card p-4 space-y-3 border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/10">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-2">
-                <Users className="h-4 w-4 text-[#006482]" />
+          <div className="dts-card p-3.5 sm:p-4 space-y-2.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-slate-700 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5 text-[#006482]" />
                 Son Eklenen Kullanıcılar
               </h4>
               <Link to="/super-admin/kullanicilar" className="text-[11px] font-semibold text-[#006482] hover:underline flex items-center gap-0.5">
@@ -665,20 +654,20 @@ const SuperAdminDashboard = () => {
             </div>
             
             {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {[1, 2, 3].map((n) => (
-                  <div key={n} className="h-9 w-full animate-pulse rounded-xl bg-slate-50" />
+                  <div key={n} className="h-8 w-full animate-pulse rounded-lg bg-slate-50" />
                 ))}
               </div>
             ) : !data?.recentUsers?.length ? (
-              <p className="text-xs text-slate-400 py-3 text-center">Kullanıcı kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 py-2.5 text-center">Kullanıcı kaydı bulunmuyor.</p>
             ) : (
               <div className="divide-y divide-slate-100/80">
                 {data.recentUsers.map((user) => (
                   <Link
                     key={user.id}
                     to="/super-admin/kullanicilar"
-                    className="py-2 px-2 -mx-2 rounded-xl flex justify-between items-center gap-2 hover:bg-[#eff8ff]/50 transition-colors group"
+                    className="py-1.5 px-2 -mx-1 rounded-lg flex justify-between items-center gap-2 hover:bg-white/80 transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-semibold text-slate-800 truncate group-hover:text-[#006482] transition-colors">
@@ -686,7 +675,7 @@ const SuperAdminDashboard = () => {
                       </p>
                       <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
                       <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${roleBadgeClasses[user.role]}`}>
                         {roleLabels[user.role]}
                       </span>
