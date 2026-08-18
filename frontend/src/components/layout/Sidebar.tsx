@@ -155,14 +155,25 @@ export const Sidebar = ({
                   key={item.label}
                   to={item.path}
                   onClick={onCloseMobile}
-                  className={({ isActive }) =>
-                    cn(
+                  className={({ isActive }) => {
+                    const currentPath = window.location.pathname;
+                    let isReallyActive = isActive;
+                    
+                    if (item.path === '/super-admin/fakulteler') {
+                      isReallyActive = currentPath.startsWith('/super-admin/fakulteler') || 
+                                       currentPath.startsWith('/super-admin/binalar') ||
+                                       currentPath.startsWith('/super-admin/katlar');
+                    } else if (item.path !== '/' && item.path !== '/super-admin/dashboard') {
+                      isReallyActive = currentPath.startsWith(item.path);
+                    }
+                    
+                    return cn(
                       'group flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition duration-150',
-                      isActive
+                      isReallyActive
                         ? 'bg-[#006482] text-white font-semibold shadow-[0_4px_12px_rgba(0,100,130,0.16)]'
                         : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
-                    )
-                  }
+                    );
+                  }}
                   title={collapsed ? item.label : undefined}
                 >
                   <Icon className="h-4.5 w-4.5 shrink-0" />
