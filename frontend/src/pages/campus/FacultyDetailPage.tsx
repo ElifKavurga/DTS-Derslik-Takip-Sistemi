@@ -5,18 +5,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
-import { Plus, Edit2, Trash2, Building2, Layers, MapPinned, ChevronLeft } from 'lucide-react';
+import { Plus, Edit2, Trash2, Building2, Layers, MapPinned, ChevronLeft, X } from 'lucide-react';
 import { AxiosError } from 'axios';
 
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
-import { SearchInput } from '@/components/ui/SearchInput';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormModal } from '@/components/ui/FormModal';
-import { RichList } from '@/components/ui/RichList';
-import { RichListItem } from '@/components/ui/RichListItem';
 import { MoreActionsMenu } from '@/components/ui/MoreActionsMenu';
 import { facultyService } from '@/services/facultyService';
 import { buildingService } from '@/services/buildingService';
@@ -66,7 +63,7 @@ export const FacultyDetailPage = () => {
   // Sync breadcrumbs with active faculty name
   useEffect(() => {
     if (faculty) {
-      setMeta(faculty.name, ['Ana Ekran', 'Kampüs Yönetimi', 'Fakülteler', faculty.name]);
+      setMeta(faculty.name, ['Ana Ekran', 'Fakülte Yönetimi', faculty.name]);
     }
   }, [faculty, setMeta]);
 
@@ -173,16 +170,12 @@ export const FacultyDetailPage = () => {
 
   if (isLoading && !faculty) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 w-48 rounded bg-slate-200 animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-20 rounded-2xl bg-slate-200 animate-pulse" />
-          ))}
-        </div>
-        <div className="space-y-3.5 mt-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 rounded-2xl bg-slate-100 animate-pulse" />
+      <div className="space-y-4 sm:space-y-5 animate-pulse">
+        <div className="h-20 rounded-2xl bg-slate-200" />
+        <div className="h-24 rounded-2xl bg-slate-200" />
+        <div className="space-y-2.5">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-16 rounded-2xl bg-slate-100" />
           ))}
         </div>
       </div>
@@ -199,7 +192,7 @@ export const FacultyDetailPage = () => {
             className="flex w-fit items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition select-none group"
           >
             <ChevronLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-            Fakülte Listesine Dön
+            Fakülte Yönetimine Dön
           </button>
         }
         badge={
@@ -219,41 +212,60 @@ export const FacultyDetailPage = () => {
       />
 
       {/* Faculty Summary Card */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        <div className="dts-card p-4 flex flex-col justify-center">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Fakülte Adı</span>
-          <span className="text-xs font-bold text-slate-800 mt-1.5 truncate">{faculty?.name}</span>
+      <section className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3.5 sm:p-4 shadow-xs">
+        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Fakülte Adı</span>
+            <span className="text-xs font-extrabold text-slate-800 mt-1 truncate">{faculty?.name}</span>
+          </div>
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Fakülte Kodu</span>
+            <span className="text-xs font-extrabold text-slate-800 mt-1 truncate">{faculty?.code}</span>
+          </div>
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Bağlı Bina</span>
+            <span className="text-xs font-extrabold text-slate-800 mt-1">{faculty?.totalBuildings}</span>
+          </div>
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Toplam Kat</span>
+            <span className="text-xs font-extrabold text-slate-800 mt-1">{faculty?.totalFloors}</span>
+          </div>
+          <div className="flex flex-col justify-center min-w-0 col-span-2 md:col-span-1">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Toplam Derslik</span>
+            <span className="text-xs font-extrabold text-slate-800 mt-1">{faculty?.totalClassrooms}</span>
+          </div>
         </div>
-        <div className="dts-card p-4 flex flex-col justify-center">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Fakülte Kodu</span>
-          <span className="text-xs font-bold text-slate-800 mt-1.5">{faculty?.code}</span>
-        </div>
-        <div className="dts-card p-4 flex flex-col justify-center">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Toplam Bina</span>
-          <span className="text-sm font-extrabold text-slate-800 mt-1.5">{faculty?.totalBuildings}</span>
-        </div>
-        <div className="dts-card p-4 flex flex-col justify-center">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Toplam Kat</span>
-          <span className="text-sm font-extrabold text-slate-800 mt-1.5">{faculty?.totalFloors}</span>
-        </div>
-        <div className="dts-card p-4 flex flex-col justify-center col-span-2 md:col-span-1">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Toplam Derslik</span>
-          <span className="text-sm font-extrabold text-slate-800 mt-1.5">{faculty?.totalClassrooms}</span>
-        </div>
-      </div>
+      </section>
 
       {/* Buildings List Area */}
       <div className="space-y-4">
         {buildingsList.length > 0 && (
-          <div className="dts-filter-bar">
-            <SearchInput
-              onSearchChange={setSearchQuery}
-              placeholder="Bina adı veya kodu ara..."
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            <div className="relative min-w-0 flex-1 max-w-md">
+              <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Bina adı veya kodu ara..."
+                className="dts-input pl-9 h-10 py-1.5 text-xs sm:text-sm rounded-xl hover:border-[#88d0f2] focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/10"
+              />
+              {searchQuery && (
+                <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {filteredBuildings.length === 0 ? (
+        {buildingsList.length === 0 ? (
           <EmptyState
             title="Bu fakülteye henüz bina eklenmemiştir."
             description="Fakültede dersliklerin bulunacağı binaları oluşturarak başlayın. Daha sonra binalara ait katları ve derslikleri tanımlayabilirsiniz."
@@ -263,8 +275,16 @@ export const FacultyDetailPage = () => {
               </PrimaryButton>
             }
           />
+        ) : filteredBuildings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+              <Building2 className="h-6 w-6" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-600">Eşleşen bina bulunamadı</h3>
+            <p className="mt-1 text-[13px] text-slate-400">Arama kelimesini değiştirmeyi veya temizlemeyi deneyin.</p>
+          </div>
         ) : (
-          <RichList>
+          <div className="space-y-2">
             {filteredBuildings.map((building) => {
               const actions = [
                 {
@@ -281,36 +301,36 @@ export const FacultyDetailPage = () => {
               ];
 
               return (
-                <RichListItem
+                <div
                   key={building.id}
                   onClick={() => navigate(`/super-admin/binalar/${building.id}`)}
-                  actionMenu={<MoreActionsMenu actions={actions} />}
+                  className="group flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] shadow-xs cursor-pointer select-none transition-all duration-200 ease-out dts-interactive-card"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-3.5 pr-3">
                     {/* Building Name & Code */}
-                    <div className="flex items-center gap-3.5">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 border border-slate-100 group-hover:bg-[#eff8ff] group-hover:text-[#006482] transition duration-200">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/80 text-slate-500 border border-slate-100/90 group-hover:bg-[#eff8ff] group-hover:text-[#006482] transition duration-200">
                         <Building2 className="h-5.5 w-5.5" />
                       </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900 leading-tight group-hover:text-[#006482] transition-colors duration-150">
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-bold text-slate-900 leading-tight group-hover:text-[#006482] transition-colors duration-150 truncate">
                           {building.name}
                         </h4>
-                        <p className="text-[10px] text-slate-400 mt-1">Bina Kodu: {building.code}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Bina Kodu: {building.code}</p>
                       </div>
                     </div>
 
                     {/* Building Metrics */}
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3.5 md:mr-6">
-                      <div className="flex items-center gap-2 border border-slate-200/50 bg-slate-50/50 rounded-xl px-3 py-1.5 min-w-[85px]">
-                        <Layers className="h-4 w-4 text-slate-400" />
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3.5">
+                      <div className="flex items-center gap-2 border border-slate-200/50 bg-white/95 rounded-xl px-2.5 py-1 min-w-[75px] shadow-xs">
+                        <Layers className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                         <div className="flex flex-col text-left">
                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Kat</span>
                           <span className="text-xs font-extrabold text-slate-700 mt-0.5 leading-none">{building.totalFloors}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 border border-slate-200/50 bg-slate-50/50 rounded-xl px-3 py-1.5 min-w-[85px]">
-                        <MapPinned className="h-4 w-4 text-slate-400" />
+                      <div className="flex items-center gap-2 border border-slate-200/50 bg-white/95 rounded-xl px-2.5 py-1 min-w-[75px] shadow-xs">
+                        <MapPinned className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                         <div className="flex flex-col text-left">
                           <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider leading-none">Derslik</span>
                           <span className="text-xs font-extrabold text-slate-700 mt-0.5 leading-none">{building.totalClassrooms}</span>
@@ -318,10 +338,15 @@ export const FacultyDetailPage = () => {
                       </div>
                     </div>
                   </div>
-                </RichListItem>
+
+                  {/* Actions dropdown */}
+                  <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                    <MoreActionsMenu actions={actions} />
+                  </div>
+                </div>
               );
             })}
-          </RichList>
+          </div>
         )}
       </div>
 
@@ -333,7 +358,7 @@ export const FacultyDetailPage = () => {
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-1">
-            <label htmlFor="name" className="dts-input-label">
+            <label htmlFor="name" className="dts-input-label text-[10px] mb-1">
               Bina Adı
             </label>
             <input
@@ -347,7 +372,7 @@ export const FacultyDetailPage = () => {
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="code" className="dts-input-label">
+            <label htmlFor="code" className="dts-input-label text-[10px] mb-1">
               Bina Kodu
             </label>
             <input
