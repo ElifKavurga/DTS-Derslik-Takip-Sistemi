@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {
   Plus, Edit2, Trash2,
   ChevronUp, ChevronDown, ChevronsUpDown,
-  SlidersHorizontal, X, User as UserIcon, Users, Building2, BookOpen, Clock, Tag, Calendar,
+  SlidersHorizontal, X, User as UserIcon, Users, Building2, BookOpen, Clock,
   MoreVertical, Copy, Eye, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { AxiosError } from 'axios';
@@ -29,14 +29,14 @@ import { useAuthStore } from '@/store/useAuthStore';
 
 // ── CourseType & Semester Meta ────────────────────────────────────────────────
 const COURSE_TYPE_META: Record<CourseType, { label: string; cls: string }> = {
-  ZORUNLU: { label: 'Zorunlu', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
-  SECMELI: { label: 'Seçmeli', cls: 'bg-sky-50 text-sky-600 border-sky-200' },
+  ZORUNLU: { label: 'Zorunlu', cls: 'bg-rose-50 text-rose-600 border-rose-200/80' },
+  SECMELI: { label: 'Seçmeli', cls: 'bg-sky-50 text-sky-600 border-sky-200/80' },
 };
 
 const SEMESTER_META: Record<Semester, { label: string; cls: string }> = {
-  GUZ:       { label: 'Güz',       cls: 'bg-amber-50 text-amber-600 border-amber-200' },
-  BAHAR:     { label: 'Bahar',     cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-  YAZ_OKULU: { label: 'Yaz Okulu', cls: 'bg-orange-50 text-orange-600 border-orange-200' },
+  GUZ:       { label: 'Güz',       cls: 'bg-amber-50 text-amber-600 border-amber-200/80' },
+  BAHAR:     { label: 'Bahar',     cls: 'bg-emerald-50 text-emerald-600 border-emerald-200/80' },
+  YAZ_OKULU: { label: 'Yaz Okulu', cls: 'bg-orange-50 text-orange-600 border-orange-200/80' },
 };
 
 // ── Form Schema ──────────────────────────────────────────────────────────────
@@ -167,13 +167,11 @@ const InfoRow = ({ icon, text }: { icon: React.ReactNode; text?: string | null }
 // ── CourseCard ───────────────────────────────────────────────────────────────
 const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, isReadOnly = false }: any) => {
   return (
-    <div className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-4 sm:p-5 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-md">
-      <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-transparent group-hover:bg-[#006482] transition-colors duration-200" />
-      
+    <div className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] px-4 py-3 sm:px-4.5 sm:py-3.5 shadow-xs transition-all duration-200 ease-out dts-interactive-card">
       {/* Sol: Kod + İsim */}
-      <div className="w-56 shrink-0 min-w-0 pr-4 border-r border-slate-100">
+      <div className="w-56 shrink-0 min-w-0 pr-4 md:border-r border-slate-100/90">
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-600 tracking-widest">{course.code}</span>
+          <span className="rounded bg-white border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-500 tracking-wider shadow-2xs">{course.code}</span>
         </div>
         <p className="mt-1.5 text-[13px] font-bold text-slate-900 leading-snug truncate" title={course.name}>
           {course.name}
@@ -181,39 +179,43 @@ const CourseCard = ({ course, onView, onEdit, onCopy, onToggleActive, onDelete, 
       </div>
 
       {/* Orta: Bilgiler */}
-      <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-6 gap-y-1.5 px-2">
-        <InfoRow icon={<UserIcon className="h-3 w-3" />} text={course.academicianName} />
-        <InfoRow icon={<Building2 className="h-3 w-3" />} text={course.facultyName} />
-        <InfoRow icon={<BookOpen className="h-3 w-3" />} text={course.departmentName} />
-        <InfoRow icon={<Clock className="h-3 w-3" />} text={`T: ${course.theoreticalHours} U: ${course.practicalHours} (AKTS: ${course.ects})`} />
-        <InfoRow icon={<Users className="h-3 w-3" />} text={`Mevcut: ${course.studentCount} kişi`} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1.5 md:flex-1 md:px-0">
+        <InfoRow icon={<UserIcon className="h-3.5 w-3.5" />} text={course.academicianName} />
+        <InfoRow icon={<Building2 className="h-3.5 w-3.5" />} text={course.facultyName} />
+        <InfoRow icon={<BookOpen className="h-3.5 w-3.5" />} text={course.departmentName} />
+        <InfoRow icon={<Clock className="h-3.5 w-3.5" />} text={`T: ${course.theoreticalHours} U: ${course.practicalHours} (AKTS: ${course.ects})`} />
+        <InfoRow icon={<Users className="h-3.5 w-3.5" />} text={`Mevcut: ${course.studentCount} kişi`} />
       </div>
 
       {/* Sağ: Badge'ler + Aksiyonlar */}
-      <div className="flex items-center gap-2 shrink-0">
-        <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide', SEMESTER_META[course.semester as Semester].cls)}>
-          {SEMESTER_META[course.semester as Semester].label}
-        </span>
-        <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide', COURSE_TYPE_META[course.courseType as CourseType].cls)}>
-          {COURSE_TYPE_META[course.courseType as CourseType].label}
-        </span>
-        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${course.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-500 border-red-200'}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${course.active ? 'bg-emerald-500' : 'bg-red-400'}`} />
-          {course.active ? 'Aktif' : 'Pasif'}
-        </span>
+      <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 border-t border-slate-100/70 pt-2.5 md:border-0 md:pt-0 shrink-0">
+        <div className="flex flex-wrap gap-1">
+          <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wide', SEMESTER_META[course.semester as Semester].cls)}>
+            {SEMESTER_META[course.semester as Semester].label}
+          </span>
+          <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wide', COURSE_TYPE_META[course.courseType as CourseType].cls)}>
+            {COURSE_TYPE_META[course.courseType as CourseType].label}
+          </span>
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold whitespace-nowrap ${course.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-500 border-red-200'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${course.active ? 'bg-emerald-500' : 'bg-red-400'}`} />
+            {course.active ? 'Aktif' : 'Pasif'}
+          </span>
+        </div>
 
-        {!isReadOnly && (
-          <button
-            type="button"
-            onClick={onEdit}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all duration-150 hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] group-hover:border-[#006482]/20 active:scale-95"
-          >
-            <Edit2 className="h-3 w-3" />
-            Düzenle
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-xs transition hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] active:scale-95 whitespace-nowrap"
+            >
+              <Edit2 className="h-3 w-3" />
+              Düzenle
+            </button>
+          )}
 
-        <CourseActionsMenu course={course} onView={onView} onEdit={onEdit} onCopy={onCopy} onToggleActive={onToggleActive} onDelete={onDelete} isReadOnly={isReadOnly} />
+          <CourseActionsMenu course={course} onView={onView} onEdit={onEdit} onCopy={onCopy} onToggleActive={onToggleActive} onDelete={onDelete} isReadOnly={isReadOnly} />
+        </div>
       </div>
     </div>
   );
@@ -224,34 +226,44 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Click outside listener that ignores portal AppSelect dropdown clicks
   useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const h = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        ref.current &&
+        !ref.current.contains(target) &&
+        !target.closest('.dts-select-menu')
+      ) {
+        setOpen(false);
+      }
+    };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative animate-fade-in" ref={ref}>
       <button
         type="button"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition-all duration-200 whitespace-nowrap',
+          'flex h-10 items-center gap-2 rounded-xl border px-3 py-2 text-xs sm:text-sm font-semibold shadow-xs transition-all duration-200 whitespace-nowrap',
           activeCount > 0 ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482] hover:bg-[#ddf0fb]' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
         )}
       >
-        <SlidersHorizontal className="h-4 w-4" />
+        <SlidersHorizontal className="h-4 w-4 shrink-0" />
         Filtrele
-        {activeCount > 0 && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#006482] text-[10px] font-bold text-white">{activeCount}</span>}
+        {activeCount > 0 && <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#006482] text-[9px] font-bold text-white">{activeCount}</span>}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-96 rounded-3xl border border-slate-200/60 bg-white p-5 shadow-2xl shadow-slate-200/60">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Filtreler</span>
+        <div className="absolute right-0 top-full mt-2 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-md rounded-3xl border border-slate-200/60 bg-white p-4 sm:p-5 shadow-2xl shadow-slate-200/60">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Filtreler</span>
             {activeCount > 0 && (
-              <button type="button" onClick={onClearAll} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 transition-colors">
+              <button type="button" onClick={onClearAll} className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 hover:text-red-500 transition-colors">
                 <X className="h-3 w-3" /> Temizle
               </button>
             )}
@@ -260,7 +272,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
             {showLocationFilters && (
               <>
                 <div>
-                  <label className="dts-input-label">Fakülte</label>
+                  <label className="dts-input-label text-[10px] mb-1">Fakülte</label>
                   <AppSelect
                     value={filters.faculty}
                     onChange={(value) => setFilters({ ...filters, faculty: value })}
@@ -270,7 +282,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
                   />
                 </div>
                 <div>
-                  <label className="dts-input-label">Bölüm</label>
+                  <label className="dts-input-label text-[10px] mb-1">Bölüm</label>
                   <AppSelect
                     value={filters.department}
                     onChange={(value) => setFilters({ ...filters, department: value })}
@@ -282,7 +294,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
               </>
             )}
             <div>
-              <label className="dts-input-label">Akademisyen</label>
+              <label className="dts-input-label text-[10px] mb-1">Akademisyen</label>
               <AppSelect
                 value={filters.academician}
                 onChange={(value) => setFilters({ ...filters, academician: value })}
@@ -293,7 +305,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="dts-input-label">Dönem</label>
+                <label className="dts-input-label text-[10px] mb-1">Dönem</label>
                 <AppSelect
                   value={filters.semester}
                   onChange={(value) => setFilters({ ...filters, semester: value })}
@@ -302,7 +314,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
                 />
               </div>
               <div>
-                <label className="dts-input-label">Tür</label>
+                <label className="dts-input-label text-[10px] mb-1">Tür</label>
                 <AppSelect
                   value={filters.courseType}
                   onChange={(value) => setFilters({ ...filters, courseType: value })}
@@ -312,7 +324,7 @@ const FilterPopover = ({ filters, setFilters, lists, activeCount, onClearAll, sh
               </div>
             </div>
             <div>
-              <label className="dts-input-label">Durum</label>
+              <label className="dts-input-label text-[10px] mb-1">Durum</label>
               <AppSelect
                 value={filters.active}
                 onChange={(value) => setFilters({ ...filters, active: value })}
@@ -407,16 +419,16 @@ export const CoursesPage = () => {
 
   const { data, isLoading } = useQuery({ queryKey: ['courses'], queryFn: courseService.getAll });
   const coursesList = useMemo(() => data ?? [], [data]);
-  
+
   // Data for filters
   const lists = useMemo(() => {
     return {
-      faculties: [...new Set(coursesList.map((c) => c.facultyName))].sort(),
-      departments: [...new Set(coursesList.map((c) => c.departmentName))].sort(),
-      academicians: [...new Set(coursesList.map((c) => c.academicianName))].sort(),
+      faculties: [...new Set(coursesList.map((c) => c.facultyName).filter(Boolean))].sort(),
+      departments: [...new Set(coursesList.map((c) => c.departmentName).filter(Boolean))].sort(),
+      academicians: [...new Set(coursesList.map((c) => c.academicianName).filter(Boolean))].sort(),
     };
   }, [coursesList]);
-  
+
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const filteredCourses = useMemo(() => {
@@ -458,7 +470,7 @@ export const CoursesPage = () => {
     queryFn: facultyService.getAll,
     enabled: !isDepartmentAdmin,
   });
-  
+
   const { data: departmentsForFaculty } = useQuery({
     queryKey: ['departments', watchFacultyId],
     queryFn: () => departmentService.getByFaculty(watchFacultyId!),
@@ -507,7 +519,7 @@ export const CoursesPage = () => {
     reset({ code: '', name: '', facultyId: '', departmentId: '', academicianId: '', theoreticalHours: 2, practicalHours: 0, ects: 3, credits: 2, studentCount: 0, courseType: 'ZORUNLU', semester: 'GUZ', grade: 1, active: true });
     setIsModalOpen(true);
   };
-  
+
   const handleOpenEdit = (course: any) => {
     setEditingCourse(course);
     reset({
@@ -540,19 +552,19 @@ export const CoursesPage = () => {
     onSuccess: () => { toast.success('Ders eklendi.'); queryClient.invalidateQueries({ queryKey: ['courses'] }); setIsModalOpen(false); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Hata oluştu.'),
   });
-  
+
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: any) => courseService.update(id, payload),
     onSuccess: () => { toast.success('Ders güncellendi.'); queryClient.invalidateQueries({ queryKey: ['courses'] }); setIsModalOpen(false); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Hata oluştu.'),
   });
-  
+
   const toggleMutation = useMutation({
     mutationFn: ({ id, payload }: any) => courseService.update(id, payload),
     onSuccess: (_, { payload }) => { toast.success(`Ders ${payload.active ? 'aktif' : 'pasif'} yapıldı.`); queryClient.invalidateQueries({ queryKey: ['courses'] }); },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Hata oluştu.'),
   });
-  
+
   const deleteMutation = useMutation({
     mutationFn: courseService.delete,
     onSuccess: () => { toast.success('Ders silindi.'); queryClient.invalidateQueries({ queryKey: ['courses'] }); setDeletingCourse(null); },
@@ -572,6 +584,12 @@ export const CoursesPage = () => {
     if (editingCourse) updateMutation.mutate({ id: editingCourse.id, payload });
     else createMutation.mutate(payload);
   };
+
+  const sortOptions: { key: SortKey; label: string }[] = [
+    { key: 'code', label: 'Kod' },
+    { key: 'name', label: 'İsim' },
+    { key: 'academician', label: 'Akademisyen' }
+  ];
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -596,13 +614,36 @@ export const CoursesPage = () => {
 
       {/* Toolbar */}
       {coursesList.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1 max-w-sm">
-            <span className="absolute inset-y-0 left-3.5 flex items-center text-slate-400"><svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" /></svg></span>
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Ders adı, kodu veya akademisyen ara..." className="dts-input pl-10 py-2.5 text-sm" />
-            {searchQuery && <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="relative min-w-0 flex-1 max-w-md">
+            <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Ders adı, kodu veya akademisyen ara..."
+              className="dts-input pl-9 h-10 py-1.5 text-xs sm:text-sm rounded-xl hover:border-[#88d0f2] focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/10"
+            />
+            {searchQuery && (
+              <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <FilterPopover filters={filters} setFilters={setFilters} lists={lists} activeCount={activeFilterCount} onClearAll={() => setFilters({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' })} showLocationFilters={!isDepartmentAdmin} />
+          <div className="flex items-center gap-2 shrink-0">
+            <FilterPopover
+              filters={filters}
+              setFilters={setFilters}
+              lists={lists}
+              activeCount={activeFilterCount}
+              onClearAll={() => setFilters({ faculty: '', department: '', academician: '', semester: '', courseType: '', active: '' })}
+              showLocationFilters={!isDepartmentAdmin}
+            />
+          </div>
         </div>
       )}
 
@@ -610,8 +651,18 @@ export const CoursesPage = () => {
       {coursesList.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] text-slate-400 font-medium">Sırala:</span>
-          {[{ key: 'code', label: 'Kod' }, { key: 'name', label: 'İsim' }, { key: 'academician', label: 'Akademisyen' }].map(({ key, label }) => (
-            <button key={key} type="button" onClick={() => toggleSort(key as SortKey)} className={cn('flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all', sortKey === key ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482]' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300')}>
+          {sortOptions.map(({ key, label }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => toggleSort(key)}
+              className={cn(
+                'flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold transition-all',
+                sortKey === key
+                  ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482]'
+                  : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+              )}
+            >
               {label}
               {sortKey === key ? (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ChevronsUpDown className="h-3 w-3 opacity-30" />}
             </button>
@@ -621,25 +672,37 @@ export const CoursesPage = () => {
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-2.5">{[1, 2, 3].map((i) => <div key={i} className="animate-pulse h-24 rounded-2xl border border-slate-200/40 bg-white" />)}</div>
+        <div className="space-y-2.5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="animate-pulse h-24 rounded-2xl border border-slate-200/40 bg-white" />
+          ))}
+        </div>
       ) : coursesList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400 text-2xl font-bold"><BookOpen className="h-8 w-8" /></div>
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400 text-2xl font-bold">
+            <BookOpen className="h-8 w-8" />
+          </div>
           <h3 className="text-base font-bold text-slate-700">Henüz ders yok</h3>
           {!isReadOnly && (
-            <PrimaryButton onClick={handleOpenCreate} className="mt-5" icon={<Plus className="h-4 w-4" />}>Yeni Ders Ekle</PrimaryButton>
+            <PrimaryButton onClick={handleOpenCreate} className="mt-5" icon={<Plus className="h-4 w-4" />}>
+              Yeni Ders Ekle
+            </PrimaryButton>
           )}
         </div>
       ) : filteredCourses.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-14 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><SlidersHorizontal className="h-6 w-6" /></div>
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+            <SlidersHorizontal className="h-6 w-6" />
+          </div>
           <h3 className="text-sm font-bold text-slate-600">Eşleşen ders bulunamadı</h3>
+          <p className="mt-1 text-[13px] text-slate-400">Arama kelimesini veya filtre kriterlerini değiştirmeyi deneyin.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {filteredCourses.map((course: any) => (
             <CourseCard
-              key={course.id} course={course}
+              key={course.id}
+              course={course}
               onView={() => setViewingCourse(course)}
               onEdit={() => handleOpenEdit(course)}
               onCopy={() => handleOpenCopy(course)}
@@ -656,21 +719,21 @@ export const CoursesPage = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-1 space-y-1">
-              <label className="dts-input-label">Kod</label>
+              <label className="dts-input-label text-[10px] mb-1">Kod</label>
               <input type="text" {...register('code')} className={`dts-input ${errors.code ? 'border-red-300' : ''}`} placeholder="CENG101" />
               {errors.code && <p className="text-[10px] text-red-500">{errors.code.message}</p>}
             </div>
             <div className="col-span-3 space-y-1">
-              <label className="dts-input-label">Ders Adı</label>
+              <label className="dts-input-label text-[10px] mb-1">Ders Adı</label>
               <input type="text" {...register('name')} className={`dts-input ${errors.name ? 'border-red-300' : ''}`} />
               {errors.name && <p className="text-[10px] text-red-500">{errors.name.message}</p>}
             </div>
           </div>
-          
+
           {!isDepartmentAdmin && (
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="dts-input-label">Fakülte</label>
+                <label className="dts-input-label text-[10px] mb-1">Fakülte</label>
                 <Controller
                   name="facultyId"
                   control={control}
@@ -687,7 +750,7 @@ export const CoursesPage = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="dts-input-label">Bölüm</label>
+                <label className="dts-input-label text-[10px] mb-1">Bölüm</label>
                 <Controller
                   name="departmentId"
                   control={control}
@@ -706,9 +769,9 @@ export const CoursesPage = () => {
               </div>
             </div>
           )}
-          
+
           <div className="space-y-1">
-            <label className="dts-input-label">Akademisyen</label>
+            <label className="dts-input-label text-[10px] mb-1">Akademisyen</label>
             <Controller
               name="academicianId"
               control={control}
@@ -729,32 +792,32 @@ export const CoursesPage = () => {
 
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
-              <label className="dts-input-label">T. Saat</label>
+              <label className="dts-input-label text-[10px] mb-1">T. Saat</label>
               <input type="number" {...register('theoreticalHours')} className="dts-input" />
             </div>
             <div className="space-y-1">
-              <label className="dts-input-label">U. Saat</label>
+              <label className="dts-input-label text-[10px] mb-1">U. Saat</label>
               <input type="number" {...register('practicalHours')} className="dts-input" />
             </div>
             <div className="space-y-1">
-              <label className="dts-input-label">AKTS</label>
+              <label className="dts-input-label text-[10px] mb-1">AKTS</label>
               <input type="number" {...register('ects')} className="dts-input" />
             </div>
             <div className="space-y-1">
-              <label className="dts-input-label">Kredi</label>
+              <label className="dts-input-label text-[10px] mb-1">Kredi</label>
               <input type="number" {...register('credits')} className="dts-input" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="dts-input-label">Ders Mevcudu</label>
+            <label className="dts-input-label text-[10px] mb-1">Ders Mevcudu</label>
             <input type="number" min={0} step={1} {...register('studentCount')} className={`dts-input ${errors.studentCount ? 'border-red-300' : ''}`} placeholder="Örn. 72" />
             {errors.studentCount && <p className="text-[10px] text-red-500">{errors.studentCount.message}</p>}
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label className="dts-input-label">Tür</label>
+              <label className="dts-input-label text-[10px] mb-1">Tür</label>
               <Controller
                 name="courseType"
                 control={control}
@@ -768,7 +831,7 @@ export const CoursesPage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="dts-input-label">Dönem</label>
+              <label className="dts-input-label text-[10px] mb-1">Dönem</label>
               <Controller
                 name="semester"
                 control={control}
@@ -786,7 +849,7 @@ export const CoursesPage = () => {
               />
             </div>
             <div className="space-y-1">
-              <label className="dts-input-label">Sınıf</label>
+              <label className="dts-input-label text-[10px] mb-1">Sınıf</label>
               <Controller
                 name="grade"
                 control={control}
