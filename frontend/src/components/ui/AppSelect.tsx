@@ -186,7 +186,7 @@ export const AppSelect = ({
         <div
           ref={menuRef}
           style={{ position: 'fixed', top: menuStyle.top, left: menuStyle.left, width: menuStyle.width, zIndex: 99999 }}
-          className="rounded-2xl border border-slate-200/70 bg-white p-1.5 shadow-2xl shadow-slate-200/60"
+          className="dts-select-menu rounded-2xl border border-slate-200/70 bg-white p-1.5 shadow-2xl shadow-slate-200/60"
         >
           {searchable && (
             <div className="mb-1.5 px-1.5 py-1">

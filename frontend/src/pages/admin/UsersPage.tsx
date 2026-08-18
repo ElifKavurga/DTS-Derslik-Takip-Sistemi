@@ -244,75 +244,65 @@ const UserCard = ({ user, onEdit, onDelete, onToggleActive, onResetPw, onViewPro
 
   return (
     <div
-      className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-4 sm:p-5 transition-all duration-200 ease-out hover:-translate-y-px hover:border-[#88d0f2]/60 hover:shadow-md"
-      style={{ boxShadow: '0 1px 3px rgba(15,23,42,0.04), 0 4px 16px -4px rgba(15,23,42,0.06)' }}
+      className="group relative flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] px-4 py-3 sm:px-4.5 sm:py-3.5 shadow-xs transition-all duration-200 ease-out dts-interactive-card"
     >
-      {/* Left accent */}
-      <div className="absolute inset-y-0 left-0 w-[3px] rounded-l-2xl bg-transparent group-hover:bg-[#006482] transition-colors duration-200" />
-
-      {/* ── Avatar ── */}
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white tracking-wide select-none ${color}`}>
-        {inits}
-      </div>
-
-      {/* ── Sol: İsim + E-posta ── */}
-      <div className="w-48 shrink-0 min-w-0">
-        <p className="text-[13px] font-bold text-slate-900 leading-snug truncate">
-          {user.firstName} {user.lastName}
-        </p>
-        <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400 truncate">
-          <Mail className="h-3 w-3 shrink-0" />
-          <span className="truncate">{user.email}</span>
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white tracking-wide select-none ${color}`}>
+          {inits}
+        </div>
+        <div className="min-w-0">
+          <p className="text-[13px] font-bold text-slate-900 leading-snug truncate">
+            {user.firstName} {user.lastName}
+          </p>
+          <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400 truncate">
+            <Mail className="h-3 w-3 shrink-0" />
+            <span className="truncate">{user.email}</span>
+          </div>
         </div>
       </div>
 
-      {/* ── Orta: Ek bilgiler ── */}
-      <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-6 gap-y-1 px-2">
-        <InfoRow icon={<Building2 className="h-3 w-3" />}   text={user.faculty}    />
-        <InfoRow icon={<GraduationCap className="h-3 w-3" />} text={user.title}    />
-        <InfoRow icon={<BookOpen className="h-3 w-3" />}    text={user.department} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 px-1 border-t border-slate-100/70 pt-2 md:border-0 md:pt-0 md:flex-1 md:px-0">
+        <InfoRow icon={<Building2 className="h-3.5 w-3.5" />}   text={user.faculty}    />
+        <InfoRow icon={<GraduationCap className="h-3.5 w-3.5" />} text={user.title}    />
+        <InfoRow icon={<BookOpen className="h-3.5 w-3.5" />}    text={user.department} />
       </div>
 
-      {/* ── Sağ: Roller + Durum + Aksiyonlar ── */}
-      <div className="flex items-center gap-2 shrink-0">
-        {/* Rol badge'leri */}
-        <div className="flex flex-wrap justify-end gap-1 max-w-[200px]">
+      <div className="flex flex-wrap items-center justify-between md:justify-end gap-2 border-t border-slate-100/70 pt-2.5 md:border-0 md:pt-0 shrink-0">
+        <div className="flex flex-wrap gap-1">
           {userRoles.map((r) => (
-            <span key={r} className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${ROLE_META[r].cls}`}>
+            <span key={r} className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold tracking-wide ${ROLE_META[r].cls}`}>
               {ROLE_META[r].label}
             </span>
           ))}
+          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold whitespace-nowrap ${
+            user.active
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-red-50 text-red-500 border-red-200'
+          }`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-red-400'}`} />
+            {user.active ? 'Aktif' : 'Pasif'}
+          </span>
         </div>
 
-        {/* Durum badge */}
-        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold whitespace-nowrap ${
-          user.active
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-            : 'bg-red-50 text-red-500 border-red-200'
-        }`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-red-400'}`} />
-          {user.active ? 'Aktif' : 'Pasif'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 shadow-xs transition hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] active:scale-95"
+          >
+            <Edit2 className="h-3 w-3" />
+            Düzenle
+          </button>
 
-        {/* Düzenle butonu */}
-        <button
-          type="button"
-          onClick={onEdit}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 shadow-sm transition-all duration-150 hover:border-[#006482]/40 hover:bg-[#eff8ff] hover:text-[#006482] group-hover:border-[#006482]/20 active:scale-95"
-        >
-          <Edit2 className="h-3 w-3" />
-          Düzenle
-        </button>
-
-        {/* Zengin üç nokta menüsü */}
-        <UserActionsMenu
-          user={user}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onToggleActive={onToggleActive}
-          onResetPw={onResetPw}
-          onViewProfile={onViewProfile}
-        />
+          <UserActionsMenu
+            user={user}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleActive={onToggleActive}
+            onResetPw={onResetPw}
+            onViewProfile={onViewProfile}
+          />
+        </div>
       </div>
     </div>
   );
@@ -320,11 +310,18 @@ const UserCard = ({ user, onEdit, onDelete, onToggleActive, onResetPw, onViewPro
 
 // ── FilterPopover ────────────────────────────────────────────────────────────
 interface FilterPopoverProps {
-  faculties: string[]; departments: string[];
-  filterRole: string; filterFaculty: string; filterDepartment: string; filterActive: string;
-  onChangeRole: (v: string) => void; onChangeFaculty: (v: string) => void;
-  onChangeDepartment: (v: string) => void; onChangeActive: (v: string) => void;
-  onClearAll: () => void; activeCount: number;
+  faculties: string[];
+  departments: string[];
+  filterRole: string;
+  filterFaculty: string;
+  filterDepartment: string;
+  filterActive: string;
+  onChangeRole: (v: string) => void;
+  onChangeFaculty: (v: string) => void;
+  onChangeDepartment: (v: string) => void;
+  onChangeActive: (v: string) => void;
+  onClearAll: () => void;
+  activeCount: number;
 }
 
 const FilterPopover = ({
@@ -336,10 +333,15 @@ const FilterPopover = ({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Listener her zaman aktif; buton mousedown'ı durdurarak toggle ile çakışmayı önler
+  // Click outside listener that ignores clicks inside portal AppSelect dropdowns
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      if (
+        ref.current &&
+        !ref.current.contains(target) &&
+        !target.closest('.dts-select-menu')
+      ) {
         setOpen(false);
       }
     };
@@ -348,40 +350,40 @@ const FilterPopover = ({
   }, []);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative animate-fade-in" ref={ref}>
       <button
         type="button"
         onMouseDown={(e) => e.stopPropagation()}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          'flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition-all duration-200 whitespace-nowrap',
+          'flex h-10 items-center gap-2 rounded-xl border px-3 py-2 text-xs sm:text-sm font-semibold shadow-xs transition-all duration-200 whitespace-nowrap',
           activeCount > 0
             ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482] hover:bg-[#ddf0fb]'
             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
         )}
       >
-        <SlidersHorizontal className="h-4 w-4" />
+        <SlidersHorizontal className="h-4 w-4 shrink-0" />
         Filtrele
         {activeCount > 0 && (
-          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#006482] text-[10px] font-bold text-white">
+          <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#006482] text-[9px] font-bold text-white">
             {activeCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-96 rounded-3xl border border-slate-200/60 bg-white p-5 shadow-2xl shadow-slate-200/60">
-          <div className="mb-4 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Filtreler</span>
+        <div className="absolute right-0 top-full mt-2 z-50 w-[calc(100vw-2rem)] sm:w-96 max-w-md rounded-3xl border border-slate-200/60 bg-white p-4 sm:p-5 shadow-2xl shadow-slate-200/60">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Filtreler</span>
             {activeCount > 0 && (
-              <button type="button" onClick={onClearAll} className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-red-500 transition-colors">
+              <button type="button" onClick={onClearAll} className="flex items-center gap-1 text-[10px] font-semibold text-slate-400 hover:text-red-500 transition-colors">
                 <X className="h-3 w-3" /> Temizle
               </button>
             )}
           </div>
           <div className="space-y-3">
             <div>
-              <label className="dts-input-label">Rol</label>
+              <label className="dts-input-label text-[10px] mb-1">Rol</label>
               <AppSelect
                 value={filterRole}
                 onChange={onChangeRole}
@@ -391,11 +393,11 @@ const FilterPopover = ({
             </div>
             {faculties.length > 0 && (
               <div>
-                <label className="dts-input-label">Fakülte</label>
+                <label className="dts-input-label text-[10px] mb-1">Fakülte</label>
                 <AppSelect
                   value={filterFaculty}
                   onChange={onChangeFaculty}
-                  options={[{ label: 'Tüm Fakülteler', value: '' }, ...faculties.map((faculty) => ({ label: faculty, value: faculty }))]}
+                  options={[{ label: 'Tüm Fakülteler', value: '' }, ...faculties.map((faculty: string) => ({ label: faculty, value: faculty }))]}
                   searchable
                   placeholder="Tüm Fakülteler"
                 />
@@ -403,18 +405,18 @@ const FilterPopover = ({
             )}
             {departments.length > 0 && (
               <div>
-                <label className="dts-input-label">Bölüm</label>
+                <label className="dts-input-label text-[10px] mb-1">Bölüm</label>
                 <AppSelect
                   value={filterDepartment}
                   onChange={onChangeDepartment}
-                  options={[{ label: 'Tüm Bölümler', value: '' }, ...departments.map((department) => ({ label: department, value: department }))]}
+                  options={[{ label: 'Tüm Bölümler', value: '' }, ...departments.map((department: string) => ({ label: department, value: department }))]}
                   searchable
                   placeholder="Tüm Bölümler"
                 />
               </div>
             )}
             <div>
-              <label className="dts-input-label">Durum</label>
+              <label className="dts-input-label text-[10px] mb-1">Durum</label>
               <AppSelect
                 value={filterActive}
                 onChange={onChangeActive}
@@ -709,8 +711,8 @@ export const UsersPage = () => {
 
       {/* Search + Filter */}
       {usersList.length > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1 max-w-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          <div className="relative min-w-0 flex-1 max-w-md">
             <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-slate-400">
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -721,7 +723,7 @@ export const UsersPage = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Ad, soyad veya e-posta ara..."
-              className="dts-input pl-10 py-2.5 text-sm"
+              className="dts-input pl-9 h-10 py-1.5 text-xs sm:text-sm rounded-xl hover:border-[#88d0f2] focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/10"
             />
             {searchQuery && (
               <button type="button" onClick={() => setSearchQuery('')} className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
@@ -729,15 +731,17 @@ export const UsersPage = () => {
               </button>
             )}
           </div>
-          <FilterPopover
-            faculties={faculties} departments={departments}
-            filterRole={filterRole} filterFaculty={filterFaculty}
-            filterDepartment={filterDepartment} filterActive={filterActive}
-            onChangeRole={setFilterRole} onChangeFaculty={setFilterFaculty}
-            onChangeDepartment={setFilterDepartment} onChangeActive={setFilterActive}
-            onClearAll={() => { setFilterRole(''); setFilterFaculty(''); setFilterDepartment(''); setFilterActive(''); }}
-            activeCount={activeFilterCount}
-          />
+          <div className="flex items-center gap-2 shrink-0">
+            <FilterPopover
+              faculties={faculties} departments={departments}
+              filterRole={filterRole} filterFaculty={filterFaculty}
+              filterDepartment={filterDepartment} filterActive={filterActive}
+              onChangeRole={setFilterRole} onChangeFaculty={setFilterFaculty}
+              onChangeDepartment={setFilterDepartment} onChangeActive={setFilterActive}
+              onClearAll={() => { setFilterRole(''); setFilterFaculty(''); setFilterDepartment(''); setFilterActive(''); }}
+              activeCount={activeFilterCount}
+            />
+          </div>
         </div>
       )}
 
