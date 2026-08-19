@@ -156,10 +156,7 @@ export const SchedulePage = () => {
   });
 
   const periodOptions = useMemo(() => {
-    return [
-      { label: 'Tüm Dönemler', value: '' },
-      ...periods.map((p) => ({ label: p.displayName, value: p.id })),
-    ];
+    return periods.map((p) => ({ label: p.displayName, value: p.id }));
   }, [periods]);
 
   useEffect(() => {
@@ -812,32 +809,93 @@ export const SchedulePage = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      {/* Sayfa Başlığı ve Temel Aksiyonlar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-slate-900">{isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}</h1>
-          <p className="mt-0.5 text-[13px] text-slate-400">
-            {isReadOnly ? 'Size atanan derslerin haftalık programını görüntüleyin.' : 'Bölüm derslerini haftalık takvime manuel yerleştirin.'}
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}</h1>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2">
           {!isReadOnly && (
-            <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
+            <>
+              <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
+              <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+            </>
           )}
-          <div className="flex w-full min-w-[180px] items-center gap-2 sm:w-44">
-            <CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
-            <AppSelect
-              value={selectedSemester}
-              onChange={(value) => setSelectedSemester(value)}
-              options={periodOptions}
-              placeholder="Dönem seçiniz"
-              className="min-w-[150px]"
-            />
-          </div>
         </div>
       </div>
 
+      {/* Kompakt Filtre Toolbarı (Tüm Kullanıcılar İçin) */}
+      <section className="dts-filter-bar p-3.5 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className={cn(
+          "grid gap-2.5 w-full items-center",
+          isReadOnly 
+            ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[1.25fr_repeat(5,1fr)]"
+            : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[1.25fr_repeat(6,1fr)]"
+        )}>
+          <AppSelect
+            value={selectedSemester}
+            onChange={(value) => setSelectedSemester(value)}
+            options={periodOptions}
+            placeholder="Dönem seçiniz"
+            className="w-full"
+          />
+          <AppSelect
+            value={selectedGrade}
+            onChange={setSelectedGrade}
+            options={gradeOptions}
+            placeholder="Tüm sınıflar"
+            className="w-full"
+          />
+          {!isReadOnly && (
+            <AppSelect
+              value={selectedAcademicianId}
+              onChange={setSelectedAcademicianId}
+              options={scheduleFilterOptions.academicians}
+              searchable
+              placeholder="Tüm akademisyenler"
+              emptyText="Programda akademisyen bulunamadı"
+              className="w-full"
+            />
+          )}
+          <AppSelect
+            value={selectedClassroomId}
+            onChange={setSelectedClassroomId}
+            options={scheduleFilterOptions.classrooms}
+            searchable
+            placeholder="Tüm derslikler"
+            emptyText="Programda derslik bulunamadı"
+            className="w-full"
+          />
+          <AppSelect
+            value={selectedScheduleCourseId}
+            onChange={setSelectedScheduleCourseId}
+            options={scheduleFilterOptions.courses}
+            searchable
+            placeholder="Tüm dersler"
+            emptyText="Programda ders bulunamadı"
+            className="w-full"
+          />
+          <AppSelect
+            value={selectedDayFilter}
+            onChange={(value) => setSelectedDayFilter(value as ScheduleDay | '')}
+            options={scheduleDays.map((day) => ({ label: day.label, value: day.value }))}
+            placeholder="Tüm günler"
+            className="w-full"
+          />
+          <SecondaryButton
+            type="button"
+            onClick={clearScheduleFilters}
+            disabled={!hasScheduleFilters}
+            className="h-10 text-xs w-full py-2 font-bold"
+          >
+            Filtreleri Temizle
+          </SecondaryButton>
+        </div>
+      </section>
+
+      {/* Program Özeti / Metrikler (Sadece Admin için) */}
       {!isReadOnly && filteredScheduleStatus && (
-        <div className="grid gap-3 xl:grid-cols-[1.1fr_1.4fr]">
+        <div className="grid gap-3 xl:grid-cols-2">
           <ScheduleStatusOverview
             status={filteredScheduleStatus}
             isLoading={isStatusLoading}
@@ -848,14 +906,12 @@ export const SchedulePage = () => {
             <GradeScheduleSummary
               gradeLabel={selectedGradeLabel}
               summary={gradeScheduleSummary}
-              problemCourses={compactProblemCourses}
-              onOpenCourse={(courseId) => openCreate(courseId)}
-              onShowDetails={() => setIsStatusModalOpen(true)}
             />
           )}
         </div>
       )}
 
+      {/* Program Özeti / Metrikler (Akademisyen için) */}
       {isReadOnly && (
         <section className="grid gap-3 sm:grid-cols-3">
           <SummaryMetric label="Ders" value={readOnlyScheduleSummary.courseCount} />
@@ -864,7 +920,8 @@ export const SchedulePage = () => {
         </section>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* Takvim Başlığı ve İletiler */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between pt-1">
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
           {isReadOnly && (
@@ -873,63 +930,7 @@ export const SchedulePage = () => {
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {!isReadOnly && (
-            <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
-          )}
-        </div>
       </div>
-
-      {!isReadOnly && (
-        <section className="rounded-2xl border border-slate-200/70 bg-white p-3">
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
-            <AppSelect
-              value={selectedGrade}
-              onChange={setSelectedGrade}
-              options={gradeOptions}
-              placeholder="Tüm sınıflar"
-            />
-            <AppSelect
-              value={selectedAcademicianId}
-              onChange={setSelectedAcademicianId}
-              options={scheduleFilterOptions.academicians}
-              searchable
-              placeholder="Tüm akademisyenler"
-              emptyText="Programda akademisyen bulunamadı"
-            />
-            <AppSelect
-              value={selectedClassroomId}
-              onChange={setSelectedClassroomId}
-              options={scheduleFilterOptions.classrooms}
-              searchable
-              placeholder="Tüm derslikler"
-              emptyText="Programda derslik bulunamadı"
-            />
-            <AppSelect
-              value={selectedScheduleCourseId}
-              onChange={setSelectedScheduleCourseId}
-              options={scheduleFilterOptions.courses}
-              searchable
-              placeholder="Tüm dersler"
-              emptyText="Programda ders bulunamadı"
-            />
-            <AppSelect
-              value={selectedDayFilter}
-              onChange={(value) => setSelectedDayFilter(value as ScheduleDay | '')}
-              options={scheduleDays.map((day) => ({ label: day.label, value: day.value }))}
-              placeholder="Tüm günler"
-            />
-            <SecondaryButton
-              type="button"
-              onClick={clearScheduleFilters}
-              disabled={!hasScheduleFilters}
-              className="h-12"
-            >
-              Filtreleri Temizle
-            </SecondaryButton>
-          </div>
-        </section>
-      )}
 
       {isLoading ? (
         <div className="grid gap-2">
@@ -1484,59 +1485,19 @@ const ClassroomGroup = ({
 const GradeScheduleSummary = ({
   gradeLabel,
   summary,
-  problemCourses,
-  onOpenCourse,
-  onShowDetails,
 }: {
   gradeLabel: string;
   summary: { courseCount: number; requiredHours: number; scheduledHours: number; missingHours: number; excessHours: number };
-  problemCourses: CourseScheduleStatusItemResponse[];
-  onOpenCourse: (courseId: string) => void;
-  onShowDetails: () => void;
 }) => (
-  <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 sm:p-5 shadow-xs relative overflow-hidden">
-    <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-    
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-      {/* Sol Taraf: Metrikler */}
-      <div className="min-w-0 lg:col-span-7 flex flex-col justify-between">
-        <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
-          <div className="mt-3 grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-            <SummaryMetric label="Ders" value={summary.courseCount} />
-            <SummaryMetric label="Saat" value={summary.requiredHours} />
-            <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
-            <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
-            <SummaryMetric label="Fazla" value={summary.excessHours} tone={summary.excessHours > 0 ? 'warn' : 'ok'} />
-          </div>
-        </div>
-      </div>
-
-      {/* Sağ Taraf: Sorunlu Dersler */}
-      <div className="min-w-0 lg:col-span-5 border-t lg:border-t-0 lg:border-l border-slate-100/90 lg:pl-5 pt-4 lg:pt-0">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Eksik / Fazla Dersler ({problemCourses.length})</p>
-          <button type="button" onClick={onShowDetails} className="text-[11px] font-bold text-[#006482] hover:underline">Detay</button>
-        </div>
-        {problemCourses.length === 0 ? (
-          <p className="mt-3 rounded-xl bg-emerald-50 border border-emerald-100/60 px-3 py-2 text-xs font-semibold text-emerald-700">Seçili sınıf için program tamam.</p>
-        ) : (
-          <div className="mt-3 max-h-28 space-y-1.5 overflow-y-auto pr-1">
-            {problemCourses.map((course) => (
-              <button
-                key={course.courseId}
-                type="button"
-                onClick={() => onOpenCourse(course.courseId)}
-                className="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-100 bg-white hover:border-[#88d0f2] hover:bg-[#eff8ff] px-3 py-2 text-left text-xs font-semibold transition duration-150"
-              >
-                <span className="min-w-0 truncate text-slate-700">{course.courseCode} - {course.courseName}</span>
-                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold border', course.remainingHours < 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-amber-50 text-amber-700 border-amber-100')}>
-                  {course.remainingHours < 0 ? `Fazla ${Math.abs(course.remainingHours)}` : `Eksik ${course.remainingHours}`}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+  <section className="rounded-[24px] border border-slate-200/60 bg-gradient-to-br from-white via-white to-[#eff8ff]/40 p-4 sm:p-5 shadow-xs relative overflow-hidden transition-all duration-300">
+    <div>
+      <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{gradeLabel} Program Özeti</p>
+      <div className="mt-3 grid grid-cols-5 gap-2.5">
+        <SummaryMetric label="Ders" value={summary.courseCount} />
+        <SummaryMetric label="Saat" value={summary.requiredHours} />
+        <SummaryMetric label="Planlanan" value={summary.scheduledHours} />
+        <SummaryMetric label="Eksik" value={summary.missingHours} tone={summary.missingHours > 0 ? 'warn' : 'ok'} />
+        <SummaryMetric label="Fazla" value={summary.excessHours} tone={summary.excessHours > 0 ? 'warn' : 'ok'} />
       </div>
     </div>
   </section>
@@ -1544,11 +1505,11 @@ const GradeScheduleSummary = ({
 
 const SummaryMetric = ({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warn' | 'ok' }) => (
   <div className={cn(
-    'rounded-xl border px-3 py-2',
-    tone === 'warn' ? 'border-amber-100 bg-amber-50' : tone === 'ok' ? 'border-emerald-100 bg-emerald-50' : 'border-slate-100 bg-slate-50',
+    'rounded-xl border p-2 text-center transition-all duration-200 min-w-0 flex flex-col justify-center items-center',
+    tone === 'warn' ? 'border-amber-100 bg-amber-50/40' : tone === 'ok' ? 'border-emerald-100 bg-emerald-50/40' : 'border-slate-100 bg-slate-50/50',
   )}>
-    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
-    <p className={cn('mt-0.5 text-base font-black', tone === 'warn' ? 'text-amber-700' : tone === 'ok' ? 'text-emerald-700' : 'text-slate-800')}>{value}</p>
+    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wide text-slate-400 truncate w-full px-0.5" title={label}>{label}</p>
+    <p className={cn('mt-0.5 text-sm font-black leading-none', tone === 'warn' ? 'text-amber-700' : tone === 'ok' ? 'text-emerald-700' : 'text-slate-800')}>{value}</p>
   </div>
 );
 
@@ -1617,6 +1578,13 @@ const ScheduleStatusOverview = ({
   const visibleCapacityWarningCount = showCapacityWarnings ? status.capacityWarningCount : 0;
   const hasWarnings = hasScheduleProblems || visibleCapacityWarningCount > 0;
   const isComplete = hasCourses && !hasWarnings;
+  
+  const statusColorClass = !hasCourses 
+    ? 'border-slate-200 bg-white' 
+    : hasWarnings 
+      ? 'border-amber-100 bg-amber-50/40' 
+      : 'border-emerald-100 bg-emerald-50/40';
+
   const title = !hasCourses
     ? 'Programlanacak ders bulunmuyor'
     : !hasScheduleProblems && visibleCapacityWarningCount > 0
@@ -1624,42 +1592,50 @@ const ScheduleStatusOverview = ({
     : isComplete
       ? 'Ders programı tamamlandı'
       : 'Ders programı tamamlanmadı';
+
   const Icon = !hasCourses ? Circle : isComplete ? CheckCircle2 : AlertTriangle;
+  const iconColor = !hasCourses ? 'text-slate-400' : hasWarnings ? 'text-amber-600' : 'text-emerald-600';
 
   return (
     <section className={cn(
-      'rounded-2xl border px-4 py-3',
-      !hasCourses ? 'border-slate-200 bg-white' : hasWarnings ? 'border-amber-100 bg-amber-50/70' : 'border-emerald-100 bg-emerald-50/70',
+      'relative overflow-hidden rounded-[24px] border p-4 sm:p-5 shadow-xs transition-all duration-300 ease-out',
+      statusColorClass
     )}>
+      {/* Sadece sayfanın ana üst kartında gradient üst çizgi */}
+      <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#007d9e] via-[#00acc1] to-[#fabc07]" />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
-          <Icon className={cn('mt-0.5 h-5 w-5 shrink-0', !hasCourses ? 'text-slate-400' : hasWarnings ? 'text-amber-600' : 'text-emerald-600')} />
+          <div className={cn('p-1.5 rounded-lg bg-white/90 shadow-xs shrink-0', iconColor)}>
+            <Icon className="h-5 w-5" />
+          </div>
           <div className="min-w-0">
-            <p className={cn('text-sm font-bold', !hasCourses ? 'text-slate-700' : hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
+            <p className={cn('text-sm font-extrabold tracking-tight', !hasCourses ? 'text-slate-700' : hasWarnings ? 'text-amber-800' : 'text-emerald-800')}>
               {title}
             </p>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">
+            <p className="mt-0.5 text-xs font-semibold text-slate-500">
               {isLoading
-                ? 'Program durumu hesaplanıyor...'
+                ? 'Hesaplanıyor...'
                 : !hasCourses
-                  ? 'Bu seçim için programlanacak ders bulunmuyor.'
-                  : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı · ${status.overScheduledCourses} fazla saat${showCapacityWarnings ? ` · ${status.capacityWarningCount} kapasite uyarısı` : ''}`}
+                  ? 'Seçilen dönem için programlanacak ders bulunmuyor.'
+                  : `${status.completedCourses} tamamlandı · ${status.incompleteCourses} eksik · ${status.notScheduledCourses} programlanmadı`}
             </p>
             {hasCourses && (
-              <p className="mt-0.5 text-[11px] font-semibold text-slate-500">
+              <p className="mt-1 text-[11px] font-bold text-slate-500">
                 {status.scheduledHours} / {status.requiredHours} saat · Eksik {status.missingHours} · Fazla {status.excessHours}
               </p>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-28">
-            <div className="h-2 overflow-hidden rounded-full bg-white/80">
-              <div className="h-full rounded-full bg-[#006482]" style={{ width: `${status.completionPercentage}%` }} />
+        
+        <div className="flex items-center gap-3 justify-between sm:justify-end">
+          <div className="w-24">
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/60">
+              <div className="h-full rounded-full bg-[#006482] transition-all duration-500" style={{ width: `${status.completionPercentage}%` }} />
             </div>
-            <p className="mt-1 text-right text-[11px] font-bold text-slate-500">{status.completionPercentage}%</p>
+            <p className="mt-1 text-right text-[10px] font-bold text-slate-500">{status.completionPercentage}%</p>
           </div>
-          <SecondaryButton type="button" onClick={onShowDetails}>Detayları Gör</SecondaryButton>
+          <SecondaryButton type="button" onClick={onShowDetails} className="h-9 text-xs py-1.5 px-3 rounded-xl border-slate-200/80">Detayları Gör</SecondaryButton>
         </div>
       </div>
     </section>
@@ -1743,63 +1719,104 @@ const ScheduleCard = ({
 }) => {
   const shouldCenterContent = (groupMeta?.slotCount ?? 1) >= 3;
   const compactCard = (groupMeta?.slotCount ?? 1) <= 2;
+  
   const exceptionMeta = exceptionType
     ? {
-      CANCELLED: { label: 'İPTAL', cls: 'border-red-200 bg-red-50 text-red-700', cardCls: 'border-red-200 bg-red-50' },
-      MAKEUP: { label: 'TELAFİ', cls: 'border-amber-200 bg-amber-50 text-amber-700', cardCls: 'border-amber-200 bg-amber-50' },
-      EXTRA: { label: 'EK DERS', cls: 'border-emerald-200 bg-emerald-50 text-emerald-700', cardCls: 'border-emerald-200 bg-emerald-50' },
+      CANCELLED: { label: 'İPTAL', cls: 'border-red-200 bg-red-50 text-red-700', cardCls: 'border-red-200 bg-red-50 text-red-900' },
+      MAKEUP: { label: 'TELAFİ', cls: 'border-amber-200 bg-amber-50 text-amber-700', cardCls: 'border-amber-200 bg-amber-50 text-amber-900' },
+      EXTRA: { label: 'EK DERS', cls: 'border-emerald-200 bg-emerald-50 text-emerald-700', cardCls: 'border-emerald-200 bg-emerald-50 text-emerald-900' },
     }[exceptionType]
     : null;
+
   return (
-  <article
-    role="button"
-    tabIndex={0}
-    onClick={onOpenDetails}
-    onKeyDown={(event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        onOpenDetails();
-      }
-    }}
-    className={cn(
-      'flex h-full flex-col overflow-hidden rounded-xl border p-2.5 shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
-      shouldCenterContent && 'justify-center',
-      exceptionMeta ? exceptionMeta.cardCls : hasConflict ? 'border-red-200 bg-red-50' : 'border-[#006482]/15 bg-[#eff8ff]',
-      highlighted && 'ring-2 ring-[#fabc07]/70',
-    )}
-  >
-    <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className={cn('truncate text-xs font-extrabold text-slate-900', exceptionType === 'CANCELLED' && 'text-red-800')}>
-              {compactCard ? schedule.courseName : schedule.courseCode}
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onOpenDetails}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onOpenDetails();
+        }
+      }}
+      className={cn(
+        'dts-interactive-card flex h-full flex-col overflow-hidden rounded-xl border p-2 text-left shadow-xs transition duration-200 focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+        shouldCenterContent && 'justify-center',
+        exceptionMeta 
+          ? exceptionMeta.cardCls 
+          : hasConflict 
+            ? 'border-red-200 bg-red-50 text-red-900' 
+            : 'border-[#bce5ee] bg-[#effafc] hover:bg-[#e0f3f7]',
+        highlighted && 'ring-2 ring-[#fabc07]/70',
+      )}
+    >
+      <div className="flex items-start justify-between gap-1.5 min-w-0">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <p className={cn(
+              'text-[11px] font-black text-slate-800', 
+              exceptionType === 'CANCELLED' && 'text-red-800'
+            )}>
+              {schedule.courseCode}
             </p>
             {exceptionMeta && (
-              <span className={cn('shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black tracking-wide', exceptionMeta.cls)}>
+              <span className={cn('shrink-0 rounded-full border px-1 py-0.5 text-[8px] font-black tracking-wide', exceptionMeta.cls)}>
                 {exceptionMeta.label}
               </span>
             )}
           </div>
-        {!compactCard && <p className="mt-0.5 line-clamp-2 text-[11px] font-semibold leading-snug text-slate-600">{schedule.courseName}</p>}
+          <p className="mt-0.5 text-[11px] font-semibold text-slate-500 leading-tight line-clamp-2 break-words">{schedule.courseName}</p>
+        </div>
+        {!isReadOnly && (
+          <div className="flex shrink-0 items-center gap-0.5 z-20">
+            <button 
+              type="button" 
+              onClick={(event) => { event.stopPropagation(); onEdit(); }} 
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-[#006482] transition" 
+              aria-label="Düzenle"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </button>
+            <button 
+              type="button" 
+              onClick={(event) => { event.stopPropagation(); onDelete(); }} 
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-rose-600 transition" 
+              aria-label="Sil"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
-      {!isReadOnly && (
-        <div className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={(event) => { event.stopPropagation(); onEdit(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-[#006482]" aria-label="Düzenle">
-            <Edit2 className="h-3.5 w-3.5" />
-          </button>
-          <button type="button" onClick={(event) => { event.stopPropagation(); onDelete(); }} className="rounded-lg p-1 text-slate-400 transition hover:bg-white hover:text-red-600" aria-label="Sil">
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+
+      {!compactCard && (
+        <div className="mt-2 space-y-0.5 text-[10px] font-semibold text-slate-500">
+          <p className="flex items-center gap-1.5">
+            <User className="h-3 w-3 shrink-0 text-slate-400" /> 
+            <span className="truncate">{schedule.academicianName}</span>
+          </p>
+          <p className="flex items-center gap-1.5">
+            <MapPin className="h-3 w-3 shrink-0 text-slate-400" /> 
+            <span className="truncate">{schedule.classroomCode} · {schedule.classroomName}</span>
+          </p>
+          <p className="flex items-center gap-1.5">
+            <Clock className="h-3 w-3 shrink-0 text-slate-400" /> 
+            <span className="truncate">
+              {groupMeta && groupMeta.slotCount > 1 ? `${groupMeta.slotCount} ders saati · ${groupMeta.timeRange}` : formatSlot(schedule.timeSlot)}
+            </span>
+          </p>
+          {exceptionType === 'CANCELLED' && (
+            <p className="flex items-center gap-1.5 font-bold text-red-700">
+              <XCircle className="h-3 w-3 shrink-0" /> İPTAL EDİLDİ
+            </p>
+          )}
+          {hasConflict && (
+            <p className="flex items-center gap-1.5 font-bold text-red-600">
+              <XCircle className="h-3 w-3 shrink-0" /> Çakışma
+            </p>
+          )}
         </div>
       )}
-    </div>
-    {!compactCard && <div className="mt-2 space-y-1 text-[10px] font-semibold text-slate-500">
-      <p className="flex items-center gap-1.5"><User className="h-3 w-3" /> <span className="truncate">{schedule.academicianName}</span></p>
-      <p className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> <span className="truncate">{schedule.classroomCode} · {schedule.classroomName}</span></p>
-      <p className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {groupMeta && groupMeta.slotCount > 1 ? `${groupMeta.slotCount} ders saati · ${groupMeta.timeRange}` : formatSlot(schedule.timeSlot)}</p>
-      {exceptionType === 'CANCELLED' && <p className="flex items-center gap-1.5 font-bold text-red-700"><XCircle className="h-3 w-3" /> İPTAL EDİLDİ</p>}
-      {hasConflict && <p className="flex items-center gap-1.5 font-bold text-red-600"><XCircle className="h-3 w-3" /> Çakışma</p>}
-    </div>}
-  </article>
+    </article>
   );
 };
