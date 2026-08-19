@@ -19,6 +19,7 @@ import { Link } from 'react-router-dom';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FormModal } from '@/components/ui/FormModal';
 import { AppSelect } from '@/components/ui/AppSelect';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { publicCampusService } from '@/services/publicCampusService';
 import {
@@ -43,21 +44,27 @@ const AVAILABILITY_LABELS: Record<string, string> = {
   STARTING_SOON: 'Yakında dolacak',
   OCCUPIED: 'Dolu',
 };
-const AVAILABILITY_STYLES: Record<string, { card: string; badge: string; dot: string }> = {
+const AVAILABILITY_STYLES: Record<string, { card: string; cardBg: string; badge: string; dot: string; text: string }> = {
   AVAILABLE: {
-    card: 'border-emerald-300 bg-emerald-50/90 text-emerald-950',
+    card: 'border-emerald-200',
+    cardBg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
     badge: 'bg-emerald-100 text-emerald-700',
     dot: 'bg-emerald-500',
+    text: 'text-emerald-950',
   },
   STARTING_SOON: {
-    card: 'border-amber-300 bg-amber-50/90 text-amber-950',
+    card: 'border-amber-200',
+    cardBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
     badge: 'bg-amber-100 text-amber-700',
     dot: 'bg-amber-500',
+    text: 'text-amber-950',
   },
   OCCUPIED: {
-    card: 'border-red-300 bg-red-50/90 text-red-950',
+    card: 'border-red-200',
+    cardBg: 'linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%)',
     badge: 'bg-red-100 text-red-700',
     dot: 'bg-red-500',
+    text: 'text-red-950',
   },
 };
 
@@ -119,6 +126,7 @@ const getObjectIcon = (type: string) => {
   return School;
 };
 
+
 const ClassroomSlot = ({
   object,
   selected,
@@ -143,47 +151,68 @@ const ClassroomSlot = ({
         ? [object.nextCourseName, object.nextStartTime ? `${object.nextStartTime} başlangıç` : undefined].filter(Boolean).join(' · ')
         : '';
 
+  const wrapperStyle: React.CSSProperties = absolute
+    ? {
+        left: object.positionX,
+        top: object.positionY,
+        width: object.width,
+        height: object.height,
+        transform: object.rotation ? `rotate(${object.rotation}deg)` : undefined,
+        transformOrigin: 'center',
+      }
+    : {};
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <div
       className={cn(
-        'flex min-h-24 min-w-36 flex-col items-start justify-between rounded-xl border p-3 text-left shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
-        availabilityStyle.card,
-        selected ? 'ring-2 ring-offset-1 ring-[#006482] border-[#006482] z-10' : 'hover:border-[#006482]/50',
+        'group relative p-[1.5px] rounded-xl transition-all duration-300 hover:-translate-y-0.5',
+        selected ? 'shadow-md' : 'shadow-xs hover:shadow-md',
         absolute && 'absolute overflow-hidden',
       )}
-      style={
-        absolute
-          ? {
-              left: object.positionX,
-              top: object.positionY,
-              width: object.width,
-              height: object.height,
-              transform: object.rotation ? `rotate(${object.rotation}deg)` : undefined,
-              transformOrigin: 'center',
-            }
-          : undefined
-      }
-      title={[label, availabilityLabel, statusDetail].filter(Boolean).join(' - ')}
+      style={wrapperStyle}
     >
-      <span className="flex w-full items-center justify-between gap-2">
-        <Icon className="h-4 w-4 shrink-0 text-[#006482]" />
-        <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', availabilityStyle.badge)}>
-          <span className={cn('h-2 w-2 rounded-full', availabilityStyle.dot)} />
-          {availabilityLabel}
+      {/* Static turkuaz → sarı gradient border — visible on hover only */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+      />
+
+      <button
+        type="button"
+        onClick={onSelect}
+        className={cn(
+          'relative flex w-full h-full min-h-[88px] min-w-[138px] flex-col items-start justify-between rounded-[10px] border p-3 text-left transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+          selected
+            ? 'border-[#006482] bg-gradient-to-br from-[#eff8ff] to-[#eff8ff]/90 ring-2 ring-[#006482]/20 z-10'
+            : cn(availabilityStyle.card, 'group-hover:border-transparent'),
+        )}
+        style={selected ? {} : { backgroundImage: availabilityStyle.cardBg }}
+      >
+        <span className="flex w-full items-center justify-between gap-2">
+          <Icon className="h-4 w-4 shrink-0 text-[#006482]" />
+          <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold', availabilityStyle.badge)}>
+            <span className={cn('h-1.5 w-1.5 rounded-full', availabilityStyle.dot)} />
+            {availabilityLabel}
+          </span>
         </span>
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-bold text-slate-900">{label}</span>
-        <span className="mt-1 block truncate text-xs text-slate-500">{detail}</span>
-        {object.capacity != null && <span className="mt-1 block text-[11px] text-slate-400">{object.capacity} kişi</span>}
-        {statusDetail && <span className="mt-1 block truncate text-[11px] font-medium text-slate-600">{statusDetail}</span>}
-        {object.placed === false && <span className="mt-1 block text-[10px] font-semibold text-slate-400">Yerleşim yok</span>}
-      </span>
-    </button>
+        <span className="w-full mt-2 min-w-0">
+          <span className={cn('block truncate text-sm font-bold', availabilityStyle.text)}>{label}</span>
+          <span className="mt-0.5 block truncate text-[11px] font-medium text-slate-500">{detail}</span>
+          <div className="mt-1 flex items-center justify-between gap-1 text-[10px] font-medium text-slate-400">
+            {object.capacity != null && <span>{object.capacity} kişi</span>}
+            {object.placed === false && <span className="font-semibold text-slate-400/80">Yerleşim yok</span>}
+          </div>
+          {statusDetail && (
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#006482]/80 leading-normal">
+              {statusDetail}
+            </p>
+          )}
+        </span>
+      </button>
+    </div>
   );
 };
+
 
 const AvailabilityLegend = () => (
   <div className="flex flex-wrap gap-2">
@@ -204,9 +233,9 @@ const AvailabilityLegend = () => (
 );
 
 const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
-  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
-    <p className="mt-1 truncate text-sm font-bold text-slate-900">{value ?? '-'}</p>
+  <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-white to-[#f0f9ff]/40 p-3">
+    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-none">{label}</p>
+    <p className="mt-1.5 truncate text-xs font-bold text-slate-800">{value ?? '-'}</p>
   </div>
 );
 
@@ -356,20 +385,24 @@ const ClassroomDetailContent = ({
         : 'Şu anda ders görünmüyor.';
 
   return (
-    <div className="space-y-5">
-      <div className={cn('rounded-2xl border p-4', availabilityStyle.card)}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div className="space-y-4">
+      <div className={cn('rounded-2xl border p-3.5', availabilityStyle.card)}>
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Derslik</p>
-            <h2 className="mt-1 truncate text-2xl font-bold text-slate-950">{classroom.code || classroom.label}</h2>
-            <p className="mt-1 text-sm text-slate-600">{classroom.label && classroom.label !== classroom.code ? classroom.label : typeLabel}</p>
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-white/40 px-2 py-0.5 text-[10px] font-bold tracking-widest text-slate-800">
+              {typeLabel}
+            </span>
+            <h2 className="mt-1.5 truncate text-lg font-bold text-slate-950 leading-none">{classroom.code || classroom.label}</h2>
+            {classroom.label && classroom.label !== classroom.code && (
+              <p className="mt-0.5 text-xs font-semibold text-slate-600/80">{classroom.label}</p>
+            )}
           </div>
-          <span className={cn('inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold', availabilityStyle.badge)}>
-            <span className={cn('h-2.5 w-2.5 rounded-full', availabilityStyle.dot)} />
+          <span className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold', availabilityStyle.badge)}>
+            <span className={cn('h-1.5 w-1.5 rounded-full', availabilityStyle.dot)} />
             {availabilityLabel}
           </span>
         </div>
-        <p className="mt-3 text-sm font-medium text-slate-700">{statusDescription}</p>
+        <p className="mt-2.5 text-xs font-bold text-slate-900 leading-normal">{statusDescription}</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -399,7 +432,7 @@ const ClassroomDetailContent = ({
 const SelectionSkeleton = () => (
   <div className="grid gap-4 md:grid-cols-2">
     {[1, 2].map((item) => (
-      <div key={item} className="dts-card min-h-32 animate-pulse p-5">
+      <div key={item} className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-[#f0f9ff]/30 shadow-xs min-h-32 animate-pulse p-5">
         <div className="mb-4 h-3 w-20 rounded bg-slate-100" />
         <div className="h-11 rounded-2xl bg-slate-100" />
       </div>
@@ -643,27 +676,34 @@ export const ClassroomExplorerPage = () => {
     <main className="min-h-screen bg-slate-50">
       <PageContainer>
         <div className="space-y-4">
-          <header className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-5 py-4 shadow-md sm:px-6">
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Görüntüleme</h1>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Fakülte, blok ve kat seçerek mevcut derslik yerleşimini görüntüleyin.
-                </p>
+          <PageHeader
+            title="Derslik Görüntüleme"
+            description="Fakülte, blok ve kat seçerek mevcut derslik yerleşimini görüntüleyin."
+            action={
+              <div className="flex items-center gap-2">
+                <div className="group relative p-[1.5px] rounded-xl transition-all duration-300 shadow-xs hover:shadow-md">
+                  <div aria-hidden="true" className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <Link
+                    to="/programlar"
+                    className="relative inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#006482]/20 bg-white px-3 text-xs font-bold text-[#006482] transition-all duration-300 group-hover:border-transparent group-hover:bg-[#f6fbfe]"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Programlar
+                  </Link>
+                </div>
+                <div className="group relative p-[1.5px] rounded-xl transition-all duration-300 shadow-xs hover:shadow-md">
+                  <div aria-hidden="true" className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <Link
+                    to="/giris"
+                    className="relative inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#006482]/20 bg-white px-3 text-xs font-bold text-[#006482] transition-all duration-300 group-hover:border-transparent group-hover:bg-[#f6fbfe]"
+                  >
+                    <LogIn className="h-3.5 w-3.5" />
+                    Giriş Yap
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Link to="/programlar" className="dts-btn-secondary">
-                  <CalendarDays className="h-4 w-4" />
-                  Programlar
-                </Link>
-                <Link to="/giris" className="dts-btn-secondary">
-                  <LogIn className="h-4 w-4" />
-                  Giriş Yap
-                </Link>
-              </div>
-            </div>
-          </header>
+            }
+          />
 
           {isFacultiesLoading ? (
             <SelectionSkeleton />
@@ -676,7 +716,7 @@ export const ClassroomExplorerPage = () => {
             />
           ) : (
             <>
-              <section className="dts-card grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(280px,1.2fr)]">
+              <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-[#f0f9ff]/30 shadow-xs p-4 sm:p-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(280px,1.2fr)]">
                 <div className="min-w-0">
                   <div className="mb-2 flex items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#006482]/10 bg-[#eff8ff] text-[#006482]">
@@ -686,18 +726,24 @@ export const ClassroomExplorerPage = () => {
                       <label htmlFor="public-faculty" className="dts-input-label mb-1">
                         Fakülte
                       </label>
-                      <p className="truncate text-xs text-slate-500">Gerçek fakülte kayıtları listelenir.</p>
+                      <p className="truncate text-[10px] font-semibold text-slate-400">Gerçek fakülte kayıtları listelenir.</p>
                     </div>
                   </div>
-                  <AppSelect
-                    id="public-faculty"
-                    value={selectedFacultyId}
-                    options={facultyOptions}
-                    onChange={handleFacultyChange}
-                    searchable
-                    searchPlaceholder="Fakülte ara..."
-                    emptyText="Fakülte bulunamadı"
-                  />
+                  {/* Gradient border wrapper */}
+                  <div className="group relative p-[1.5px] rounded-2xl transition-all duration-300 shadow-xs hover:shadow-md">
+                    <div aria-hidden="true" className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                    <div className="relative rounded-[14px] overflow-hidden">
+                      <AppSelect
+                        id="public-faculty"
+                        value={selectedFacultyId}
+                        options={facultyOptions}
+                        onChange={handleFacultyChange}
+                        searchable
+                        searchPlaceholder="Fakülte ara..."
+                        emptyText="Fakülte bulunamadı"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="min-w-0">
@@ -709,7 +755,7 @@ export const ClassroomExplorerPage = () => {
                       <label htmlFor="public-building" className="dts-input-label mb-1">
                         Blok
                       </label>
-                      <p className="truncate text-xs text-slate-500">Yalnızca seçili fakültenin blokları gelir.</p>
+                      <p className="truncate text-[10px] font-semibold text-slate-400">Yalnızca seçili fakültenin blokları gelir.</p>
                     </div>
                   </div>
 
@@ -723,23 +769,28 @@ export const ClassroomExplorerPage = () => {
                   ) : buildings.length === 0 ? (
                     <div className="dts-input bg-slate-50 text-slate-400">Blok bulunamadı.</div>
                   ) : (
-                    <AppSelect
-                      id="public-building"
-                      value={selectedBuildingId}
-                      options={buildingOptions}
-                      onChange={handleBuildingChange}
-                      searchable
-                      searchPlaceholder="Blok ara..."
-                      emptyText="Blok bulunamadı"
-                    />
+                    <div className="group relative p-[1.5px] rounded-2xl transition-all duration-300 shadow-xs hover:shadow-md">
+                      <div aria-hidden="true" className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                      <div className="relative rounded-[14px] overflow-hidden">
+                        <AppSelect
+                          id="public-building"
+                          value={selectedBuildingId}
+                          options={buildingOptions}
+                          onChange={handleBuildingChange}
+                          searchable
+                          searchPlaceholder="Blok ara..."
+                          emptyText="Blok bulunamadı"
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
 
                 <div className="min-w-0">
                   <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0">
-                      <h2 className="text-sm font-bold text-slate-950">Katlar</h2>
-                      <p className="truncate text-xs text-slate-500">
+                      <h2 className="text-sm font-bold text-slate-900">Katlar</h2>
+                      <p className="truncate text-[10px] font-semibold text-slate-400">
                         {selectedBuilding ? `${selectedBuilding.name} için tanımlı katlar` : 'Blok seçildiğinde listelenir.'}
                       </p>
                     </div>
@@ -752,29 +803,40 @@ export const ClassroomExplorerPage = () => {
                   </div>
 
                   {!selectedBuilding ? (
-                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-400">
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3.5 text-xs font-semibold text-slate-400">
                       Katları görüntülemek için blok seçin.
                     </div>
                   ) : isFloorsError ? (
                     <EmptyState title="Katlar yüklenemedi." />
                   ) : !isFloorLoading && floors.length === 0 ? (
-                    <EmptyState title="Bu blokta kat bilgisi bulunamadı." />
+                    <EmptyState title="Bu blokta kat bilgiisi bulunamadı." />
                   ) : (
-                    <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap">
+                    <div className="flex flex-wrap gap-2">
                       {floors.map((floor) => (
-                        <button
+                        <div
                           key={floor.id}
-                          type="button"
-                          onClick={() => handleFloorChange(floor.id)}
                           className={cn(
-                            'min-w-24 rounded-2xl border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
-                            selectedFloorId === floor.id
-                              ? 'border-[#006482] bg-[#eff8ff] text-[#006482]'
-                              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300',
+                            'group relative p-[1.5px] rounded-xl transition-all duration-300 shadow-xs',
+                            selectedFloorId === floor.id ? 'shadow-xs' : 'hover:shadow-md',
                           )}
                         >
-                          {floor.name}
-                        </button>
+                          {/* Gradient border: only for unselected floors on hover */}
+                          {selectedFloorId !== floor.id && (
+                            <div aria-hidden="true" className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleFloorChange(floor.id)}
+                            className={cn(
+                              'relative min-w-20 rounded-[10px] border px-3 py-2 text-xs font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#006482]/20',
+                              selectedFloorId === floor.id
+                                ? 'border-[#006482] bg-[#eff8ff] text-[#006482]'
+                                : 'border-slate-200 bg-white text-slate-600 group-hover:border-transparent group-hover:bg-[#f6fbfe]',
+                            )}
+                          >
+                            {floor.name}
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -782,7 +844,7 @@ export const ClassroomExplorerPage = () => {
               </section>
 
               {selectedFloor && (
-                <section className="dts-card p-4 sm:p-5">
+                <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-[#f0f9ff]/30 shadow-xs p-4 sm:p-5">
                   <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Kat Yerleşimi</p>
@@ -814,7 +876,7 @@ export const ClassroomExplorerPage = () => {
                   ) : floorView ? (
                     <div className="space-y-4">
                       {!hasFloorPlan && (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500">
+                        <div className="rounded-xl border border-[#006482]/10 bg-[#eff8ff] px-3.5 py-2.5 text-xs font-semibold text-[#006482]">
                           Kat planı bulunamadı. Derslikler slot görünümünde gösteriliyor.
                         </div>
                       )}
