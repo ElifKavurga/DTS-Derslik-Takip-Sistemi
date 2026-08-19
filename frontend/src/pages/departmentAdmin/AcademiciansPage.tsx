@@ -10,6 +10,7 @@ import { cn } from '@/utils/cn';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FormModal } from '@/components/ui/FormModal';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -202,24 +203,22 @@ export const AcademiciansPage = () => {
   return (
     <div className="space-y-5">
       {/* Sayfa Header'ı */}
-      <section className="relative overflow-hidden rounded-[24px] border border-slate-200/60 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 shadow-xs transition-all duration-300">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#007d9e] via-[#00acc1] to-[#fabc07]" />
-        
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-base font-extrabold uppercase tracking-wider text-slate-700">Akademisyenler</h1>
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-              {academicians.length}
-            </span>
-          </div>
+      <PageHeader
+        title="Akademisyenler"
+        badge={
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+            {academicians.length}
+          </span>
+        }
+        action={
           <PrimaryButton type="button" onClick={openCreateModal} icon={<Plus className="h-4 w-4" />}>
             Akademisyen Ekle
           </PrimaryButton>
-        </div>
-      </section>
+        }
+      />
 
       {/* Arama ve Filtre Toolbarı */}
-      <section className="p-3.5 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+      <section className="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="flex-1 max-w-full md:max-w-md">
             <SearchInput

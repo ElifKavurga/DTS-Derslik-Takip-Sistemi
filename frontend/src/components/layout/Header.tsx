@@ -70,7 +70,6 @@ export const Header = ({ title, breadcrumbs, onOpenSidebar }: HeaderProps) => {
 
         <div className="min-w-0 flex-1">
           <Breadcrumb items={breadcrumbs} />
-          <h1 className="mt-0.5 truncate text-base font-semibold tracking-tight text-slate-900">{title}</h1>
         </div>
 
         <div ref={headerActionsRef} className="relative flex items-center gap-2" onClick={stopPanelClick}>

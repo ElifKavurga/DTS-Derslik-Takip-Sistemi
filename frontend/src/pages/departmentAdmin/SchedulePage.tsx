@@ -7,6 +7,7 @@ import { AlertTriangle, CalendarDays, CheckCircle2, Circle, Clock, Edit2, MapPin
 import { AppSelect } from '@/components/ui/AppSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { FormModal } from '@/components/ui/FormModal';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { courseService } from '@/services/courseService';
@@ -808,24 +809,24 @@ export const SchedulePage = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Sayfa Başlığı ve Temel Aksiyonlar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {!isReadOnly && (
-            <>
-              <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
-              <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
-            </>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}
+        action={
+          <div className="flex items-center gap-2">
+            {!isReadOnly && (
+              <>
+                <SecondaryButton type="button" onClick={openTimeConfig} icon={<Settings className="h-4 w-4" />}>Saat Ayarları</SecondaryButton>
+                <PrimaryButton onClick={() => openCreate()} icon={<Plus className="h-4 w-4" />}>Programa Ders Ekle</PrimaryButton>
+              </>
+            )}
+          </div>
+        }
+      />
 
       {/* Kompakt Filtre Toolbarı (Tüm Kullanıcılar İçin) */}
-      <section className="dts-filter-bar p-3.5 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
+      <section className="dts-filter-bar p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className={cn(
           "grid gap-2.5 w-full items-center",
           isReadOnly 

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageTitle } from '@/components/layout/PageTitle';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { cn } from '@/utils/cn';
 import { dashboardService } from '@/services/dashboardService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
@@ -242,36 +243,20 @@ const DepartmentAdminDashboard = () => {
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-6 max-w-full">
+    <div className="space-y-5">
       {/* 1. Üst Header Kartı */}
-      <section className="dts-card relative border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] px-5 py-4 sm:py-4.5 shadow-xs">
-        <div className="absolute inset-x-0 top-0 h-[3px] rounded-t-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07]" />
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 space-y-1 flex-1">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Ana Ekran</p>
-            {isLoading ? (
-              <div className="space-y-2">
-                <div className="h-6 w-64 max-w-full animate-pulse rounded bg-slate-100" />
-                <div className="h-4 w-40 animate-pulse rounded bg-slate-100" />
-              </div>
-            ) : (
-              <>
-                <h2 className="break-words text-lg font-bold tracking-tight text-slate-900 leading-snug">
-                  {data?.departmentName} Bölümü
-                </h2>
-                <p className="text-xs font-medium text-slate-500">{data?.facultyName}</p>
-              </>
-            )}
+      <PageHeader
+        title={isLoading ? 'Ana Ekran' : `${data?.departmentName} Bölümü`}
+        description={isLoading ? undefined : data?.facultyName}
+        badge={
+          <div className="inline-flex w-fit items-center rounded-full border border-indigo-200/80 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-extrabold text-indigo-700">
+            Bölüm Admini
           </div>
-          
-          <div className="flex flex-wrap items-center gap-2.5">
-            <SemesterDropdown value={selectedSemester} onChange={setSelectedSemester} />
-            <div className="inline-flex w-fit items-center rounded-full border border-indigo-155 bg-indigo-50 px-2.5 py-0.5 text-[10px] font-extrabold text-indigo-700">
-              Bölüm Admini
-            </div>
-          </div>
-        </div>
-      </section>
+        }
+        action={
+          <SemesterDropdown value={selectedSemester} onChange={setSelectedSemester} />
+        }
+      />
 
       {/* 2. İstatistikler */}
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
@@ -520,25 +505,17 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="space-y-3.5 sm:space-y-4">
+    <div className="space-y-5">
       {/* 1. Üst Ana Kart / Hero Alanı */}
-      <section className="dts-card relative overflow-hidden border-[#006482]/15 bg-gradient-to-br from-[#edf7fd] via-[#f8fcff] to-white px-4 py-3 sm:px-5 sm:py-3.5 shadow-sm">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eff8ff] text-[#006482] border border-[#006482]/15">
-              <Shield className="h-4.5 w-4.5" />
-            </div>
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-slate-900">
-              Süper Admin Paneli 👋
-            </h2>
-          </div>
+      <PageHeader
+        title="Süper Admin Paneli"
+        badge={
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 shrink-0">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Sistem Aktif
           </span>
-        </div>
-      </section>
+        }
+      />
 
       {/* 2. Hızlı İşlemler & Görüntülemeler */}
       <div className="grid gap-3 lg:grid-cols-12">
@@ -816,7 +793,7 @@ const SuperAdminDashboard = () => {
 };
 
 const AcademicianDashboard = () => {
-  const [selectedSemester] = React.useState<string>('GUZ');
+  const [selectedSemester, setSelectedSemester] = React.useState<string>('');
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['academicianDashboard', selectedSemester],
@@ -841,9 +818,15 @@ const AcademicianDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header Skeleton */}
-        <div className="h-32 w-full animate-pulse rounded-3xl bg-slate-100/80" />
+        <div className="h-20 w-full animate-pulse rounded-[24px] bg-slate-100/80" />
+        {/* Stats Cards Skeleton */}
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="h-24 w-full animate-pulse rounded-[24px] bg-slate-100/80" />
+          ))}
+        </div>
         <div className="grid gap-6 md:grid-cols-12">
           {/* Left panel Skeleton */}
           <div className="space-y-6 md:col-span-8">
@@ -862,18 +845,18 @@ const AcademicianDashboard = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+      <div className="dts-card py-16 text-center border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500 border border-red-100">
           <AlertCircle className="h-6 w-6" />
         </div>
-        <h3 className="text-base font-bold text-slate-800">Yükleme Başarısız</h3>
-        <p className="mt-1 text-xs text-slate-400 max-w-xs leading-normal">
-          Dashboard verileri yüklenirken bir sorun oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.
+        <h3 className="text-base font-bold text-slate-800">Veriler Yüklenirken Bir Hata Oluştu</h3>
+        <p className="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto">
+          Bağlantı sorunu yaşanıyor veya seçilen döneme ait kayıt bulunamadı. Lütfen daha sonra tekrar deneyin.
         </p>
         <button
           type="button"
           onClick={() => refetch()}
-          className="mt-4 rounded-xl bg-[#006482] px-4 py-2 text-xs font-bold text-white shadow-md hover:bg-[#00526b] transition active:scale-95"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#006482] px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#00526b] hover:shadow-sm transition active:scale-95"
         >
           Yeniden Dene
         </button>
@@ -895,81 +878,147 @@ const AcademicianDashboard = () => {
     day: 'numeric',
   });
 
+  const totalCoursesCount = courses.length;
+  const scheduledCoursesCount = Object.values(weeklySummary).reduce((a, b) => Number(a) + Number(b), 0);
+  const totalWeeklyHours = courses.reduce((acc, c) => acc + (c.theoreticalHours || 0) + (c.practicalHours || 0), 0);
+  const totalExceptionsCount = exceptionSummary.cancelled + exceptionSummary.makeup + exceptionSummary.extra;
+
+  const statCards = [
+    {
+      label: 'Toplam Ders',
+      value: totalCoursesCount,
+      icon: BookOpen,
+      href: '/academician/dersler',
+      colorClass: 'text-cyan-600 bg-cyan-50 border-cyan-100',
+      emptyText: 'Dersiniz bulunmuyor.',
+    },
+    {
+      label: 'Programlanan Dersler',
+      value: scheduledCoursesCount,
+      icon: Calendar,
+      href: '/academician/ders-programi',
+      colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+      emptyText: 'Programlanmış dersiniz yok.',
+    },
+    {
+      label: 'Haftalık Ders Saati',
+      value: totalWeeklyHours,
+      icon: Clock,
+      href: '/academician/ders-programi',
+      colorClass: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+      emptyText: 'Haftalık ders saati yok.',
+    },
+    {
+      label: 'Ders Değişiklikleri',
+      value: totalExceptionsCount,
+      icon: CalendarPlus,
+      href: '/academician/istisnalar',
+      colorClass: 'text-amber-600 bg-amber-50 border-amber-100',
+      emptyText: 'Değişiklik bulunmuyor.',
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Dynamic greeting banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white p-6 shadow-md md:p-8">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-48 w-48 rounded-full bg-[#88d0f2]/10 blur-2xl" />
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[#006482]/20 bg-[#eff8ff] px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#006482]">
-              {academicTerm}
-            </span>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
-              Hoş geldiniz, {academician?.title} {academician?.firstName} {academician?.lastName}
-            </h1>
-            <p className="text-xs font-medium text-slate-400">
-              {academician?.departmentName} · {academician?.facultyName}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.5 rounded-2xl bg-white/70 border border-slate-100 p-3 shadow-sm backdrop-blur-sm">
-            <Calendar className="h-5 w-5 text-[#006482]" />
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Bugün</p>
-              <p className="text-xs font-bold text-slate-700">{todayLabel}</p>
+    <div className="space-y-5">
+      {/* 1. Üst Header Kartı */}
+      <PageHeader
+        title={academician ? `Hoş geldiniz, ${academician.title} ${academician.firstName} ${academician.lastName}` : 'Ana Ekran'}
+        description={academician ? `${academician.departmentName} · ${academician.facultyName}` : undefined}
+        badge={
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 shrink-0">
+            <GraduationCap className="h-3 w-3" />
+            Akademisyen
+          </span>
+        }
+        action={
+          <div className="flex flex-wrap items-center gap-2.5">
+            <SemesterDropdown value={selectedSemester} onChange={setSelectedSemester} />
+            <div className="flex shrink-0 items-center gap-2 rounded-xl bg-white/80 border border-slate-200/80 px-3 py-1.5 shadow-xs backdrop-blur-sm">
+              <Calendar className="h-4 w-4 text-[#006482]" />
+              <div className="text-left">
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wide leading-none">Bugün</p>
+                <p className="mt-0.5 text-[10px] font-bold text-slate-700 leading-none">{todayLabel}</p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="grid gap-6 md:grid-cols-12">
+      {/* 2. İstatistikler */}
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#007d9e] via-[#00acc1] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <Link
+                to={stat.href}
+                className="relative rounded-[14px] bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3.5 sm:p-4 border border-slate-200/80 group-hover:border-transparent transition-all duration-300 block text-left h-full"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{stat.label}</p>
+                    <p className="mt-1.5 text-xl font-bold tracking-tight text-slate-900">{stat.value}</p>
+                    {stat.value === 0 && <p className="mt-0.5 text-[9px] text-slate-405 leading-none">{stat.emptyText}</p>}
+                  </div>
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-all duration-300", stat.colorClass)}>
+                    <Icon className="h-4.5 w-4.5 animate-none group-hover:scale-105 transition-transform duration-300" />
+                  </div>
+                </div>
+              </Link>
+            </div>
+          );
+        })}
+      </section>
+
+      <div className="grid gap-5 md:grid-cols-12">
         {/* Left Side: Today's courses & Schedules */}
-        <div className="space-y-6 md:col-span-8">
+        <div className="space-y-5 md:col-span-8">
           {/* Next Class Highlight */}
           {nextCourse ? (
-            <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-6 shadow-sm">
+            <div className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/50 to-white p-5 shadow-sm">
               <div className="absolute right-0 top-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-emerald-100/10 blur-xl" />
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                  <Clock className="h-5 w-5" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                  <Clock className="h-4.5 w-4.5" />
                 </div>
                 <div>
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Sıradaki Dersiniz</h3>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[13px] font-bold text-slate-950">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs font-bold text-slate-950">
                     <span>{nextCourse.courseCode} · {nextCourse.courseName}</span>
                   </div>
                 </div>
               </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
-                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Saat</span>
-                  <span className="mt-1 block text-xs font-bold text-slate-700">{nextCourse.timeSlot}</span>
+              <div className="mt-3.5 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white border border-slate-100 p-2 sm:p-2.5 shadow-xs">
+                  <span className="block text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Saat</span>
+                  <span className="mt-0.5 block text-xs font-bold text-slate-700">{nextCourse.timeSlot}</span>
                 </div>
-                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
-                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Derslik</span>
-                  <span className="mt-1 block text-xs font-bold text-slate-700">{nextCourse.classroomCode} · {nextCourse.classroomName}</span>
+                <div className="rounded-xl bg-white border border-slate-100 p-2 sm:p-2.5 shadow-xs">
+                  <span className="block text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Derslik</span>
+                  <span className="mt-0.5 block text-xs font-bold text-slate-700">{nextCourse.classroomCode} · {nextCourse.classroomName}</span>
                 </div>
-                <div className="rounded-2xl bg-white border border-slate-100 p-3 shadow-xs">
-                  <span className="block text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Bölüm</span>
-                  <span className="mt-1 block text-xs font-bold text-slate-700 truncate">{nextCourse.courseName ? academician?.departmentName : ''}</span>
+                <div className="rounded-xl bg-white border border-slate-100 p-2 sm:p-2.5 shadow-xs">
+                  <span className="block text-[8px] font-extrabold uppercase tracking-wider text-slate-400">Bölüm</span>
+                  <span className="mt-0.5 block text-xs font-bold text-slate-700 truncate">{nextCourse.courseName ? academician?.departmentName : ''}</span>
                 </div>
               </div>
             </div>
           ) : null}
 
           {/* Today's Courses List */}
-          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Bugünün Ders Programı</h2>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">Bugün vermeniz gereken derslerin listesi.</p>
+          <div className="dts-interactive-card rounded-3xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">Bugünün Ders Programı</h2>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-400">Bugün vermeniz gereken derslerin listesi.</p>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 space-y-2">
               {todayCourses.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
-                    <Calendar className="h-5 w-5" />
+                <div className="flex flex-col items-center justify-center py-6 text-center">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-50 text-slate-400 border border-slate-100">
+                    <Calendar className="h-4.5 w-4.5" />
                   </div>
-                  <p className="mt-2.5 text-xs font-bold text-slate-700">Bugün dersiniz bulunmuyor</p>
+                  <p className="mt-2 text-xs font-bold text-slate-700">Bugün dersiniz bulunmuyor</p>
                   <p className="mt-0.5 text-[11px] text-slate-400">Kendinize vakit ayırabilir veya hazırlık yapabilirsiniz.</p>
                 </div>
               ) : (
@@ -996,37 +1045,37 @@ const AcademicianDashboard = () => {
                     <div
                       key={index}
                       className={cn(
-                        'flex items-center gap-4 rounded-2xl border p-4 transition-all duration-200',
+                        'flex items-center gap-3 rounded-2xl border p-2.5 sm:p-3 transition-all duration-200',
                         isFinished
                           ? 'border-slate-100 bg-slate-50/50 text-slate-400'
-                          : 'border-slate-100 hover:border-[#88d0f2]/60 hover:shadow-md hover:shadow-slate-100'
+                          : 'border-slate-150 bg-gradient-to-br from-white via-white to-[#eff8ff]/20 hover:border-[#88d0f2]/60 hover:shadow-sm'
                       )}
                     >
                       <div className={cn(
-                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xs font-extrabold tracking-wider',
+                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[10px] font-extrabold tracking-wider',
                         isFinished ? 'bg-slate-100 text-slate-400' : 'bg-[#eff8ff] text-[#006482]'
                       )}>
                         {course.timeSlot.split('-')[0]}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className={cn(
-                            'rounded px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase',
-                            isFinished ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-500'
+                            'rounded px-1 py-0.5 text-[8px] font-bold tracking-widest uppercase',
+                            isFinished ? 'bg-slate-100 text-slate-400' : 'bg-slate-50 text-slate-500 border border-slate-200/50'
                           )}>
                             {course.courseCode}
                           </span>
                           {isFinished && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                            <span className="flex items-center gap-0.5 text-[9px] font-bold text-emerald-600">
                               <CheckCircle2 className="h-3 w-3" /> Tamamlandı
                             </span>
                           )}
                         </div>
-                        <h4 className={cn('mt-1 text-xs font-bold leading-normal truncate', isFinished ? 'text-slate-400' : 'text-slate-900')}>
+                        <h4 className={cn('mt-0.5 text-xs font-bold leading-normal truncate', isFinished ? 'text-slate-400' : 'text-slate-900')}>
                           {course.courseName}
                         </h4>
-                        <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-slate-400">
-                          <MapPin className="h-3 w-3 shrink-0" /> {course.classroomCode} · {course.classroomName}
+                        <p className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-slate-450">
+                          <MapPin className="h-3 w-3 shrink-0 text-slate-450" /> {course.classroomCode} · {course.classroomName}
                         </p>
                       </div>
                     </div>
@@ -1038,23 +1087,23 @@ const AcademicianDashboard = () => {
         </div>
 
         {/* Right Side: Weekly Summary & Course list */}
-        <div className="space-y-6 md:col-span-4">
-          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
+        <div className="space-y-5 md:col-span-4">
+          <div className="dts-interactive-card rounded-3xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Yaklaşan Ders Değişiklikleri</h2>
-                <p className="mt-0.5 text-xs font-medium text-slate-400">İptal, telafi ve ek ders kayıtlarınız.</p>
+                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">Yaklaşan Ders Değişiklikleri</h2>
+                <p className="mt-0.5 text-[11px] font-medium text-slate-400">İptal, telafi ve ek ders kayıtlarınız.</p>
               </div>
-              <RefreshCw className="h-5 w-5 shrink-0 text-[#006482]" />
+              <RefreshCw className="h-4.5 w-4.5 shrink-0 text-[#006482]" />
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <DashboardExceptionMetric label="İptal" value={exceptionSummary.cancelled} icon={<Ban className="h-4 w-4" />} tone="red" />
-              <DashboardExceptionMetric label="Telafi" value={exceptionSummary.makeup} icon={<RefreshCw className="h-4 w-4" />} tone="amber" />
-              <DashboardExceptionMetric label="Ek Ders" value={exceptionSummary.extra} icon={<CalendarPlus className="h-4 w-4" />} tone="emerald" />
+            <div className="mt-3 grid grid-cols-3 gap-1.5">
+              <DashboardExceptionMetric label="İptal" value={exceptionSummary.cancelled} icon={<Ban className="h-3.5 w-3.5" />} tone="red" />
+              <DashboardExceptionMetric label="Telafi" value={exceptionSummary.makeup} icon={<RefreshCw className="h-3.5 w-3.5" />} tone="amber" />
+              <DashboardExceptionMetric label="Ek Ders" value={exceptionSummary.extra} icon={<CalendarPlus className="h-3.5 w-3.5" />} tone="emerald" />
             </div>
             <Link
               to="/academician/istisnalar"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
             >
               Tümünü Gör
               <ArrowRight className="h-3.5 w-3.5" />
@@ -1062,19 +1111,19 @@ const AcademicianDashboard = () => {
           </div>
 
           {/* Weekly Summary Widget */}
-          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Haftalık Ders Özeti</h2>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">Hangi gün kaç ders saati dersiniz var.</p>
+          <div className="dts-interactive-card rounded-3xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">Haftalık Ders Özeti</h2>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-400">Hangi gün kaç ders saati dersiniz var.</p>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-3 space-y-1.5">
               {['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'].map((day) => {
                 const count = weeklySummary[day] ?? 0;
                 return (
-                  <div key={day} className="flex items-center justify-between rounded-xl border border-slate-50 p-2.5">
-                    <span className="text-xs font-bold text-slate-600">{getDayLabel(day)}</span>
+                  <div key={day} className="flex items-center justify-between rounded-xl border border-slate-50 py-1.5 px-2.5 bg-slate-50/30">
+                    <span className="text-xs font-bold text-slate-650">{getDayLabel(day)}</span>
                     <span className={cn(
-                      'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-extrabold leading-none',
-                      count > 0 ? 'bg-[#eff8ff] text-[#006482]' : 'bg-slate-50 text-slate-400'
+                      'inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[9px] font-extrabold leading-none',
+                      count > 0 ? 'bg-[#eff8ff] text-[#006482] border border-[#006482]/10' : 'bg-slate-100 text-slate-450'
                     )}>
                       {count > 0 ? `${count} ders` : 'Boş'}
                     </span>
@@ -1085,7 +1134,7 @@ const AcademicianDashboard = () => {
 
             <Link
               to="/academician/ders-programi"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
             >
               Haftalık Programı Gör
               <ArrowRight className="h-3.5 w-3.5" />
@@ -1093,23 +1142,23 @@ const AcademicianDashboard = () => {
           </div>
 
           {/* Courses Widget */}
-          <div className="rounded-3xl border border-slate-200/60 bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">Verdiğim Dersler</h2>
-            <p className="mt-0.5 text-xs font-medium text-slate-400">Bu dönem atandığınız aktif dersler.</p>
+          <div className="dts-interactive-card rounded-3xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">Verdiğim Dersler</h2>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-400">Bu dönem atandığınız aktif dersler.</p>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 space-y-2">
               {courses.length === 0 ? (
-                <div className="py-6 text-center text-xs text-slate-400 font-medium">Atanmış ders bulunmuyor.</div>
+                <div className="py-4 text-center text-xs text-slate-400 font-medium">Atanmış ders bulunmuyor.</div>
               ) : (
                 courses.slice(0, 3).map((course: CourseResponse, idx: number) => (
-                  <div key={idx} className="flex items-start gap-3 rounded-2xl border border-slate-50 p-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-500 text-xs font-bold uppercase">
+                  <div key={idx} className="flex items-center gap-2.5 rounded-xl border border-slate-50 p-2 sm:p-2.5 bg-slate-50/20">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100/80 text-slate-500 text-[10px] font-bold uppercase">
                       {course.code.substring(0, 2)}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="block text-[9px] font-bold tracking-widest text-[#006482] uppercase">{course.code}</span>
-                      <h4 className="mt-0.5 text-xs font-bold text-slate-800 truncate" title={course.name}>{course.name}</h4>
-                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">AKTS: {course.ects} · {course.theoreticalHours + course.practicalHours} saat/hafta</p>
+                      <span className="block text-[8px] font-extrabold tracking-widest text-[#006482] uppercase">{course.code}</span>
+                      <h4 className="text-xs font-bold text-slate-800 truncate leading-none mt-0.5" title={course.name}>{course.name}</h4>
+                      <p className="text-[10px] font-semibold text-slate-450 leading-none mt-1">AKTS: {course.ects} · {course.theoreticalHours + course.practicalHours} saat/hafta</p>
                     </div>
                   </div>
                 ))
@@ -1117,14 +1166,14 @@ const AcademicianDashboard = () => {
             </div>
 
             {courses.length > 3 && (
-              <div className="mt-2 text-center text-[10px] font-bold text-slate-400">
+              <div className="mt-2 text-center text-[9px] font-extrabold text-slate-450">
                 +{courses.length - 3} ders daha
               </div>
             )}
 
             <Link
               to="/academician/dersler"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-[#006482] hover:border-[#006482]/20 active:scale-95"
             >
               Tüm Dersleri Gör
               <ArrowRight className="h-3.5 w-3.5" />
@@ -1148,13 +1197,13 @@ const DashboardExceptionMetric = ({
   tone: 'red' | 'amber' | 'emerald';
 }) => (
   <div className={cn(
-    'rounded-2xl border px-3 py-2',
-    tone === 'red' ? 'border-red-100 bg-red-50 text-red-700' : tone === 'amber' ? 'border-amber-100 bg-amber-50 text-amber-700' : 'border-emerald-100 bg-emerald-50 text-emerald-700',
+    'rounded-xl border px-2.5 py-1.5 text-center flex flex-col justify-between h-full',
+    tone === 'red' ? 'border-red-100 bg-red-50/70 text-red-700' : tone === 'amber' ? 'border-amber-100 bg-amber-50/70 text-amber-700' : 'border-emerald-100 bg-emerald-50/70 text-emerald-700',
   )}>
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-[10px] font-extrabold uppercase tracking-wider">{label}</span>
+    <div className="flex items-center justify-between gap-1">
+      <span className="text-[8px] font-extrabold uppercase tracking-wider">{label}</span>
       {icon}
     </div>
-    <p className="mt-1 text-lg font-black">{value}</p>
+    <p className="mt-0.5 text-sm font-black text-left">{value}</p>
   </div>
 );

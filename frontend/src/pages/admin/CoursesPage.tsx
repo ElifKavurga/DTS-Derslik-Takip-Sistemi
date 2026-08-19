@@ -611,14 +611,14 @@ export const CoursesPage = () => {
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader
         title="Dersler"
         badge={
           coursesList.length > 0 ? (
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
-              {filteredCourses.length}{filteredCourses.length !== coursesList.length ? ` / ${coursesList.length}` : ''}
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+              {coursesList.length}
             </span>
           ) : null
         }

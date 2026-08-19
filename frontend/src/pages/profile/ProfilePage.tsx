@@ -16,6 +16,7 @@ import { ChangePasswordRequest } from '@/types';
 import { cn } from '@/utils/cn';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Süper Admin',
@@ -309,9 +310,19 @@ export const ProfilePage = () => {
 
   return (
     <div className="mx-auto w-full space-y-[20px]">
+      {/* Page Header */}
+      <PageHeader
+        title="Profil"
+        action={
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[#eff8ff] border border-[#006482]/20 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#006482] shrink-0">
+            <User className="h-3 w-3" />
+            Profil Özeti
+          </span>
+        }
+      />
+
       {/* 1. Profil Özet Kartı */}
-      <section className="dts-card dts-interactive-card relative overflow-hidden border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3 sm:p-3.5 shadow-xs">
-        <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
+      <section className="dts-card dts-interactive-card relative overflow-hidden border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-5 shadow-xs">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
             <div className="relative shrink-0">
@@ -354,15 +365,11 @@ export const ProfilePage = () => {
               </div>
             </div>
           </div>
-          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-[#eff8ff] border border-[#006482]/20 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#006482] shrink-0 self-start sm:self-auto">
-            <User className="h-3 w-3" />
-            Profil Özeti
-          </span>
         </div>
       </section>
 
       {/* 2. Profil Bilgileri Form Kartı */}
-      <section className="dts-card dts-interactive-card p-3 sm:p-3.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+      <section className="dts-card dts-interactive-card p-5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
         <div className="mb-2 flex items-center gap-2 border-b border-slate-100/90 pb-1.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482]">
             <User className="h-3 w-3" />
@@ -589,7 +596,7 @@ export const ProfilePage = () => {
       </section>
 
       {/* 3. Şifre Değiştir Form Kartı */}
-      <section className="dts-card dts-interactive-card p-3 sm:p-3.5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+      <section className="dts-card dts-interactive-card p-5 border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
         <div className="mb-2 flex items-center gap-2 border-b border-slate-100/90 pb-1.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#eff8ff] text-[#006482]">
             <KeyRound className="h-3 w-3" />
