@@ -12,6 +12,7 @@ import { FormModal } from '@/components/ui/FormModal';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { apiClient } from '@/services/axios';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { scheduleService } from '@/services/scheduleService';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
 import { semesterService } from '@/services/semesterService';
@@ -787,35 +788,31 @@ export const AcademicianCoursesPage = () => {
   }, [courses, searchQuery]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Page Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white p-6 shadow-md md:p-8">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-[#88d0f2]/10 blur-2xl" />
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#006482]/10 text-[#006482]">
-                <BookOpen className="h-4.5 w-4.5" />
-              </div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">Derslerim</h1>
-            </div>
-            <p className="text-xs font-medium text-slate-400">
-              Sisteme atanmış derslerinizi ve program bilgilerini görüntüleyin.
-            </p>
-          </div>
-          {courses && (
-            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-slate-200/60 bg-white/70 px-4 py-2.5 shadow-sm">
-              <Tag className="h-4 w-4 text-[#006482]" />
-              <span className="text-sm font-bold text-slate-700">
+      <PageHeader
+        title="Derslerim"
+        description="Sisteme atanmış derslerinizi ve program bilgilerini görüntüleyin."
+        badge={
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 shrink-0">
+            <BookOpen className="h-3 w-3" />
+            Dersler
+          </span>
+        }
+        action={
+          courses && (
+            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 px-3 py-1.5 shadow-xs backdrop-blur-sm">
+              <Tag className="h-3.5 w-3.5 text-[#006482]" />
+              <span className="text-xs font-bold text-slate-700">
                 {filtered.length} ders
               </span>
             </div>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="p-3 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] rounded-2xl border border-slate-200/80 shadow-xs flex flex-col gap-3 sm:flex-row sm:items-center">
         {/* Search */}
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -824,13 +821,13 @@ export const AcademicianCoursesPage = () => {
             placeholder="Ders kodu veya adı ara…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-[#006482]/40 focus:outline-none focus:ring-2 focus:ring-[#006482]/10"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-xs font-semibold text-slate-800 placeholder-slate-450 shadow-xs transition hover:border-[#88d0f2] focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/10 focus:outline-none"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-455 hover:text-slate-655"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -845,10 +842,10 @@ export const AcademicianCoursesPage = () => {
               type="button"
               onClick={() => setSelectedSemester(opt.value)}
               className={cn(
-                'rounded-2xl border px-3.5 py-2 text-xs font-semibold shadow-sm transition-all duration-150 whitespace-nowrap',
+                'rounded-xl border px-3 py-1.5 text-xs font-semibold shadow-xs transition-all duration-150 whitespace-nowrap',
                 selectedSemester === opt.value
                   ? 'border-[#006482]/30 bg-[#eff8ff] text-[#006482]'
-                  : 'border-slate-200 bg-white text-slate-650 hover:border-slate-355 hover:bg-slate-50',
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-355 hover:bg-slate-50',
               )}
             >
               {opt.label}
@@ -860,23 +857,25 @@ export const AcademicianCoursesPage = () => {
       {/* Content */}
       {isLoading && (
         <div className="space-y-2.5">
-          {[1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}
+          {[1, 2, 3, 4].map((i) => (
+            <SkeletonRow key={i} />
+          ))}
         </div>
       )}
 
       {error && !isLoading && (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/60 bg-white py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-400">
-            <AlertCircle className="h-6 w-6" />
+        <div className="dts-card flex flex-col items-center justify-center py-10 px-4 text-center border-slate-200/80 bg-gradient-to-br from-[#fff5f5] via-white to-[#fff0f0]">
+          <div className="mb-3.5 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-red-500 border border-red-100">
+            <AlertCircle className="h-5 w-5" />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">Dersler yüklenemedi</h3>
-          <p className="mt-1 max-w-xs text-xs font-medium text-slate-400 leading-normal">
+          <h3 className="text-xs font-bold text-slate-855">Dersler yüklenemedi</h3>
+          <p className="mt-0.5 max-w-xs text-[11px] text-slate-450 leading-normal">
             Veriler alınırken bir sorun oluştu. Lütfen tekrar deneyin.
           </p>
           <button
             type="button"
             onClick={() => refetch()}
-            className="mt-4 rounded-xl bg-[#006482] px-4 py-2 text-xs font-bold text-white shadow-md transition hover:bg-[#00526b] active:scale-95"
+            className="mt-3.5 rounded-lg bg-[#006482] px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-[#00526b] active:scale-95"
           >
             Yeniden Dene
           </button>
@@ -884,14 +883,14 @@ export const AcademicianCoursesPage = () => {
       )}
 
       {!isLoading && !error && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200/60 bg-white py-20 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 text-slate-400">
-            <BookOpen className="h-6 w-6" />
+        <div className="dts-card flex flex-col items-center justify-center py-10 px-4 text-center border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+          <div className="mb-3.5 flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[#006482] border border-slate-200/50">
+            <BookOpen className="h-4.5 w-4.5" />
           </div>
-          <h3 className="text-sm font-bold text-slate-800">
+          <h3 className="text-xs font-bold text-slate-855">
             {searchQuery ? 'Arama sonucu bulunamadı' : 'Henüz atanmış ders yok'}
           </h3>
-          <p className="mt-1 max-w-xs text-xs font-medium text-slate-400 leading-normal">
+          <p className="mt-0.5 max-w-xs text-[11px] text-slate-450 leading-normal">
             {searchQuery
               ? 'Farklı bir arama terimi deneyin.'
               : 'Bölüm admininiz sizi bir derse atadığında burada görünecek.'}
@@ -900,7 +899,7 @@ export const AcademicianCoursesPage = () => {
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="mt-4 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
+              className="mt-3.5 flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-655 shadow-xs transition hover:bg-slate-50"
             >
               <X className="h-3 w-3" />
               Aramayı Temizle

@@ -813,6 +813,12 @@ export const SchedulePage = () => {
       {/* Sayfa Başlığı ve Temel Aksiyonlar */}
       <PageHeader
         title={isReadOnly ? 'Haftalık Programım' : 'Ders Programı'}
+        description={isReadOnly ? 'Haftalık ders programınızı görüntüleyin.' : 'Bölüm ders programını oluşturun ve yönetin.'}
+        badge={
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 shrink-0">
+            {isReadOnly ? 'Akademisyen' : 'Bölüm Yetkilisi'}
+          </span>
+        }
         action={
           <div className="flex items-center gap-2">
             {!isReadOnly && (
@@ -826,7 +832,7 @@ export const SchedulePage = () => {
       />
 
       {/* Kompakt Filtre Toolbarı (Tüm Kullanıcılar İçin) */}
-      <section className="dts-filter-bar p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+      <section className="dts-filter-bar p-3 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] rounded-2xl border border-slate-200/80 shadow-xs">
         <div className={cn(
           "grid gap-2.5 w-full items-center",
           isReadOnly 
@@ -924,38 +930,33 @@ export const SchedulePage = () => {
       {/* Takvim Başlığı ve İletiler */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between pt-1">
         <div>
-          <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">Haftalık Ders Programı</h2>
-          {isReadOnly && (
-            <p className="mt-0.5 text-xs font-medium text-slate-400">
-              Ders kartları salt okunurdur; düzenleme işlemleri bölüm admini tarafından yapılır.
-            </p>
-          )}
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-755">Haftalık Ders Programı</h2>
         </div>
       </div>
 
       {isLoading ? (
         <div className="grid gap-2">
-          {[1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl border border-slate-200/50 bg-white" />)}
+          {[1, 2, 3].map((item) => <div key={item} className="h-20 animate-pulse rounded-2xl border border-slate-200/50 bg-white" />)}
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-8 text-center">
-          <p className="text-sm font-bold text-red-700">Ders programı yüklenemedi.</p>
+        <div className="dts-card rounded-2xl border border-red-100 bg-gradient-to-br from-[#fff5f5] via-white to-[#fff0f0] p-5 text-center shadow-xs">
+          <p className="text-xs font-bold text-red-750">Ders programı yüklenemedi.</p>
           <button
             type="button"
             onClick={() => refetch()}
-            className="mt-4 rounded-xl border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50"
+            className="mt-3 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 transition hover:bg-red-50"
           >
             Tekrar Dene
           </button>
         </div>
       ) : timeSlots.length === 0 ? (
-        <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-8 text-center">
-          <p className="text-sm font-bold text-amber-800">Ders saatleri oluşturulamadı. Saat ayarlarını kontrol edin.</p>
+        <div className="dts-card rounded-2xl border border-amber-100 bg-gradient-to-br from-[#fffbeb] via-white to-[#fff9e6] p-5 text-center shadow-xs">
+          <p className="text-xs font-bold text-amber-800">Ders saatleri oluşturulamadı. Saat ayarlarını kontrol edin.</p>
         </div>
       ) : visibleSchedules.length === 0 && visualScheduleItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center">
-          <CalendarDays className="h-10 w-10 text-slate-300" />
-          <h3 className="mt-3 text-base font-bold text-slate-700">
+        <div className="dts-card flex flex-col items-center justify-center py-10 px-4 text-center border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+          <CalendarDays className="h-9 w-9 text-slate-400" />
+          <h3 className="mt-2.5 text-xs font-bold text-slate-700">
             {hasScheduleFilters
               ? 'Bu filtrelerle eşleşen ders programı bulunamadı.'
               : isReadOnly ? 'Henüz oluşturulmuş bir ders programınız bulunmuyor.' : 'Henüz haftalık ders programı oluşturulmadı.'}
@@ -1505,12 +1506,18 @@ const GradeScheduleSummary = ({
 );
 
 const SummaryMetric = ({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warn' | 'ok' }) => (
-  <div className={cn(
-    'rounded-xl border p-2 text-center transition-all duration-200 min-w-0 flex flex-col justify-center items-center',
-    tone === 'warn' ? 'border-amber-100 bg-amber-50/40' : tone === 'ok' ? 'border-emerald-100 bg-emerald-50/40' : 'border-slate-100 bg-slate-50/50',
-  )}>
-    <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-wide text-slate-400 truncate w-full px-0.5" title={label}>{label}</p>
-    <p className={cn('mt-0.5 text-sm font-black leading-none', tone === 'warn' ? 'text-amber-700' : tone === 'ok' ? 'text-emerald-700' : 'text-slate-800')}>{value}</p>
+  <div className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
+    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#007d9e] via-[#00acc1] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    
+    <div className={cn(
+      'relative rounded-[14px] p-3 border transition-all duration-300 text-center h-full bg-gradient-to-br border-slate-200/80',
+      tone === 'warn' ? 'from-[#fffbeb] via-white to-[#fff9e6] text-amber-700 border-amber-100' :
+      tone === 'ok' ? 'from-[#f0fdf4] via-white to-[#ecfdf5] text-emerald-700 border-emerald-100' :
+      'from-[#f6fbfe] via-white to-[#e2f3fa] text-slate-755'
+    )}>
+      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-450 leading-none">{label}</p>
+      <p className={cn('mt-1.5 text-lg font-black', tone === 'warn' ? 'text-amber-700' : tone === 'ok' ? 'text-emerald-700' : 'text-slate-900')}>{value}</p>
+    </div>
   </div>
 );
 

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, Ban, CalendarDays, RefreshCw, Search, X, CalendarPlus } from 'lucide-react';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { FormModal } from '@/components/ui/FormModal';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { scheduleExceptionService } from '@/services/scheduleExceptionService';
 import { ScheduleExceptionResponse, ScheduleExceptionType } from '@/types';
@@ -102,24 +103,26 @@ export const AcademicianExceptionsPage = () => {
 
   return (
     <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white p-6 shadow-md">
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-44 w-44 rounded-full bg-[#88d0f2]/10 blur-2xl" />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">Ders Değişikliklerim</h1>
-            <p className="mt-1 max-w-2xl text-xs font-medium leading-5 text-slate-500">
-              Ana program bölüm admini tarafından yönetilir. Burada yalnızca belirli tarihler için oluşturduğunuz program istisnaları listelenir.
-            </p>
-          </div>
+      {/* Page Header */}
+      <PageHeader
+        title="Ders Değişikliklerim"
+        description="Oluşturduğunuz program istisnalarını yönetin."
+        badge={
+          <span className="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-700 shrink-0">
+            <RefreshCw className="h-3 w-3" />
+            İstisnalar
+          </span>
+        }
+        action={
           <Link
             to="/academician/ders-programi"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-[#006482]/20 bg-white px-4 text-xs font-bold text-[#006482] shadow-sm transition hover:bg-[#eff8ff]"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#006482]/20 bg-white px-3 text-xs font-bold text-[#006482] shadow-xs transition hover:bg-[#eff8ff]"
           >
             Programda Gör
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
-        </div>
-      </section>
+        }
+      />
 
       <section className="grid gap-3 sm:grid-cols-4">
         <SummaryCard label="Toplam" value={summary.total} />
@@ -128,22 +131,22 @@ export const AcademicianExceptionsPage = () => {
         <SummaryCard label="Ek Ders" value={summary.extra} tone="emerald" />
       </section>
 
-      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 sm:flex-row sm:items-center">
+      <section className="p-3 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] rounded-2xl border border-slate-200/80 shadow-xs flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Ders kodu veya adı ara..."
-            className="h-11 w-full rounded-2xl border border-slate-200 bg-white pl-10 pr-10 text-sm font-medium text-slate-800 placeholder-slate-400 shadow-sm transition focus:border-[#006482]/40 focus:outline-none focus:ring-2 focus:ring-[#006482]/10"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 text-xs font-semibold text-slate-800 placeholder-slate-450 shadow-xs transition hover:border-[#88d0f2] focus:border-[#006482] focus:ring-2 focus:ring-[#006482]/10 focus:outline-none"
           />
           {searchQuery && (
-            <button type="button" onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" aria-label="Aramayı temizle">
+            <button type="button" onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-700" aria-label="Aramayı temizle">
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
-        <div className="grid gap-3 sm:w-[360px] sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:w-[320px] sm:grid-cols-2">
           <AppSelect value={typeFilter} onChange={(value) => setTypeFilter(value as TypeFilter)} options={typeOptions} />
           <AppSelect value={dateFilter} onChange={(value) => setDateFilter(value as DateFilter)} options={dateOptions} />
         </div>
@@ -160,10 +163,10 @@ export const AcademicianExceptionsPage = () => {
           <SecondaryButton type="button" onClick={() => refetch()} className="mt-4">Tekrar Dene</SecondaryButton>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-16 text-center">
-          <CalendarDays className="h-10 w-10 text-slate-300" />
-          <h2 className="mt-3 text-sm font-bold text-slate-700">Henüz bir ders değişikliği bulunmuyor.</h2>
-          <p className="mt-1 max-w-sm text-xs font-medium text-slate-400">İptal, telafi veya ek ders oluşturduğunuzda kayıtlar burada görünecek.</p>
+        <div className="dts-card flex flex-col items-center justify-center py-10 px-4 text-center border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]">
+          <CalendarDays className="h-9 w-9 text-slate-400" />
+          <h2 className="mt-2.5 text-xs font-bold text-slate-700">Henüz bir ders değişikliği bulunmuyor.</h2>
+          <p className="mt-0.5 max-w-sm text-[11px] text-slate-450">İptal, telafi veya ek ders oluşturduğunuzda kayıtlar burada görünecek.</p>
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -189,12 +192,19 @@ export const AcademicianExceptionsPage = () => {
 };
 
 const SummaryCard = ({ label, value, tone = 'slate' }: { label: string; value: number; tone?: 'slate' | 'red' | 'amber' | 'emerald' }) => (
-  <div className={cn(
-    'rounded-2xl border px-4 py-3',
-    tone === 'red' ? 'border-red-100 bg-red-50' : tone === 'amber' ? 'border-amber-100 bg-amber-50' : tone === 'emerald' ? 'border-emerald-100 bg-emerald-50' : 'border-slate-200 bg-white',
-  )}>
-    <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">{label}</p>
-    <p className="mt-1 text-xl font-black text-slate-900">{value}</p>
+  <div className="relative group p-[1.5px] rounded-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer">
+    <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#007d9e] via-[#00acc1] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    
+    <div className={cn(
+      'relative rounded-[14px] p-3 border transition-all duration-300 text-left h-full bg-gradient-to-br border-slate-200/80',
+      tone === 'red' ? 'from-[#fff5f5] via-white to-[#fff0f0] text-red-700' :
+      tone === 'amber' ? 'from-[#fffbeb] via-white to-[#fff9e6] text-amber-700' :
+      tone === 'emerald' ? 'from-[#f0fdf4] via-white to-[#ecfdf5] text-emerald-700' :
+      'from-[#f6fbfe] via-white to-[#e2f3fa] text-slate-700'
+    )}>
+      <p className="text-[9px] font-bold uppercase tracking-wider text-slate-450 leading-none">{label}</p>
+      <p className="mt-1 text-xl font-black">{value}</p>
+    </div>
   </div>
 );
 
@@ -205,20 +215,20 @@ const ExceptionRow = ({ item, onClick }: { item: ScheduleExceptionResponse; onCl
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white p-4 text-left shadow-sm transition hover:border-[#006482]/25 hover:bg-[#eff8ff]/40 sm:flex-row sm:items-center"
+      className="dts-interactive-card flex w-full flex-col gap-3 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3 text-left shadow-xs transition-all duration-300 hover:-translate-y-0.5 sm:flex-row sm:items-center"
     >
-      <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border', meta.cls)}>
-        <Icon className="h-5 w-5" />
+      <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border', meta.cls)}>
+        <Icon className="h-4.5 w-4.5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-extrabold text-slate-900">{item.courseCode} - {item.courseName}</span>
-        <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold text-slate-500">
+        <span className="block truncate text-xs font-bold text-slate-900">{item.courseCode} - {item.courseName}</span>
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] font-semibold text-slate-450">
           <span>{formatDate(item.targetDate)}</span>
           <span>{item.timeSlot}</span>
           {item.classroomCode && <span>{item.classroomCode}</span>}
         </span>
       </span>
-      <span className={cn('inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-[10px] font-black tracking-wide', meta.cls)}>
+      <span className={cn('inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold tracking-wide', meta.cls)}>
         {meta.label}
       </span>
     </button>
