@@ -30,25 +30,42 @@ export const ProgramTypeSelector = () => {
   ];
 
   return (
-    <div className="mb-5 grid gap-1.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm sm:grid-cols-3">
+    <div className="mb-4 grid gap-1.5 rounded-[24px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-1.5 shadow-xs sm:grid-cols-3">
       {tabs.map((tab) => {
         const isActive = location.pathname.startsWith(tab.path);
         const targetUrl = `${tab.path}?week=${currentWeek}`;
-        
+
+        if (isActive) {
+          return (
+            <Link
+              key={tab.id}
+              to={targetUrl}
+              className="flex min-h-10 items-center justify-center gap-2 rounded-2xl px-3 py-2 text-center text-xs font-semibold transition-all duration-300 sm:text-sm bg-[#006482] text-white shadow-[0_4px_12px_rgba(0,100,130,0.16)]"
+            >
+              <tab.icon className="h-4 w-4 text-white" />
+              {tab.name}
+            </Link>
+          );
+        }
+
         return (
-          <Link
+          <div
             key={tab.id}
-            to={targetUrl}
-            className={cn(
-              'flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-xs font-bold transition-all duration-200 sm:text-sm',
-              isActive
-                ? 'bg-[#006482] text-white shadow-md'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-            )}
+            className="group relative p-[1.5px] rounded-2xl transition-all duration-300 hover:shadow-xs"
           >
-            <tab.icon className={cn('h-4 w-4', isActive ? 'text-white' : 'text-slate-500')} />
-            {tab.name}
-          </Link>
+            {/* Gradient border on hover */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+            />
+            <Link
+              to={targetUrl}
+              className="relative flex min-h-10 w-full items-center justify-center gap-2 rounded-[14px] border border-transparent bg-transparent px-3 py-2 text-center text-xs font-bold text-slate-600 transition-all duration-300 sm:text-sm group-hover:bg-[#f6fbfe] group-hover:text-[#006482]"
+            >
+              <tab.icon className={cn('h-4 w-4 text-slate-500 transition-colors duration-300 group-hover:text-[#006482]')} />
+              {tab.name}
+            </Link>
+          </div>
         );
       })}
     </div>

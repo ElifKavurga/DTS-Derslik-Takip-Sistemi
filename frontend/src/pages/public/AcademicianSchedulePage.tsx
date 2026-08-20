@@ -99,9 +99,9 @@ export const AcademicianSchedulePage = () => {
   const selectedAcademician = academicians.find(a => a.id === selectedAcademicianId);
 
   return (
-    <main className="min-h-screen bg-slate-50/50 pb-12 pt-8">
+    <main className="min-h-screen bg-slate-50/50 pb-12 pt-4">
       <PageContainer>
-        <div className="space-y-6">
+        <div className="space-y-4">
           <PublicProgramHeader
             title="Öğretim Görevlisi Programı"
             description="Akademisyen seçerek haftalık ders programını inceleyin."
@@ -110,17 +110,21 @@ export const AcademicianSchedulePage = () => {
 
           <ProgramTypeSelector />
 
-          <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-[#f2fbfd] p-4 shadow-sm sm:p-5">
+          <div className="group relative p-[1.5px] rounded-[24px] transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5">
+            {/* Gradient border on hover */}
+            <div aria-hidden="true" className="absolute inset-0 rounded-[24px] bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div className="relative overflow-hidden rounded-[23px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3.5 group-hover:border-transparent transition-colors duration-300">
+
             {isAcademiciansLoading ? (
               <div className="grid gap-3 sm:grid-cols-2">
-                 <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
+                 <div className="h-10 animate-pulse rounded-lg bg-slate-100/50" />
               </div>
             ) : isAcademiciansError ? (
               <EmptyState title="Öğretim görevlileri yüklenemedi." />
             ) : academicians.length === 0 ? (
               <EmptyState title="Sistemde henüz kayıtlı öğretim görevlisi bulunmuyor." />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <AppSelect
                   id="academician-select"
                   value={selectedAcademicianId}
@@ -132,10 +136,16 @@ export const AcademicianSchedulePage = () => {
                 />
               </div>
             )}
+            </div>
           </div>
 
           {selectedAcademicianId && selectedAcademician && (
-            <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+            <div className="group relative p-[1.5px] rounded-[24px] transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 mt-4">
+              {/* Gradient border on hover */}
+              <div aria-hidden="true" className="absolute inset-0 rounded-[24px] bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+              <div className="relative overflow-hidden rounded-[23px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 sm:p-5 group-hover:border-transparent transition-colors duration-300">
+
+
               <WeeklySchedulePanel
                 title={formatAcademicianName(selectedAcademician)}
                 weekStart={weekAnchor}
@@ -149,6 +159,7 @@ export const AcademicianSchedulePage = () => {
                 onThisWeek={handleThisWeek}
                 onNextWeek={handleNextWeek}
               />
+              </div>
             </div>
           )}
         </div>
