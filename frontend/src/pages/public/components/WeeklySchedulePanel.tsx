@@ -124,12 +124,12 @@ export const WeeklySchedulePanel = ({
   const totalItems = schedule?.days.reduce((sum, day) => sum + day.items.length, 0) ?? 0;
 
   return (
-    <div className="border-t border-slate-100 pt-5">
+    <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-white to-[#f8fcfd] p-1 sm:p-2">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Haftalık Program</p>
+          <h3 className="text-base font-bold text-slate-900">{title}</h3>
+          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Haftalık Program</p>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">
             <CalendarRange className="h-4 w-4 text-[#006482]" />
             <span>{formatWeekRange(weekStart, weekEnd)}</span>
@@ -190,8 +190,8 @@ export const WeeklySchedulePanel = ({
           <EmptyState title={emptyStateMessage ?? "Seçilen hafta için planlanmış ders bulunmuyor."} />
         </div>
       ) : schedule ? (
-        <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-          <div className="flex min-w-[560px] gap-2">
+        <div className="mt-3 max-w-full overflow-x-auto rounded-xl border border-slate-100 bg-slate-50/60 p-2">
+          <div className="flex min-w-[560px] gap-1.5">
             {schedule.days.map((day) => (
               <WeeklyDayColumn key={day.date} day={day} scheduleType={scheduleType} />
             ))}

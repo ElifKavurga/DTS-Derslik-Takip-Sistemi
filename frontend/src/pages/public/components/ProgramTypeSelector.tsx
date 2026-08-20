@@ -30,7 +30,7 @@ export const ProgramTypeSelector = () => {
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2 rounded-2xl bg-white p-1.5 shadow-sm border border-[#006482]/10 mb-6">
+    <div className="mb-5 grid gap-1.5 rounded-2xl border border-slate-200/80 bg-white/80 p-1.5 shadow-sm sm:grid-cols-3">
       {tabs.map((tab) => {
         const isActive = location.pathname.startsWith(tab.path);
         const targetUrl = `${tab.path}?week=${currentWeek}`;
@@ -40,7 +40,7 @@ export const ProgramTypeSelector = () => {
             key={tab.id}
             to={targetUrl}
             className={cn(
-              'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200',
+              'flex min-h-10 items-center justify-center gap-2 rounded-xl px-3 py-2 text-center text-xs font-bold transition-all duration-200 sm:text-sm',
               isActive
                 ? 'bg-[#006482] text-white shadow-md'
                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',

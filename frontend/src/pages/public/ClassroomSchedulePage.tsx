@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Landmark, LogIn, Presentation } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { AppSelect } from '@/components/ui/AppSelect';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { publicCampusService } from '@/services/publicCampusService';
 import { WeeklySchedulePanel } from './components/WeeklySchedulePanel';
 import { ProgramTypeSelector } from './components/ProgramTypeSelector';
+import { PublicProgramHeader } from './components/PublicProgramHeader';
 import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue, getWeekEnd } from '@/utils/date';
 import { PublicBuildingResponse, PublicFacultyResponse, PublicFloorResponse } from '@/types';
 
@@ -213,38 +213,17 @@ export const ClassroomSchedulePage = () => {
     <main className="min-h-screen bg-slate-50/50 pb-12 pt-8">
       <PageContainer>
         <div className="space-y-6">
-          <header className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-5 py-4 shadow-md sm:px-6">
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-500">
-                  <Link to="/programlar" className="hover:text-[#006482]">&larr; Programlar</Link>
-                  <span>/</span>
-                  <span className="text-slate-900">Derslik Programı</span>
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Derslik Programı</h1>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Fakülte, blok, kat ve derslik seçerek haftalık ders programını inceleyin.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Link to="/classrooms" className="dts-btn-secondary">
-                  <Presentation className="h-4 w-4" />
-                  Derslik Görüntüleme
-                </Link>
-                <Link to="/giris" className="dts-btn-secondary">
-                  <LogIn className="h-4 w-4" />
-                  Giriş Yap
-                </Link>
-              </div>
-            </div>
-          </header>
+          <PublicProgramHeader
+            title="Derslik Programı"
+            description="Fakülte, blok, kat ve derslik seçerek haftalık ders programını inceleyin."
+            showBackLink
+          />
 
           <ProgramTypeSelector />
 
-          <div className="rounded-3xl border border-[#006482]/10 bg-white p-5 shadow-sm sm:p-6">
+          <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-[#f2fbfd] p-4 shadow-sm sm:p-5">
             {isFacultiesLoading ? (
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100" />
@@ -300,7 +279,7 @@ export const ClassroomSchedulePage = () => {
           </div>
 
           {selectedClassroomId && selectedClassroom && (
-            <div className="rounded-3xl border border-[#006482]/10 bg-white p-5 shadow-sm sm:p-6 mt-6">
+            <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
               <WeeklySchedulePanel
                 title={selectedClassroom.code || selectedClassroom.label || 'Derslik'}
                 weekStart={weekAnchor}

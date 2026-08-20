@@ -1,98 +1,58 @@
 import { Link } from 'react-router-dom';
-import { CalendarDays, LogIn, Presentation, School, UserRound } from 'lucide-react';
+import { ArrowRight, Presentation, School, UserRound } from 'lucide-react';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { cn } from '@/utils/cn';
+import { PublicProgramHeader } from './components/PublicProgramHeader';
+
+const programCards = [
+  {
+    title: 'Derslik Programı',
+    description: 'Dersliklerin haftalık ders programlarını ve doluluk durumlarını görüntüleyin.',
+    path: '/programlar/sinif',
+    icon: Presentation,
+  },
+  {
+    title: 'Bölüm Programı',
+    description: 'Bölümlere ait müfredat ve haftalık genel ders programları.',
+    path: '/programlar/bolum',
+    icon: School,
+  },
+  {
+    title: 'Öğretim Görevlisi Programı',
+    description: 'Öğretim görevlilerinin haftalık ders programları ve müsaitlikleri.',
+    path: '/programlar/akademisyen',
+    icon: UserRound,
+  },
+];
 
 export const ProgramsPage = () => {
   return (
     <main className="min-h-screen bg-slate-50/50 pb-12 pt-8">
       <PageContainer>
         <div className="space-y-6">
-          <header className="relative overflow-hidden rounded-3xl border border-[#006482]/15 bg-gradient-to-br from-[#eff8ff] via-white to-white px-5 py-4 shadow-md sm:px-6">
-            <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#004b62] via-[#006482] to-[#fabc07]" />
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Programlar</h1>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                  Derslik, bölüm veya öğretim görevlisi programlarını inceleyin.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <Link to="/classrooms" className="dts-btn-secondary">
-                  <Presentation className="h-4 w-4" />
-                  Derslik Görüntüleme
-                </Link>
-                <Link to="/giris" className="dts-btn-secondary">
-                  <LogIn className="h-4 w-4" />
-                  Giriş Yap
-                </Link>
-              </div>
-            </div>
-          </header>
+          <PublicProgramHeader title="Programlar" description="Derslik, bölüm veya öğretim görevlisi programlarını inceleyin." />
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <Link
-              to="/programlar/sinif"
-              className={cn(
-                'group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-sm transition-all hover:shadow-md',
-                'border-[#006482]/20 bg-white hover:border-[#006482]/40',
-              )}
-            >
-              <div className="mb-8">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
-                  <Presentation className="h-6 w-6" />
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            {programCards.map(({ title, description, path, icon: Icon }) => (
+              <Link
+                key={path}
+                to={path}
+                className="group rounded-2xl bg-slate-200/80 p-px shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:bg-gradient-to-r hover:from-[#006482] hover:to-[#fabc07] hover:shadow-lg"
+              >
+                <div className="flex min-h-[238px] h-full flex-col justify-between rounded-[15px] bg-gradient-to-br from-white via-white to-[#eff8ff] p-5 transition-colors duration-250 group-hover:from-[#f8fdff] group-hover:to-[#e3f8fb]">
+                  <div>
+                    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f7fb] text-[#006482] transition-colors duration-250 group-hover:bg-white group-hover:text-[#004b62]">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+                    <p className="mt-2 text-sm leading-5 text-slate-500">{description}</p>
+                  </div>
+                  <div className="mt-6 inline-flex items-center gap-1.5 text-sm font-bold text-[#006482] transition-colors duration-250 group-hover:text-[#004b62]">
+                    Programı Gör
+                    <ArrowRight className="h-4 w-4 transition-transform duration-250 group-hover:translate-x-0.5" />
+                  </div>
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">Derslik Programı</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Dersliklerin haftalık ders programlarını ve doluluk durumlarını görüntüleyin.
-                </p>
-              </div>
-              <div className="flex items-center text-sm font-semibold text-[#006482] group-hover:text-[#004b62]">
-                Programı Gör &rarr;
-              </div>
-            </Link>
-
-            <Link
-              to="/programlar/bolum"
-              className={cn(
-                'group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-sm transition-all hover:shadow-md',
-                'border-[#006482]/20 bg-white hover:border-[#006482]/40',
-              )}
-            >
-              <div className="mb-8">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
-                  <School className="h-6 w-6" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">Bölüm Programı</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Bölümlere ait müfredat ve haftalık genel ders programları.
-                </p>
-              </div>
-              <div className="flex items-center text-sm font-semibold text-[#006482] group-hover:text-[#004b62]">
-                Programı Gör &rarr;
-              </div>
-            </Link>
-
-            <Link
-              to="/programlar/akademisyen"
-              className={cn(
-                'group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 shadow-sm transition-all hover:shadow-md',
-                'border-[#006482]/20 bg-white hover:border-[#006482]/40',
-              )}
-            >
-              <div className="mb-8">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff8ff] text-[#006482]">
-                  <UserRound className="h-6 w-6" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">Öğretim Görevlisi Programı</h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  Öğretim görevlilerinin haftalık ders programları ve müsaitlikleri.
-                </p>
-              </div>
-              <div className="flex items-center text-sm font-semibold text-[#006482] group-hover:text-[#004b62]">
-                Programı Gör &rarr;
-              </div>
-            </Link>
+              </Link>
+            ))}
           </div>
         </div>
       </PageContainer>
