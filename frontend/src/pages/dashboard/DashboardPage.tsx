@@ -594,7 +594,7 @@ const SuperAdminDashboard = () => {
             </Link>
 
             <Link
-              to="/programlar"
+              to="/programlar/sinif"
               className="dts-card dts-interactive-card flex items-center justify-between p-3 group border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa]"
             >
               <div className="flex items-center gap-2.5 min-w-0">

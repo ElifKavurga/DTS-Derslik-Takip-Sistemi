@@ -684,7 +684,7 @@ export const ClassroomExplorerPage = () => {
                 <div className="group relative p-[1.5px] rounded-xl transition-all duration-300 shadow-xs hover:shadow-md">
                   <div aria-hidden="true" className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                   <Link
-                    to="/programlar"
+                    to="/programlar/sinif"
                     className="relative inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#006482]/20 bg-white px-3 text-xs font-bold text-[#006482] transition-all duration-300 group-hover:border-transparent group-hover:bg-[#f6fbfe]"
                   >
                     <CalendarDays className="h-3.5 w-3.5" />

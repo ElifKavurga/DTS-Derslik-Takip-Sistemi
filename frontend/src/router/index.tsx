@@ -20,7 +20,7 @@ import { SchedulePage } from '@/pages/departmentAdmin/SchedulePage';
 import { AcademicianCoursesPage } from '@/pages/academician/AcademicianCoursesPage';
 import { AcademicianExceptionsPage } from '@/pages/academician/AcademicianExceptionsPage';
 import { ClassroomExplorerPage } from '@/pages/public/ClassroomExplorerPage';
-import { ProgramsPage } from '@/pages/public/ProgramsPage';
+
 import { ClassroomSchedulePage } from '@/pages/public/ClassroomSchedulePage';
 import { DepartmentSchedulePage } from '@/pages/public/DepartmentSchedulePage';
 import { AcademicianSchedulePage } from '@/pages/public/AcademicianSchedulePage';
@@ -39,7 +39,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/programlar',
-    element: <ProgramsPage />,
+    element: <Navigate to="/programlar/sinif" replace />,
   },
   {
     path: '/programlar/sinif',

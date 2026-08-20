@@ -163,11 +163,20 @@ export const ClassroomSchedulePage = () => {
   useEffect(() => {
     if (!selectedFloorId || isFloorViewLoading || isFloorViewFetching || !floorView) return;
 
+    if (classrooms.length === 0) {
+      if (selectedClassroomId) {
+        updateParams({ classroom: undefined });
+      }
+      return;
+    }
+
     const classroomStillValid = classrooms.some(
       (c) => (c.classroomId ?? c.id) === selectedClassroomId,
     );
-    if (!classroomStillValid && selectedClassroomId) {
-      updateParams({ classroom: undefined });
+    if (!classroomStillValid) {
+      const defaultClassroom = classrooms[0];
+      const defaultClassroomId = defaultClassroom.classroomId ?? defaultClassroom.id;
+      updateParams({ classroom: defaultClassroomId });
     }
   }, [classrooms, isFloorViewFetching, isFloorViewLoading, selectedClassroomId, selectedFloorId, updateParams, floorView]);
 
@@ -216,7 +225,6 @@ export const ClassroomSchedulePage = () => {
           <PublicProgramHeader
             title="Derslik Programı"
             description="Fakülte, blok, kat ve derslik seçerek haftalık ders programını inceleyin."
-            showBackLink
           />
 
           <ProgramTypeSelector />

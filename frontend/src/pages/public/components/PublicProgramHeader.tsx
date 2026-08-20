@@ -15,7 +15,7 @@ export const PublicProgramHeader = ({
     title={title}
     description={description}
     backAction={showBackLink ? (
-      <Link to="/programlar" className="text-xs font-semibold text-slate-500 transition-colors hover:text-[#006482]">
+      <Link to="/programlar/sinif" className="text-xs font-semibold text-slate-500 transition-colors hover:text-[#006482]">
         &larr; Programlar
       </Link>
     ) : undefined}
