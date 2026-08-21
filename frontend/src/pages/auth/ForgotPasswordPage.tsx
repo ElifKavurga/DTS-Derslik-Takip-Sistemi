@@ -45,14 +45,18 @@ export const ForgotPasswordPage = () => {
       title="Şifremi Unuttum"
       description="Kurumsal e-posta adresinizi girerek güvenli şifre sıfırlama talebi oluşturun."
     >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-800">
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-800">
             Kurumsal E-posta
           </label>
-          <div className="group relative">
+          <div className="group relative rounded-2xl p-[1.5px] shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md focus-within:-translate-y-0.5 focus-within:shadow-md">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
+            />
             <EnvelopeIcon
-              className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 transition group-focus-within:text-[#006482]"
+              className="pointer-events-none absolute left-5 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-slate-400 transition group-hover:text-[#006482] group-focus-within:text-[#006482]"
               aria-hidden="true"
             />
             <input
@@ -60,7 +64,7 @@ export const ForgotPasswordPage = () => {
               type="email"
               autoComplete="email"
               placeholder="ornek@inonu.edu.tr"
-              className="block h-12 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-11 text-[15px] text-slate-950 outline-none transition duration-200 placeholder:text-slate-400 hover:border-slate-300 hover:bg-white focus:border-[#006482]/45 focus:bg-white focus:ring-4 focus:ring-[#006482]/10"
+              className="relative block h-11 w-full rounded-[14px] border border-slate-200 bg-slate-50/70 px-11 text-[15px] text-slate-950 outline-none transition duration-300 placeholder:text-slate-400 group-hover:border-transparent group-hover:bg-[#f6fbfe] focus:border-transparent focus:bg-white focus:ring-4 focus:ring-[#006482]/10"
               {...register('email')}
             />
           </div>
@@ -75,17 +79,23 @@ export const ForgotPasswordPage = () => {
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={forgotPasswordMutation.isPending}
-          className="relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl bg-[#006482] px-4 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(0,100,130,0.22)] transition duration-200 before:absolute before:inset-0 before:bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent)] before:translate-x-[-120%] before:transition before:duration-700 hover:-translate-y-0.5 hover:bg-[#004b62] hover:shadow-[0_18px_34px_rgba(0,100,130,0.28)] hover:before:translate-x-[120%] focus:outline-none focus:ring-4 focus:ring-[#006482]/18 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-70"
-        >
-          <span className="relative">
-            {forgotPasswordMutation.isPending
-              ? 'Bağlantı oluşturuluyor...'
-              : 'Şifre Sıfırlama Bağlantısı Oluştur'}
-          </span>
-        </button>
+        <div className="group relative rounded-2xl p-[1.5px] shadow-[0_14px_28px_rgba(0,100,130,0.22)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(0,100,130,0.28)] focus-within:-translate-y-0.5 focus-within:shadow-[0_18px_34px_rgba(0,100,130,0.28)]">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-within:opacity-100"
+          />
+          <button
+            type="submit"
+            disabled={forgotPasswordMutation.isPending}
+            className="relative flex h-11 w-full items-center justify-center rounded-[14px] border border-transparent bg-[#006482] px-4 text-sm font-semibold text-white transition duration-300 hover:bg-[#004b62] focus:outline-none focus:ring-4 focus:ring-[#006482]/18 disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-70"
+          >
+            <span className="relative">
+              {forgotPasswordMutation.isPending
+                ? 'Bağlantı oluşturuluyor...'
+                : 'Şifre Sıfırlama Bağlantısı Oluştur'}
+            </span>
+          </button>
+        </div>
 
         <Link
           to="/giris"
