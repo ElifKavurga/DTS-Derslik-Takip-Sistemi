@@ -15,4 +15,6 @@ public class PublicDepartmentResponse {
     private UUID id;
     private String name;
     private String code;
+    private UUID facultyId;
+    private String facultyName;
 }

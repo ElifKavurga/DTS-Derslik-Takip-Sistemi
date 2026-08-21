@@ -9,18 +9,11 @@ import { WeeklySchedulePanel } from './components/WeeklySchedulePanel';
 import { ProgramTypeSelector } from './components/ProgramTypeSelector';
 import { PublicProgramHeader } from './components/PublicProgramHeader';
 import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue, getWeekEnd } from '@/utils/date';
-import { PublicDepartmentResponse } from '@/types';
-
-// Yardımcı fonksiyonlar
-const findDefaultDepartment = (departments: PublicDepartmentResponse[]) => {
-  if (departments.length === 0) return undefined;
-  const engineering = departments.find((d) => d.name.toLowerCase().includes('bilgisayar'));
-  return engineering || departments[0];
-};
 
 export const DepartmentSchedulePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const selectedFacultyId = searchParams.get('faculty') || '';
   const selectedDepartmentId = searchParams.get('department') || '';
   const selectedClassLevelStr = searchParams.get('classLevel') || '';
   const selectedClassLevel = selectedClassLevelStr ? parseInt(selectedClassLevelStr, 10) : undefined;
@@ -49,6 +42,17 @@ export const DepartmentSchedulePage = () => {
   }, [setSearchParams]);
 
   const {
+    data: facultiesData,
+    isLoading: isFacultiesLoading,
+    isError: isFacultiesError,
+  } = useQuery({
+    queryKey: ['public', 'faculties'],
+    queryFn: publicCampusService.getFaculties,
+  });
+
+  const faculties = useMemo(() => facultiesData?.faculties ?? [], [facultiesData?.faculties]);
+
+  const {
     data: departmentsData,
     isLoading: isDepartmentsLoading,
     isError: isDepartmentsError,
@@ -58,6 +62,10 @@ export const DepartmentSchedulePage = () => {
   });
 
   const departments = useMemo(() => departmentsData?.departments ?? [], [departmentsData?.departments]);
+  const filteredDepartments = useMemo(
+    () => departments.filter((department) => department.facultyId === selectedFacultyId),
+    [departments, selectedFacultyId],
+  );
 
   const {
     data: classLevelsData,
@@ -71,12 +79,21 @@ export const DepartmentSchedulePage = () => {
 
   const classLevels = useMemo(() => classLevelsData?.classLevels ?? [], [classLevelsData?.classLevels]);
 
-  // Varsayılan seçimler ve temizleme mantığı
+  // Bağımlı seçimleri temizleme ve doğrulama mantığı
   useEffect(() => {
-    if (selectedDepartmentId || departments.length === 0) return;
-    const defaultDepartment = findDefaultDepartment(departments);
-    updateParams({ department: defaultDepartment?.id ?? '' });
-  }, [departments, selectedDepartmentId, updateParams]);
+    if (!selectedFacultyId) {
+      if (selectedDepartmentId || selectedClassLevelStr) {
+        updateParams({ department: undefined, classLevel: undefined });
+      }
+      return;
+    }
+
+    if (isDepartmentsLoading) return;
+    const departmentStillValid = filteredDepartments.some((department) => department.id === selectedDepartmentId);
+    if (selectedDepartmentId && !departmentStillValid) {
+      updateParams({ department: undefined, classLevel: undefined });
+    }
+  }, [filteredDepartments, isDepartmentsLoading, selectedClassLevelStr, selectedDepartmentId, selectedFacultyId, updateParams]);
 
   useEffect(() => {
     if (!selectedDepartmentId) {
@@ -95,11 +112,12 @@ export const DepartmentSchedulePage = () => {
     const selectedStillValid = selectedClassLevel && classLevels.includes(selectedClassLevel);
     if (selectedStillValid) return;
 
-    updateParams({ classLevel: classLevels[0].toString() });
+    updateParams({ classLevel: undefined });
   }, [classLevels, isClassLevelsFetching, isClassLevelsLoading, selectedClassLevel, selectedClassLevelStr, selectedDepartmentId, updateParams]);
 
 
-  const departmentOptions = useMemo(() => departments.map((dep) => ({ value: dep.id, label: dep.name })), [departments]);
+  const facultyOptions = useMemo(() => faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })), [faculties]);
+  const departmentOptions = useMemo(() => filteredDepartments.map((dep) => ({ value: dep.id, label: dep.name })), [filteredDepartments]);
   const classLevelOptions = useMemo(() => classLevels.map((lvl) => ({ value: lvl.toString(), label: `${lvl}. Sınıf` })), [classLevels]);
 
   const weekEnd = toDateValue(getWeekEnd(weekAnchor));
@@ -130,7 +148,9 @@ export const DepartmentSchedulePage = () => {
 
   const isClassLevelSelectLoading = !!selectedDepartmentId && (isClassLevelsLoading || isClassLevelsFetching);
 
-  const selectedDepartment = departments.find(d => d.id === selectedDepartmentId);
+  const selectedDepartment = filteredDepartments.find(d => d.id === selectedDepartmentId);
+  const hasFilterError = isFacultiesError || isDepartmentsError;
+  const isFilterLoading = isFacultiesLoading || isDepartmentsLoading;
 
   return (
     <main className="min-h-screen bg-slate-50/50 pb-12 pt-4">
@@ -138,7 +158,7 @@ export const DepartmentSchedulePage = () => {
         <div className="space-y-4">
           <PublicProgramHeader
             title="Bölüm Programı"
-            description="Bölüm ve sınıf seviyesi seçerek haftalık ders programını inceleyin."
+            description="Fakülte, bölüm ve sınıf seçerek haftalık ders programını inceleyin."
             showBackLink
           />
 
@@ -149,17 +169,29 @@ export const DepartmentSchedulePage = () => {
             <div aria-hidden="true" className="absolute inset-0 rounded-[24px] bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             <div className="relative overflow-hidden rounded-[23px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3.5 group-hover:border-transparent transition-colors duration-300">
 
-            {isDepartmentsLoading ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+            {isFilterLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                 <div className="h-10 animate-pulse rounded-lg bg-slate-100/50" />
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100/50" />
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100/50" />
               </div>
-            ) : isDepartmentsError ? (
-              <EmptyState title="Bölümler yüklenemedi." />
+            ) : hasFilterError ? (
+              <EmptyState title="Fakülte veya bölümler yüklenemedi." />
+            ) : faculties.length === 0 ? (
+              <EmptyState title="Sistemde henüz kayıtlı fakülte bulunmuyor." />
             ) : departments.length === 0 ? (
               <EmptyState title="Sistemde henüz kayıtlı bölüm bulunmuyor." />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <AppSelect
+                  id="faculty-select"
+                  value={selectedFacultyId}
+                  options={facultyOptions}
+                  onChange={(val) => updateParams({ faculty: val, department: undefined, classLevel: undefined, week: getCurrentWeekStart() })}
+                  searchable
+                  searchPlaceholder="Fakülte ara..."
+                  emptyText="Fakülte bulunamadı"
+                />
                 <AppSelect
                   id="department-select"
                   value={selectedDepartmentId}
@@ -167,7 +199,8 @@ export const DepartmentSchedulePage = () => {
                   onChange={(val) => updateParams({ department: val, classLevel: undefined, week: getCurrentWeekStart() })}
                   searchable
                   searchPlaceholder="Bölüm ara..."
-                  emptyText="Bölüm bulunamadı"
+                  emptyText={selectedFacultyId ? 'Bu fakültede bölüm bulunamadı' : 'Önce fakülte seçin'}
+                  disabled={!selectedFacultyId || filteredDepartments.length === 0}
                 />
                 <AppSelect
                   id="classlevel-select"

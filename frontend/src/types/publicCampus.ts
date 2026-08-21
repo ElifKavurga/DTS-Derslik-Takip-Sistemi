@@ -16,6 +16,8 @@ export interface PublicDepartmentResponse {
   id: string;
   name: string;
   code: string;
+  facultyId: string;
+  facultyName: string;
 }
 
 export interface PublicDepartmentListResponse {
@@ -140,4 +142,3 @@ export interface PublicWeeklyScheduleResponse {
   endDate: string;
   days: PublicWeeklyScheduleDayResponse[];
 }
-

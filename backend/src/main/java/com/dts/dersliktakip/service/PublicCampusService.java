@@ -457,6 +457,8 @@ public class PublicCampusService {
                 .id(department.getId())
                 .name(department.getName())
                 .code(department.getCode())
+                .facultyId(department.getFaculty().getId())
+                .facultyName(department.getFaculty().getName())
                 .build();
     }
 
