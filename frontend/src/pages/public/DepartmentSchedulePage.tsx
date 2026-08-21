@@ -81,6 +81,11 @@ export const DepartmentSchedulePage = () => {
 
   // Bağımlı seçimleri temizleme ve doğrulama mantığı
   useEffect(() => {
+    if (selectedFacultyId || faculties.length === 0) return;
+    updateParams({ faculty: faculties[0].id });
+  }, [faculties, selectedFacultyId, updateParams]);
+
+  useEffect(() => {
     if (!selectedFacultyId) {
       if (selectedDepartmentId || selectedClassLevelStr) {
         updateParams({ department: undefined, classLevel: undefined });
@@ -90,8 +95,13 @@ export const DepartmentSchedulePage = () => {
 
     if (isDepartmentsLoading) return;
     const departmentStillValid = filteredDepartments.some((department) => department.id === selectedDepartmentId);
-    if (selectedDepartmentId && !departmentStillValid) {
+    if (filteredDepartments.length === 0) {
       updateParams({ department: undefined, classLevel: undefined });
+      return;
+    }
+
+    if (!selectedDepartmentId || !departmentStillValid) {
+      updateParams({ department: filteredDepartments[0].id, classLevel: undefined });
     }
   }, [filteredDepartments, isDepartmentsLoading, selectedClassLevelStr, selectedDepartmentId, selectedFacultyId, updateParams]);
 
@@ -112,7 +122,7 @@ export const DepartmentSchedulePage = () => {
     const selectedStillValid = selectedClassLevel && classLevels.includes(selectedClassLevel);
     if (selectedStillValid) return;
 
-    updateParams({ classLevel: undefined });
+    updateParams({ classLevel: classLevels[0].toString() });
   }, [classLevels, isClassLevelsFetching, isClassLevelsLoading, selectedClassLevel, selectedClassLevelStr, selectedDepartmentId, updateParams]);
 
 

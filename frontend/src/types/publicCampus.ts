@@ -33,6 +33,10 @@ export interface PublicAcademicianResponse {
   firstName: string;
   lastName: string;
   title: string;
+  facultyId: string;
+  facultyName: string;
+  departmentId: string;
+  departmentName: string;
 }
 
 export interface PublicAcademicianListResponse {

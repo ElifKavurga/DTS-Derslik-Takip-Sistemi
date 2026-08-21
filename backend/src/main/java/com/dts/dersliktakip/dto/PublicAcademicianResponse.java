@@ -6,6 +6,10 @@ public record PublicAcademicianResponse(
         UUID id,
         String firstName,
         String lastName,
-        String title
+        String title,
+        UUID facultyId,
+        String facultyName,
+        UUID departmentId,
+        String departmentName
 ) {
 }

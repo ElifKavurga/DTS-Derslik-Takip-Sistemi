@@ -372,7 +372,16 @@ public class PublicCampusService {
 
     public List<PublicAcademicianResponse> getAcademicians() {
         return academicianRepository.findAllByOrderByFirstNameAscLastNameAsc().stream()
-                .map(a -> new PublicAcademicianResponse(a.getId(), a.getFirstName(), a.getLastName(), a.getTitle()))
+                .map(a -> new PublicAcademicianResponse(
+                        a.getId(),
+                        a.getFirstName(),
+                        a.getLastName(),
+                        a.getTitle(),
+                        a.getFaculty().getId(),
+                        a.getFaculty().getName(),
+                        a.getDepartment().getId(),
+                        a.getDepartment().getName()
+                ))
                 .toList();
     }
 
