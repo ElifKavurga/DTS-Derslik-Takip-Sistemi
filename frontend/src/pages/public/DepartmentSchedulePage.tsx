@@ -8,6 +8,7 @@ import { publicCampusService } from '@/services/publicCampusService';
 import { WeeklySchedulePanel } from './components/WeeklySchedulePanel';
 import { ProgramTypeSelector } from './components/ProgramTypeSelector';
 import { PublicProgramHeader } from './components/PublicProgramHeader';
+import { PublicProgramCard } from './components/PublicProgramCard';
 import { getCurrentWeekStart, getWeekStart, shiftDate, toDateValue, getWeekEnd } from '@/utils/date';
 
 export const DepartmentSchedulePage = () => {
@@ -168,17 +169,12 @@ export const DepartmentSchedulePage = () => {
         <div className="space-y-4">
           <PublicProgramHeader
             title="Bölüm Programı"
-            description="Fakülte, bölüm ve sınıf seçerek haftalık ders programını inceleyin."
-            showBackLink
+            description="Seçilen bölümün haftalık ders programını görüntüleyin."
           />
 
           <ProgramTypeSelector />
 
-          <div className="group relative p-[1.5px] rounded-[24px] transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5">
-            {/* Gradient border on hover */}
-            <div aria-hidden="true" className="absolute inset-0 rounded-[24px] bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-            <div className="relative overflow-hidden rounded-[23px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-3.5 group-hover:border-transparent transition-colors duration-300">
-
+          <PublicProgramCard contentClassName="p-3.5">
             {isFilterLoading ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                  <div className="h-10 animate-pulse rounded-lg bg-slate-100/50" />
@@ -223,16 +219,10 @@ export const DepartmentSchedulePage = () => {
                 />
               </div>
             )}
-            </div>
-          </div>
+          </PublicProgramCard>
 
           {selectedDepartmentId && selectedClassLevel && selectedDepartment && (
-            <div className="group relative p-[1.5px] rounded-[24px] transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 mt-4">
-              {/* Gradient border on hover */}
-              <div aria-hidden="true" className="absolute inset-0 rounded-[24px] bg-gradient-to-r from-[#006482] via-[#00a896] to-[#fabc07] opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-              <div className="relative overflow-hidden rounded-[23px] border border-slate-200/80 bg-gradient-to-br from-[#f6fbfe] via-white to-[#e2f3fa] p-4 sm:p-5 group-hover:border-transparent transition-colors duration-300">
-
-
+            <PublicProgramCard className="mt-4" contentClassName="p-4 sm:p-5">
               <WeeklySchedulePanel
                 title={`${selectedDepartment.name} - ${selectedClassLevel}. Sınıf`}
                 weekStart={weekAnchor}
@@ -246,8 +236,7 @@ export const DepartmentSchedulePage = () => {
                 onThisWeek={handleThisWeek}
                 onNextWeek={handleNextWeek}
               />
-              </div>
-            </div>
+            </PublicProgramCard>
           )}
         </div>
       </PageContainer>

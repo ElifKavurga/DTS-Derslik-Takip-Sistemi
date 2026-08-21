@@ -40,10 +40,10 @@ export const ProgramTypeSelector = () => {
             <Link
               key={tab.id}
               to={targetUrl}
-              className="flex min-h-10 items-center justify-center gap-2 rounded-2xl px-3 py-2 text-center text-xs font-semibold transition-all duration-300 sm:text-sm bg-[#006482] text-white shadow-[0_4px_12px_rgba(0,100,130,0.16)]"
+              className="flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-2xl bg-[#006482] px-3 py-2 text-center text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,100,130,0.16)] transition-all duration-300 sm:text-sm"
             >
               <tab.icon className="h-4 w-4 text-white" />
-              {tab.name}
+              <span className="truncate">{tab.name}</span>
             </Link>
           );
         }
@@ -60,10 +60,10 @@ export const ProgramTypeSelector = () => {
             />
             <Link
               to={targetUrl}
-              className="relative flex min-h-10 w-full items-center justify-center gap-2 rounded-[14px] border border-transparent bg-transparent px-3 py-2 text-center text-xs font-bold text-slate-600 transition-all duration-300 sm:text-sm group-hover:bg-[#f6fbfe] group-hover:text-[#006482]"
+              className="relative flex min-h-10 w-full min-w-0 items-center justify-center gap-2 rounded-[14px] border border-transparent bg-transparent px-3 py-2 text-center text-xs font-bold text-slate-600 transition-all duration-300 group-hover:bg-[#f6fbfe] group-hover:text-[#006482] sm:text-sm"
             >
               <tab.icon className={cn('h-4 w-4 text-slate-500 transition-colors duration-300 group-hover:text-[#006482]')} />
-              {tab.name}
+              <span className="truncate">{tab.name}</span>
             </Link>
           </div>
         );
