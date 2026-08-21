@@ -25,17 +25,18 @@ import { ClassroomSchedulePage } from '@/pages/public/ClassroomSchedulePage';
 import { DepartmentSchedulePage } from '@/pages/public/DepartmentSchedulePage';
 import { AcademicianSchedulePage } from '@/pages/public/AcademicianSchedulePage';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
+import { PublicPageRoute } from '@/router/PublicPageRoute';
 import { PublicRoute } from '@/router/PublicRoute';
 
 
 export const router = createBrowserRouter([
   {
     path: '/',
-    element: <ClassroomExplorerPage />,
+    element: <PublicPageRoute><ClassroomExplorerPage /></PublicPageRoute>,
   },
   {
     path: '/classrooms',
-    element: <ClassroomExplorerPage />,
+    element: <PublicPageRoute><ClassroomExplorerPage /></PublicPageRoute>,
   },
   {
     path: '/programlar',
@@ -43,15 +44,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/programlar/sinif',
-    element: <ClassroomSchedulePage />,
+    element: <PublicPageRoute><ClassroomSchedulePage /></PublicPageRoute>,
   },
   {
     path: '/programlar/bolum',
-    element: <DepartmentSchedulePage />,
+    element: <PublicPageRoute><DepartmentSchedulePage /></PublicPageRoute>,
   },
   {
     path: '/programlar/akademisyen',
-    element: <AcademicianSchedulePage />,
+    element: <PublicPageRoute><AcademicianSchedulePage /></PublicPageRoute>,
   },
   {
     element: <PublicRoute />,

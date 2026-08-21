@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  Presentation,
   RefreshCw,
   User,
   Users,
@@ -30,6 +31,7 @@ type NavigationItem = {
   path: string;
   icon: typeof LayoutDashboard;
   roles?: Role[];
+  section?: 'main' | 'common';
 };
 
 const canShowItem = (item: NavigationItem, role?: Role) => {
@@ -103,8 +105,61 @@ export const Sidebar = ({
       icon: RefreshCw,
       roles: ['ACADEMICIAN'],
     },
+    {
+      label: 'Derslik Görüntüleme',
+      path: '/classrooms',
+      icon: Presentation,
+      roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'],
+      section: 'common',
+    },
+    {
+      label: 'Programlar',
+      path: '/programlar/sinif',
+      icon: CalendarDays,
+      roles: ['SUPER_ADMIN', 'DEPARTMENT_ADMIN', 'ACADEMICIAN'],
+      section: 'common',
+    },
   ];
   const navigation = navigationItems.filter((item) => canShowItem(item, role));
+  const mainNavigation = navigation.filter((item) => item.section !== 'common');
+  const commonNavigation = navigation.filter((item) => item.section === 'common');
+
+  const renderNavigationItem = (item: NavigationItem) => {
+    const Icon = item.icon;
+
+    return (
+      <NavLink
+        key={item.label}
+        to={item.path}
+        onClick={onCloseMobile}
+        className={({ isActive }) => {
+          const currentPath = window.location.pathname;
+          let isReallyActive = isActive;
+
+          if (item.path === '/super-admin/fakulteler') {
+            isReallyActive = currentPath.startsWith('/super-admin/fakulteler') ||
+                             currentPath.startsWith('/super-admin/binalar') ||
+                             currentPath.startsWith('/super-admin/katlar');
+          } else if (item.path === '/programlar/sinif') {
+            isReallyActive = currentPath.startsWith('/programlar');
+          } else if (item.path !== '/' && item.path !== '/super-admin/dashboard') {
+            isReallyActive = currentPath.startsWith(item.path);
+          }
+
+          return cn(
+            'group flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition duration-150',
+            isReallyActive
+              ? 'bg-[#006482] text-white font-semibold shadow-[0_4px_12px_rgba(0,100,130,0.16)]'
+              : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
+          );
+        }}
+        title={collapsed ? item.label : undefined}
+      >
+        <Icon className="h-4.5 w-4.5 shrink-0" />
+        <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.label}</span>
+      </NavLink>
+    );
+  };
 
   return (
     <>
@@ -153,40 +208,14 @@ export const Sidebar = ({
 
         <nav className="flex-1 overflow-y-auto px-2 py-3">
           <div className="space-y-1">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <NavLink
-                  key={item.label}
-                  to={item.path}
-                  onClick={onCloseMobile}
-                  className={({ isActive }) => {
-                    const currentPath = window.location.pathname;
-                    let isReallyActive = isActive;
-                    
-                    if (item.path === '/super-admin/fakulteler') {
-                      isReallyActive = currentPath.startsWith('/super-admin/fakulteler') || 
-                                       currentPath.startsWith('/super-admin/binalar') ||
-                                       currentPath.startsWith('/super-admin/katlar');
-                    } else if (item.path !== '/' && item.path !== '/super-admin/dashboard') {
-                      isReallyActive = currentPath.startsWith(item.path);
-                    }
-                    
-                    return cn(
-                      'group flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition duration-150',
-                      isReallyActive
-                        ? 'bg-[#006482] text-white font-semibold shadow-[0_4px_12px_rgba(0,100,130,0.16)]'
-                        : 'text-slate-600 hover:bg-slate-100/70 hover:text-slate-900',
-                    );
-                  }}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <Icon className="h-4.5 w-4.5 shrink-0" />
-                  <span className={cn('truncate', collapsed && 'lg:hidden')}>{item.label}</span>
-                </NavLink>
-              );
-            })}
+            {mainNavigation.map(renderNavigationItem)}
+            {commonNavigation.length > 0 && (
+              <div className="mt-2">
+                <div className="space-y-1">
+                  {commonNavigation.map(renderNavigationItem)}
+                </div>
+              </div>
+            )}
           </div>
         </nav>
       </aside>

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { ReactNode, useMemo, useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -36,6 +36,14 @@ const pageMeta: Record<string, { title: string; breadcrumbs: string[] }> = {
     title: 'Ders Programı',
     breadcrumbs: ['Ana Ekran', 'Ders Programı'],
   },
+  classrooms: {
+    title: 'Derslik Görüntüleme',
+    breadcrumbs: ['Ortak', 'Derslik Görüntüleme'],
+  },
+  programs: {
+    title: 'Programlar',
+    breadcrumbs: ['Ortak', 'Programlar'],
+  },
 };
 
 const resolvePageMeta = (pathname: string) => {
@@ -58,11 +66,17 @@ const resolvePageMeta = (pathname: string) => {
   if (pathname.includes('/department-admin/ders-programi')) {
     return pageMeta.schedule;
   }
+  if (pathname.includes('/classrooms')) {
+    return pageMeta.classrooms;
+  }
+  if (pathname.includes('/programlar')) {
+    return pageMeta.programs;
+  }
 
   return pageMeta.dashboard;
 };
 
-export const AppLayout = () => {
+export const AppLayout = ({ children }: { children?: ReactNode }) => {
   const location = useLocation();
   const role = useAuthStore((state) => state.user?.role);
   const [collapsed, setCollapsed] = useState(false);
@@ -93,9 +107,11 @@ export const AppLayout = () => {
       <div className={cn('min-h-screen transition-all duration-300', collapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]')}>
         <Header title={title} breadcrumbs={breadcrumbs} onOpenSidebar={() => setMobileOpen(true)} />
         <main>
-          <PageContainer>
-            <Outlet />
-          </PageContainer>
+          {children ?? (
+            <PageContainer>
+              <Outlet />
+            </PageContainer>
+          )}
         </main>
       </div>
     </div>
