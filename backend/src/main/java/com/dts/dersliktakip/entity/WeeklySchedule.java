@@ -2,6 +2,8 @@ package com.dts.dersliktakip.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -40,8 +42,8 @@ public class WeeklySchedule {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "classroom_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "classroom_id")
     private Classroom classroom;
 
     @Column(name = "day_of_week", nullable = false, length = 20)
@@ -52,6 +54,22 @@ public class WeeklySchedule {
 
     @Column(name = "schedule_group_id")
     private UUID scheduleGroupId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_type", nullable = false, length = 20)
+    private DeliveryType deliveryType = DeliveryType.FACE_TO_FACE;
+
+    @Column(name = "class_level")
+    private Integer classLevel;
+
+    @Column(length = 20)
+    private String section;
+
+    @Column(name = "student_group", length = 100)
+    private String studentGroup;
+
+    @Column(name = "source_note", length = 255)
+    private String sourceNote;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

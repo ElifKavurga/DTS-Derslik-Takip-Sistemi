@@ -13,6 +13,7 @@ import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.Course;
 import com.dts.dersliktakip.entity.CourseType;
+import com.dts.dersliktakip.entity.DeliveryType;
 import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.DepartmentScheduleConfig;
 import com.dts.dersliktakip.entity.Semester;
@@ -110,7 +111,7 @@ public class WeeklyScheduleService {
                         schedule -> schedule.getCourse().getId(),
                         Collectors.collectingAndThen(
                                 Collectors.toMap(
-                                        schedule -> schedule.getCourse().getId() + ":" + schedule.getDayOfWeek() + ":" + schedule.getTimeSlot() + ":" + schedule.getClassroom().getId(),
+                                        schedule -> schedule.getCourse().getId() + ":" + schedule.getDayOfWeek() + ":" + schedule.getTimeSlot() + ":" + classroomKey(schedule),
                                         schedule -> 1,
                                         Integer::max
                                 ),
@@ -547,6 +548,9 @@ public class WeeklyScheduleService {
     }
 
     private Optional<WeeklySchedule> findClassroomConflict(Classroom classroom, String dayOfWeek, String timeSlot, Set<UUID> excludedIds) {
+        if (classroom == null) {
+            return Optional.empty();
+        }
         return weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), dayOfWeek, timeSlot).stream()
                 .filter(schedule -> !isExcluded(schedule, excludedIds))
                 .findFirst();
@@ -685,6 +689,7 @@ public class WeeklyScheduleService {
         schedule.setDayOfWeek(dayOfWeek);
         schedule.setTimeSlot(timeSlot);
         schedule.setScheduleGroupId(groupId);
+        schedule.setDeliveryType(DeliveryType.FACE_TO_FACE);
         return schedule;
     }
 
@@ -701,11 +706,11 @@ public class WeeklyScheduleService {
                 course.getName(),
                 academician.getId(),
                 formatAcademicianName(academician),
-                classroom.getId(),
-                classroom.getCode(),
-                classroom.getName(),
-                classroom.getCapacity(),
-                classroom.getType(),
+                classroom != null ? classroom.getId() : null,
+                classroom != null ? classroom.getCode() : null,
+                classroom != null ? classroom.getName() : null,
+                classroom != null ? classroom.getCapacity() : null,
+                classroom != null ? classroom.getType() : null,
                 department.getId(),
                 department.getName(),
                 schedule.getDayOfWeek(),
@@ -713,8 +718,17 @@ public class WeeklyScheduleService {
                 course.getSemester(),
                 course.getAcademicPeriod() != null ? course.getAcademicPeriod().getId() : null,
                 course.getAcademicPeriod() != null ? course.getAcademicPeriod().getDisplayName() : null,
-                schedule.getScheduleGroupId()
+                schedule.getScheduleGroupId(),
+                schedule.getDeliveryType(),
+                schedule.getClassLevel(),
+                schedule.getSection(),
+                schedule.getStudentGroup(),
+                schedule.getSourceNote()
         );
+    }
+
+    private String classroomKey(WeeklySchedule schedule) {
+        return schedule.getClassroom() != null ? schedule.getClassroom().getId().toString() : "ONLINE";
     }
 
     private CourseScheduleStatusItemResponse toStatusItem(Course course, int scheduledHours) {

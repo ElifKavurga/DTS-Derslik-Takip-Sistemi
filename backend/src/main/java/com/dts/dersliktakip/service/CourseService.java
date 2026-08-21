@@ -305,9 +305,9 @@ public class CourseService {
                         s.getId(),
                         s.getDayOfWeek(),
                         s.getTimeSlot(),
-                        s.getClassroom().getId(),
-                        s.getClassroom().getCode(),
-                        s.getClassroom().getName()
+                        s.getClassroom() != null ? s.getClassroom().getId() : null,
+                        s.getClassroom() != null ? s.getClassroom().getCode() : "ONLINE",
+                        s.getClassroom() != null ? s.getClassroom().getName() : "Online"
                 ))
                 .collect(Collectors.toList());
 
