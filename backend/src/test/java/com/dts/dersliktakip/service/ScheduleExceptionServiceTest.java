@@ -15,6 +15,7 @@ import com.dts.dersliktakip.entity.Department;
 import com.dts.dersliktakip.entity.Faculty;
 import com.dts.dersliktakip.entity.Floor;
 import com.dts.dersliktakip.entity.Role;
+import com.dts.dersliktakip.entity.ScheduleException;
 import com.dts.dersliktakip.entity.ScheduleExceptionType;
 import com.dts.dersliktakip.entity.Semester;
 import com.dts.dersliktakip.entity.User;
@@ -27,6 +28,7 @@ import com.dts.dersliktakip.repository.ScheduleExceptionRepository;
 import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -41,7 +43,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -214,6 +218,54 @@ class ScheduleExceptionServiceTest {
                 .hasMessage("Bu saate ders eklenemez.")
                 .satisfies(exception -> assertThat(((ScheduleConflictException) exception).getCode()).isEqualTo("CLASSROOM_CONFLICT"));
         verify(scheduleExceptionRepository, never()).save(any());
+    }
+
+    @Test
+    void createExtraLessonChecksEachSelectedSlotAndPersistsWhenTargetIsAvailable() {
+        // Arrange: BR-04, TC-015-01, TD-COMBO-004
+        TestFixture fixture = fixture();
+        LocalDate monday = LocalDate.of(2026, 9, 14);
+
+        stubOwnedCourseFlow(fixture);
+        when(weeklyScheduleService.getTimeConfiguration(fixture.currentUser)).thenReturn(timeConfiguration(fixture.department));
+        when(classroomRepository.findById(fixture.classroom.getId())).thenReturn(Optional.of(fixture.classroom));
+        when(scheduleExceptionRepository.existsByCourse_IdAndTargetDateAndTimeSlotAndType(fixture.course.getId(), monday, "08:15-09:00", ScheduleExceptionType.EXTRA))
+                .thenReturn(false);
+        when(scheduleExceptionRepository.findAllByTargetDate(monday)).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), anyInt(), any(), any())).thenReturn(List.of());
+        when(scheduleExceptionRepository.save(any(ScheduleException.class))).thenAnswer(invocation -> {
+            ScheduleException saved = invocation.getArgument(0);
+            saved.setId(UUID.randomUUID());
+            return saved;
+        });
+
+        CreateExtraLessonRequest request = new CreateExtraLessonRequest(
+                fixture.course.getId(),
+                monday,
+                "08:15-09:00",
+                2,
+                fixture.classroom.getId()
+        );
+
+        // Act
+        scheduleExceptionService.createExtraLesson(request, fixture.currentUser);
+
+        // Assert
+        ArgumentCaptor<ScheduleException> exceptionCaptor = ArgumentCaptor.forClass(ScheduleException.class);
+        verify(weeklyScheduleRepository, times(2)).findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any());
+        verify(weeklyScheduleRepository, times(2)).findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any());
+        verify(weeklyScheduleRepository, times(2)).findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), anyInt(), any(), any());
+        verify(scheduleExceptionRepository, times(1)).save(exceptionCaptor.capture());
+
+        ScheduleException savedException = exceptionCaptor.getValue();
+        assertThat(savedException.getType()).isEqualTo(ScheduleExceptionType.EXTRA);
+        assertThat(savedException.getCourse()).isSameAs(fixture.course);
+        assertThat(savedException.getAcademician()).isSameAs(fixture.academician);
+        assertThat(savedException.getClassroom()).isSameAs(fixture.classroom);
+        assertThat(savedException.getTimeSlot()).isEqualTo("08:15-09:00");
+        assertThat(savedException.getSlotCount()).isEqualTo(2);
     }
 
     private void stubOwnedCourseFlow(TestFixture fixture) {

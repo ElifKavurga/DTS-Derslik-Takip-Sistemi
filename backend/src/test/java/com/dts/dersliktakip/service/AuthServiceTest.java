@@ -15,6 +15,7 @@ import com.dts.dersliktakip.repository.UserRepository;
 import com.dts.dersliktakip.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,7 +32,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,7 +80,10 @@ class AuthServiceTest {
         assertThat(response.accessToken()).isEqualTo("access-token");
         assertThat(response.refreshToken()).isEqualTo("refresh-token");
         assertThat(response.user()).isSameAs(userResponse);
-        verify(authenticationManager).authenticate(any());
+        verify(authenticationManager, times(1)).authenticate(any());
+        verify(jwtService, times(1)).generateAccessToken(user.getEmail(), user.getRoles());
+        verify(jwtService, times(1)).generateRefreshToken(user.getEmail());
+        verify(userMapper, times(1)).toResponse(user);
     }
 
     @Test
@@ -90,6 +96,8 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.login(new LoginRequest(user.getEmail(), "<DUMMY_VALID_PASSWORD>")))
                 .isInstanceOf(DisabledException.class)
                 .hasMessage("Account is inactive");
+        verify(jwtService, never()).generateAccessToken(any(), any());
+        verify(jwtService, never()).generateRefreshToken(any());
     }
 
     @Test
@@ -137,8 +145,10 @@ class AuthServiceTest {
         // Assert
         assertThat(user.getPassword()).isEqualTo("encoded-password");
         assertThat(token.isUsed()).isTrue();
-        verify(userRepository).save(user);
-        verify(passwordResetTokenRepository).save(token);
+
+        InOrder order = inOrder(userRepository, passwordResetTokenRepository);
+        order.verify(userRepository, times(1)).save(user);
+        order.verify(passwordResetTokenRepository, times(1)).save(token);
     }
 
     private static User user(Role role, boolean active) {

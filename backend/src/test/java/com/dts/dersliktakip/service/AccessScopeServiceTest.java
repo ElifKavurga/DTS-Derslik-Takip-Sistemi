@@ -19,6 +19,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +43,7 @@ class AccessScopeServiceTest {
 
         // Act / Assert
         assertThat(accessScopeService.isSuperAdmin(user)).isTrue();
+        verifyNoInteractions(facultyRepository, departmentRepository);
     }
 
     @Test
@@ -57,6 +61,8 @@ class AccessScopeServiceTest {
 
         // Assert
         assertThat(result).isSameAs(department);
+        verify(facultyRepository, times(1)).findAll();
+        verify(departmentRepository, times(1)).findAll();
     }
 
     @Test
@@ -80,6 +86,7 @@ class AccessScopeServiceTest {
 
         // Act / Assert
         accessScopeService.assertFacultyAccess(user, UUID.randomUUID());
+        verifyNoInteractions(facultyRepository, departmentRepository);
     }
 
     @Test
