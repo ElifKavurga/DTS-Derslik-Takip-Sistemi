@@ -31,7 +31,7 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
         CampusData campus = campus("CS01");
         AcademicPeriod period = activePeriod("CS01");
         Academician academician = academician("CS01", campus.faculty(), campus.department());
-        user("dept-course-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getCode(), campus.department().getCode());
+        user("dept-course-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getName(), campus.department().getName());
         String token = loginToken("dept-course-it@dts.test");
 
         mockMvc.perform(post("/api/courses")
@@ -66,7 +66,7 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
         AcademicPeriod period = activePeriod("SC01");
         Academician academician = academician("SC01", campus.faculty(), campus.department());
         Course course = course("SC101", campus.faculty(), campus.department(), academician, period);
-        user("dept-schedule-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getCode(), campus.department().getCode());
+        user("dept-schedule-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getName(), campus.department().getName());
         String token = loginToken("dept-schedule-it@dts.test");
 
         mockMvc.perform(post("/api/schedules")
@@ -96,8 +96,10 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
         Academician secondAcademician = academician("CF01B", campus.faculty(), campus.department());
         Course firstCourse = course("CF101", campus.faculty(), campus.department(), firstAcademician, period);
         Course secondCourse = course("CF102", campus.faculty(), campus.department(), secondAcademician, period);
+        secondCourse.setGrade(2);
+        courseRepository.save(secondCourse);
         schedule(firstCourse, campus.classroom(), "TUESDAY", "08:15-09:00");
-        user("dept-conflict-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getCode(), campus.department().getCode());
+        user("dept-conflict-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getName(), campus.department().getName());
         String token = loginToken("dept-conflict-it@dts.test");
 
         mockMvc.perform(post("/api/schedules")
@@ -125,7 +127,7 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
         AcademicPeriod period = activePeriod("ISO1");
         Academician academician = academician("ISO1", ownCampus.faculty(), ownCampus.department());
         Course course = course("ISO101", ownCampus.faculty(), ownCampus.department(), academician, period);
-        user("dept-isolation-it@dts.test", Role.DEPARTMENT_ADMIN, ownCampus.faculty().getCode(), ownCampus.department().getCode());
+        user("dept-isolation-it@dts.test", Role.DEPARTMENT_ADMIN, ownCampus.faculty().getName(), ownCampus.department().getName());
         String token = loginToken("dept-isolation-it@dts.test");
 
         mockMvc.perform(post("/api/schedules")
@@ -151,7 +153,7 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
         AcademicPeriod period = activePeriod("AC01");
         Academician academician = academician("AC01", campus.faculty(), campus.department());
         Course course = course("AC101", campus.faculty(), campus.department(), academician, period);
-        user(academician.getEmail(), Role.ACADEMICIAN, campus.faculty().getCode(), campus.department().getCode());
+        user(academician.getEmail(), Role.ACADEMICIAN, campus.faculty().getName(), campus.department().getName());
         String token = loginToken(academician.getEmail());
 
         mockMvc.perform(get("/api/courses")
@@ -184,7 +186,7 @@ class CourseScheduleControllerIT extends IntegrationTestSupport {
     void invalidScheduleRequestIsRejectedAtHttpValidationLayer() throws Exception {
         // REQ-3.5.4 -> TS-011 -> TC-011-06 -> TD-BOUNDARY-009
         CampusData campus = campus("VL01");
-        user("dept-validation-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getCode(), campus.department().getCode());
+        user("dept-validation-it@dts.test", Role.DEPARTMENT_ADMIN, campus.faculty().getName(), campus.department().getName());
         String token = loginToken("dept-validation-it@dts.test");
 
         mockMvc.perform(post("/api/schedules")

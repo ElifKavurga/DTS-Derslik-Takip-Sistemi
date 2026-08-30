@@ -14,5 +14,10 @@ frontend/.env.local
 *.log
 .DS_Store
 
+# Root level env files and archives
+.env
+.env.local
+backend.zip
+
 # Graphify generated output
 /graphify-out/

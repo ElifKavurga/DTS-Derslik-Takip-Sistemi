@@ -181,7 +181,10 @@ class CourseServiceTest {
                 }
                 """.formatted(UUID.randomUUID());
 
-        assertThatThrownBy(() -> new ObjectMapper().readValue(json, CreateCourseRequest.class))
+        ObjectMapper strictMapper = new ObjectMapper();
+        strictMapper.coercionConfigFor(com.fasterxml.jackson.databind.type.LogicalType.Integer)
+                .setCoercion(com.fasterxml.jackson.databind.cfg.CoercionInputShape.Float, com.fasterxml.jackson.databind.cfg.CoercionAction.Fail);
+        assertThatThrownBy(() -> strictMapper.readValue(json, CreateCourseRequest.class))
                 .isInstanceOf(Exception.class);
     }
 

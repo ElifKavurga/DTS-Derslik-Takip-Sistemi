@@ -25,11 +25,14 @@ import com.dts.dersliktakip.repository.WeeklyScheduleRepository;
 import com.dts.dersliktakip.repository.AcademicPeriodRepository;
 import com.dts.dersliktakip.entity.AcademicPeriod;
 import com.dts.dersliktakip.entity.TermType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -38,14 +41,27 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class WeeklyScheduleServiceTest {
+
+    @BeforeEach
+    void setUpLenientStubs() {
+        // assertRemainingHoursSufficient always calls this repository method.
+        // Using lenient so tests that never reach it don't fail with UnnecessaryStubbingException.
+        lenient().when(weeklyScheduleRepository
+                .findAllByCourse_Department_IdAndCourse_AcademicPeriod_IdOrderByDayOfWeekAscTimeSlotAsc(
+                        any(), any()))
+                .thenReturn(List.of());
+    }
 
     @Mock
     private WeeklyScheduleRepository weeklyScheduleRepository;
@@ -582,7 +598,7 @@ class WeeklyScheduleServiceTest {
                 .thenReturn(List.of(existingSchedule));
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
-        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), anyInt(), any(), any())).thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(classroom.getId(), "MONDAY", "09:10-09:55"))
                 .thenReturn(List.of(conflict));
         when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(course.getAcademician().getId(), "MONDAY", "09:10-09:55"))
@@ -982,7 +998,7 @@ class WeeklyScheduleServiceTest {
         when(classroomRepository.findAllByFloorBuildingFacultyIdOrderByCodeAsc(department.getFaculty().getId())).thenReturn(classrooms);
         when(weeklyScheduleRepository.findAllByClassroom_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
         when(weeklyScheduleRepository.findAllByCourse_Academician_IdAndDayOfWeekAndTimeSlot(any(), any(), any())).thenReturn(List.of());
-        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), any(), any(), any())).thenReturn(List.of());
+        when(weeklyScheduleRepository.findAllByCourse_Department_IdAndCourse_GradeAndDayOfWeekAndTimeSlot(any(), anyInt(), any(), any())).thenReturn(List.of());
     }
 
     private static Faculty faculty(UUID id) {
@@ -1014,6 +1030,9 @@ class WeeklyScheduleServiceTest {
         academician.setLastName("Lovelace");
         academician.setDepartment(department);
 
+        AcademicPeriod period = new AcademicPeriod();
+        period.setId(UUID.randomUUID());
+
         Course course = new Course();
         course.setId(id);
         course.setCode(code);
@@ -1025,6 +1044,7 @@ class WeeklyScheduleServiceTest {
         course.setSemester(Semester.GUZ);
         course.setTheoreticalHours(weeklyHours);
         course.setPracticalHours(0);
+        course.setAcademicPeriod(period);
         course.setActive(true);
         return course;
     }

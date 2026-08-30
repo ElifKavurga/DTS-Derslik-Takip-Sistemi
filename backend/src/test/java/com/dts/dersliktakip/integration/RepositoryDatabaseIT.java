@@ -5,6 +5,7 @@ import com.dts.dersliktakip.entity.Academician;
 import com.dts.dersliktakip.entity.Classroom;
 import com.dts.dersliktakip.entity.Course;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
 class RepositoryDatabaseIT extends IntegrationTestSupport {

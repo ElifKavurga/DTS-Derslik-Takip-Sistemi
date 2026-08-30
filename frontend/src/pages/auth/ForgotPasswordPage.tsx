@@ -63,7 +63,7 @@ export const ForgotPasswordPage = () => {
               id="email"
               type="email"
               autoComplete="email"
-              placeholder="ornek@inonu.edu.tr"
+              placeholder="ornek@kurum.edu.tr"
               className="relative block h-11 w-full rounded-[14px] border border-slate-200 bg-slate-50/70 px-11 text-[15px] text-slate-950 outline-none transition duration-300 placeholder:text-slate-400 group-hover:border-transparent group-hover:bg-[#f6fbfe] focus:border-transparent focus:bg-white focus:ring-4 focus:ring-[#006482]/10"
               {...register('email')}
             />
