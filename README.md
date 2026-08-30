@@ -122,7 +122,6 @@ DTS-Derslik-Takip-Sistemi/
 ├── resimler/
 ├── docker-compose.yml
 ├── .env.example
-├── SRS 2.md
 └── README.md
 ```
 
@@ -308,7 +307,6 @@ npm run build
 
 | Belge | Açıklama |
 |---|---|
-| `SRS 2.md` | Sistem gereksinimleri dokümanı. |
 | `docs/SPRINT_12_4_TEST_SCENARIOS.md` | Sprint 12.4 test senaryoları. |
 | `docs/testing/SPRINT_13_1_REQUIREMENT_ANALYSIS.md` | Sprint 13 gereksinim analizi. |
 | `docs/testing/SPRINT_13_2_TEST_CASE_DESIGN.md` | Test case tasarımı. |
@@ -325,8 +323,6 @@ npm run build
 | `docs/testing/SPRINT_13_13_DEFECT_MANAGEMENT.md` | Defect management dokümantasyonu. |
 | `docs/testing/SPRINT_13_14_TEST_MANAGEMENT_METRICS_REPORT.md` | Test management, metrikler ve final test raporu. |
 
-Repository içinde ayrı bir ER diagram veya veri sözlüğü dosyası bulunmamaktadır.
-
 ## Gelecek Çalışmalar
 
 - Maven wrapper veya standart Maven runner kullanımının netleştirilmesi
@@ -335,8 +331,4 @@ Repository içinde ayrı bir ER diagram veya veri sözlüğü dosyası bulunmama
 - Frontend unit test ve E2E test altyapısının eklenmesi
 - CI/CD pipeline ile build, test ve regression kontrollerinin otomatikleştirilmesi
 - Performans, yük ve responsive testlerinin gerçek ortam üzerinde ölçülmesi
-- SRS ile kod arasındaki rol kapsamı ve online/fiziksel ders iş kurallarının netleştirilmesi
 
-## Lisans
-
-Repository içinde bir `LICENSE` dosyası bulunmamaktadır. Bu proje akademik/staj çalışması kapsamında geliştirilmiştir.
