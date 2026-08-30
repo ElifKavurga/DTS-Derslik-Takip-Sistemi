@@ -81,50 +81,6 @@ Frontend, React ve TypeScript ile modüler bir yapı kullanır:
 - `types`: frontend veri tipleri
 - `styles`: global TailwindCSS stilleri
 
-## Proje Yapısı
-
-```text
-DTS-Derslik-Takip-Sistemi/
-├── backend/
-│   ├── pom.xml
-│   └── src/
-│       ├── main/
-│       │   ├── java/com/dts/dersliktakip/
-│       │   │   ├── config/
-│       │   │   ├── controller/
-│       │   │   ├── dto/
-│       │   │   ├── entity/
-│       │   │   ├── exception/
-│       │   │   ├── mapper/
-│       │   │   ├── repository/
-│       │   │   ├── security/
-│       │   │   └── service/
-│       │   └── resources/
-│       │       ├── application.yml
-│       │       └── db/migration/
-│       └── test/
-│           ├── java/com/dts/dersliktakip/
-│           └── resources/
-├── frontend/
-│   ├── package.json
-│   └── src/
-│       ├── components/
-│       ├── layouts/
-│       ├── pages/
-│       ├── router/
-│       ├── services/
-│       ├── store/
-│       ├── styles/
-│       └── types/
-├── docs/
-│   ├── SPRINT_12_4_TEST_SCENARIOS.md
-│   └── testing/
-├── resimler/
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
 ## Kurulum
 
 ### Gereksinimler
@@ -302,33 +258,3 @@ cd frontend
 npm run lint
 npm run build
 ```
-
-## Dokümantasyon
-
-| Belge | Açıklama |
-|---|---|
-| `docs/SPRINT_12_4_TEST_SCENARIOS.md` | Sprint 12.4 test senaryoları. |
-| `docs/testing/SPRINT_13_1_REQUIREMENT_ANALYSIS.md` | Sprint 13 gereksinim analizi. |
-| `docs/testing/SPRINT_13_2_TEST_CASE_DESIGN.md` | Test case tasarımı. |
-| `docs/testing/SPRINT_13_3_TEST_DATA.md` | Test verisi tasarımı. |
-| `docs/testing/SPRINT_13_4_UNIT_TESTS.md` | Unit test dokümantasyonu. |
-| `docs/testing/SPRINT_13_5_MOCKITO_BEHAVIOR_TESTS.md` | Mockito/behavior test dokümantasyonu. |
-| `docs/testing/SPRINT_13_6_INTEGRATION_TESTS.md` | Integration test dokümantasyonu. |
-| `docs/testing/SPRINT_13_7_SYSTEM_TESTS.md` | System test dokümantasyonu. |
-| `docs/testing/SPRINT_13_8_STATE_WORKFLOW_EXPLORATORY.md` | State, workflow ve exploratory test dokümantasyonu. |
-| `docs/testing/SPRINT_13_9_NON_FUNCTIONAL_TESTS.md` | Non-functional test dokümantasyonu. |
-| `docs/testing/SPRINT_13_10_TEST_ENVIRONMENT.md` | Test ortamı dokümantasyonu. |
-| `docs/testing/SPRINT_13_11_ACCEPTANCE_TESTS_UAT.md` | Acceptance/UAT dokümantasyonu. |
-| `docs/testing/SPRINT_13_12_TEST_AUTOMATION_REGRESSION.md` | Automation ve regression dokümantasyonu. |
-| `docs/testing/SPRINT_13_13_DEFECT_MANAGEMENT.md` | Defect management dokümantasyonu. |
-| `docs/testing/SPRINT_13_14_TEST_MANAGEMENT_METRICS_REPORT.md` | Test management, metrikler ve final test raporu. |
-
-## Gelecek Çalışmalar
-
-- Maven wrapper veya standart Maven runner kullanımının netleştirilmesi
-- Docker ortamının ve test execution sürecinin tekrarlanabilir hale getirilmesi
-- Backend testlerinin düzenli çalıştırılıp raporlanması
-- Frontend unit test ve E2E test altyapısının eklenmesi
-- CI/CD pipeline ile build, test ve regression kontrollerinin otomatikleştirilmesi
-- Performans, yük ve responsive testlerinin gerçek ortam üzerinde ölçülmesi
-
