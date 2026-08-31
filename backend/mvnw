@@ -46,4 +46,6 @@ if [ ! -f "$MAVEN_WRAPPER_JAR" ]; then
   fi
 fi
 
-exec "$JAVACMD" -classpath "$MAVEN_WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"
+MAVEN_PROJECTBASEDIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$JAVACMD" "-Dmaven.multiModuleProjectDirectory=$MAVEN_PROJECTBASEDIR" -classpath "$MAVEN_WRAPPER_JAR" org.apache.maven.wrapper.MavenWrapperMain "$@"
+

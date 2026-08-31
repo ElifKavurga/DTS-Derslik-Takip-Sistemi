@@ -35,4 +35,6 @@
     @powershell -Command "(New-Object System.Net.WebClient).DownloadFile('%WRAPPER_URL%', '%WRAPPER_JAR%')"
 )
 
-@"%JAVA_EXEC%" -classpath "%WRAPPER_JAR%" org.apache.maven.wrapper.MavenWrapperMain %*
+@"%JAVA_EXEC%" "-Dmaven.multiModuleProjectDirectory=%BASEDIR:~0,-1%" -classpath "%WRAPPER_JAR%" org.apache.maven.wrapper.MavenWrapperMain %*
+
+
